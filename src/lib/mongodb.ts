@@ -3,10 +3,23 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/community-space';
 
-let cached = global.mongoose;
+// Define our cache interface
+interface MongooseConnection {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+// Declare global type extension
+declare global {
+  var mongoose: MongooseConnection | undefined;
+}
+
+// Initialize cache
+let cached = global.mongoose || { conn: null, promise: null };
+
+// If not in global, set it
+if (!global.mongoose) {
+  global.mongoose = cached;
 }
 
 async function connectDB() {
@@ -24,7 +37,13 @@ async function connectDB() {
     });
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
   return cached.conn;
 }
 

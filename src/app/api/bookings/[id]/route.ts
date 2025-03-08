@@ -68,7 +68,7 @@ export async function PUT(
     const bookedTables = existingBookings.flatMap(booking => booking.tables);
     const requestedTables = body.tables;
     
-    const conflictingTables = requestedTables.filter(table => 
+    const conflictingTables = requestedTables.filter((table: any) => 
       bookedTables.includes(table)
     );
     

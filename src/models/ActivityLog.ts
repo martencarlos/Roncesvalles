@@ -2,6 +2,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface IActivityLog {
+  _id: string
   action: 'create' | 'update' | 'delete';
   apartmentNumber: number;
   details: string;
