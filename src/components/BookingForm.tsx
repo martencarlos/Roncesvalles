@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -39,17 +40,19 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const availableTables = [1, 2, 3, 4, 5, 6];
-
-  const handleTableToggle = (tableNum: number) => {
+  // Toggle table selection
+  const toggleTable = (tableNumber: number) => {
     setSelectedTables(prev => {
-      if (prev.includes(tableNum)) {
-        return prev.filter(t => t !== tableNum);
+      if (prev.includes(tableNumber)) {
+        return prev.filter(t => t !== tableNumber);
       } else {
-        return [...prev, tableNum];
+        return [...prev, tableNumber];
       }
     });
   };
+
+  // Check if a table is selected
+  const isSelected = (tableNumber: number) => selectedTables.includes(tableNumber);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,19 +153,76 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
       <div className="space-y-2">
         <Label>Select Tables</Label>
-        <div className="grid grid-cols-3 gap-2">
-          {availableTables.map((tableNum) => (
-            <Button
-              key={tableNum}
+        <Card className="w-full">
+          <CardContent className="p-4">
+            {/* U-shaped table layout */}
+            <div className="relative w-full aspect-video bg-gray-100 rounded-md mb-4">
+              {/* Left side tables (1 and 2) */}
+              <div className="absolute flex flex-col items-start justify-end h-full left-0 py-4">
+                <div 
+                  className={`w-24 h-16 m-2 rounded-md flex items-center justify-center cursor-pointer ${isSelected(1) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  onClick={() => toggleTable(1)}
+                >
+                  <span className="font-bold">1</span>
+                </div>
+                <div 
+                  className={`w-24 h-16 m-2 rounded-md flex items-center justify-center cursor-pointer ${isSelected(2) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  onClick={() => toggleTable(2)}
+                >
+                  <span className="font-bold">2</span>
+                </div>
+              </div>
+              
+              {/* Center top tables (3 and 4) */}
+              <div className="absolute flex justify-center space-x-4 w-full top-4">
+                <div 
+                  className={`w-24 h-16 rounded-md flex items-center justify-center cursor-pointer ${isSelected(3) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  onClick={() => toggleTable(3)}
+                >
+                  <span className="font-bold">3</span>
+                </div>
+                <div 
+                  className={`w-24 h-16 rounded-md flex items-center justify-center cursor-pointer ${isSelected(4) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  onClick={() => toggleTable(4)}
+                >
+                  <span className="font-bold">4</span>
+                </div>
+              </div>
+              
+              {/* Right side tables (5 and 6) */}
+              <div className="absolute flex flex-col items-end justify-end h-full right-0 py-4">
+                <div 
+                  className={`w-24 h-16 m-2 rounded-md flex items-center justify-center cursor-pointer ${isSelected(5) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  onClick={() => toggleTable(5)}
+                >
+                  <span className="font-bold">5</span>
+                </div>
+                <div 
+                  className={`w-24 h-16 m-2 rounded-md flex items-center justify-center cursor-pointer ${isSelected(6) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  onClick={() => toggleTable(6)}
+                >
+                  <span className="font-bold">6</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Selected tables display */}
+            <div className="mb-2">
+              <p className="font-medium">Selected Tables: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'None'}</p>
+            </div>
+            
+            {/* Clear selection button */}
+            <Button 
+              variant="outline" 
               type="button"
-              variant={selectedTables.includes(tableNum) ? "default" : "outline"}
-              onClick={() => handleTableToggle(tableNum)}
-              className="h-10"
+              onClick={() => setSelectedTables([])}
+              className="w-full"
+              size="sm"
             >
-              Table {tableNum}
+              Clear Selection
             </Button>
-          ))}
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
