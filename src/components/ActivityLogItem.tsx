@@ -13,11 +13,11 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'create':
-        return <Check className="h-4 w-4 text-green-600" />;
+        return <Check className="h-4 w-4 text-green-600 shrink-0" />;
       case 'update':
-        return <RefreshCw className="h-4 w-4 text-blue-600" />;
+        return <RefreshCw className="h-4 w-4 text-blue-600 shrink-0" />;
       case 'delete':
-        return <Trash2 className="h-4 w-4 text-red-600" />;
+        return <Trash2 className="h-4 w-4 text-red-600 shrink-0" />;
       default:
         return null;
     }
@@ -38,7 +38,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
 
   return (
     <div className="py-3">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:items-start">
         <div className="flex gap-2 items-start">
           {getActionIcon(log.action)}
           <div>
@@ -48,7 +48,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
             <span className="text-sm">{log.details}</span>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground mt-1 sm:mt-0 ml-6 sm:ml-0">
           {format(new Date(log.timestamp), 'MMM d, yyyy - HH:mm')}
         </div>
       </div>

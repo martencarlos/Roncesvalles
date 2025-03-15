@@ -1,4 +1,3 @@
-// src/app/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, History, Filter, UtensilsCrossed } from "lucide-react";
+import { PlusCircle, History, Filter, UtensilsCrossed, CalendarIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -209,11 +208,12 @@ export default function Home() {
   };
   
   return (
-    <div className="max-w-6xl mx-auto p-4 min-h-screen">
-      <header className="mb-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Sociedad Roncesvalles</h1>
-          <Button asChild variant="outline">
+    <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
+      <header className="mb-6 sm:mb-8">
+        {/* Title and activity log button */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">Sociedad Roncesvalles</h1>
+          <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
             <Link href="/activity">
               <History className="h-4 w-4 mr-2" />
               View Activity Log
@@ -221,46 +221,51 @@ export default function Home() {
           </Button>
         </div>
         
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="relative">
+        {/* Date picker and filter button - better mobile layout */}
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex items-center w-full sm:w-auto">
+              <div className="absolute left-3 pointer-events-none text-muted-foreground">
+                <CalendarIcon className="h-4 w-4" />
+              </div>
               <DatePicker
                 selected={selectedDate}
                 onChange={(date: Date) => setSelectedDate(date)}
                 dateFormat="MMMM d, yyyy"
-                className="w-full p-2 border rounded-md"
+                className="w-full pl-10 p-2 border rounded-md"
               />
             </div>
             <Button 
               variant={filtering ? "default" : "outline"} 
               onClick={toggleFiltering}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
+              size="sm"
             >
               <Filter className="h-4 w-4" />
               {filtering ? "Clear Filter" : "Filter"}
             </Button>
-            </div>
+          </div>
           
-          <Button onClick={handleNewBooking}>
+          <Button onClick={handleNewBooking} className="w-full sm:w-auto" size="sm">
             <PlusCircle className="h-4 w-4 mr-2" />
             New Booking
           </Button>
         </div>
         
-        <Tabs defaultValue="lunch" onValueChange={(value) => setSelectedMealType(value as MealType)}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="lunch">Lunch</TabsTrigger>
-            <TabsTrigger value="dinner">Dinner</TabsTrigger>
+        <Tabs defaultValue="lunch" onValueChange={(value) => setSelectedMealType(value as MealType)} className="w-full">
+          <TabsList className="mb-4 w-full">
+            <TabsTrigger value="lunch" className="flex-1">Lunch</TabsTrigger>
+            <TabsTrigger value="dinner" className="flex-1">Dinner</TabsTrigger>
           </TabsList>
           <TabsContent value="lunch">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-md flex items-center gap-2">
+              <CardHeader className="pb-3 px-4">
+                <CardTitle className="text-sm sm:text-md flex items-center gap-2">
                   <UtensilsCrossed className="h-4 w-4" />
-                  Available Tables for Lunch on {format(selectedDate, 'MMMM d, yyyy')}
+                  Available Tables for Lunch on {format(selectedDate, 'MMM d, yyyy')}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4">
                 {availableTablesLunch.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {availableTablesLunch.map(table => (
@@ -270,20 +275,20 @@ export default function Home() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-red-500">All tables are booked for lunch on this date.</p>
+                  <p className="text-red-500 text-sm">All tables are booked for lunch on this date.</p>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="dinner">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-md flex items-center gap-2">
+              <CardHeader className="pb-3 px-4">
+                <CardTitle className="text-sm sm:text-md flex items-center gap-2">
                   <UtensilsCrossed className="h-4 w-4" />
-                  Available Tables for Dinner on {format(selectedDate, 'MMMM d, yyyy')}
+                  Available Tables for Dinner on {format(selectedDate, 'MMM d, yyyy')}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4">
                 {availableTablesDinner.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {availableTablesDinner.map(table => (
@@ -293,7 +298,7 @@ export default function Home() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-red-500">All tables are booked for dinner on this date.</p>
+                  <p className="text-red-500 text-sm">All tables are booked for dinner on this date.</p>
                 )}
               </CardContent>
             </Card>
@@ -328,14 +333,14 @@ export default function Home() {
       )}
       
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+          <h2 className="text-lg sm:text-xl font-semibold">
             {filtering 
               ? `Bookings for ${format(selectedDate, 'MMMM d, yyyy')}` 
               : "All Bookings"}
           </h2>
           {filtering && filteredBookings.length === 0 && (
-            <Button variant="outline" onClick={() => setFiltering(false)}>
+            <Button variant="outline" onClick={() => setFiltering(false)} size="sm" className="w-full sm:w-auto">
               Show All Bookings
             </Button>
           )}
@@ -347,13 +352,13 @@ export default function Home() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : filteredBookings.length > 0 ? (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {sortedDateKeys.map(dateKey => (
               <div key={dateKey}>
-                <h3 className="text-lg font-medium mb-3 bg-gray-100 p-2 rounded">
+                <h3 className="text-base sm:text-lg font-medium mb-3 bg-gray-100 p-2 rounded">
                   {format(new Date(dateKey), 'EEEE, MMMM d, yyyy')}
                 </h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   {groupedBookings[dateKey]
                     .sort((a, b) => {
                       // Sort by meal type first (lunch first, then dinner)
@@ -377,7 +382,7 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground py-8 text-center">
+          <p className="text-muted-foreground py-6 sm:py-8 text-center">
             {filtering ? "No bookings for this date." : "No bookings available."}
           </p>
         )}
