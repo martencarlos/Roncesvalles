@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { CalendarIcon } from 'lucide-react';
 
 interface BookingFormProps {
   onSubmit: (data: Partial<IBooking>) => Promise<void>;
@@ -109,7 +110,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
       <div className="space-y-2">
         <Label htmlFor="date">Date</Label>
-        <div className="relative">
+        <div className="relative flex items-center w-full sm:w-auto">
+          <div className="absolute left-3 pointer-events-none text-muted-foreground">
+            <CalendarIcon className="h-4 w-4" />
+          </div>
           <DatePicker
             selected={date}
             onChange={(date: Date) => setDate(date)}

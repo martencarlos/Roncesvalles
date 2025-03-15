@@ -39,7 +39,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
   return (
     <div className="py-3">
       <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:items-start">
-        <div className="flex gap-2 items-start">
+        <div className="flex gap-2 items-center">
           {getActionIcon(log.action)}
           <div>
             <span className={`font-medium ${getActionColor(log.action)}`}>
