@@ -1,6 +1,7 @@
 // src/components/ActivityLogItem.tsx
 import React from 'react';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { IActivityLog } from '@/models/ActivityLog';
 import { Check, RefreshCw, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -36,6 +37,33 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
     }
   };
 
+  const getActionText = (action: string) => {
+    switch (action) {
+      case 'create':
+        return 'CREAR';
+      case 'update':
+        return 'ACTUALIZAR';
+      case 'delete':
+        return 'ELIMINAR';
+      default:
+        return action.toUpperCase();
+    }
+  };
+
+  // Traducir texto específico en la descripción
+  const translateDetails = (details: string) => {
+    return details
+      .replace('booked tables', 'ha reservado las mesas')
+      .replace('for lunch on', 'para comida el')
+      .replace('for dinner on', 'para cena el')
+      .replace('modified booking for lunch on', 'ha modificado la reserva para comida el')
+      .replace('modified booking for dinner on', 'ha modificado la reserva para cena el')
+      .replace('cancelled booking for lunch on', 'ha cancelado la reserva para comida el')
+      .replace('cancelled booking for dinner on', 'ha cancelado la reserva para cena el')
+      .replace('tables', 'mesas')
+      .replace('Apt', 'Apto.');
+  };
+
   return (
     <div className="py-3">
       <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:items-start">
@@ -43,13 +71,13 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
           {getActionIcon(log.action)}
           <div>
             <span className={`font-medium ${getActionColor(log.action)}`}>
-              {log.action.toUpperCase()}
+              {getActionText(log.action)}
             </span>{' '}
-            <span className="text-sm">{log.details}</span>
+            <span className="text-sm">{translateDetails(log.details)}</span>
           </div>
         </div>
         <div className="text-xs text-muted-foreground mt-1 sm:mt-0 ml-6 sm:ml-0">
-          {format(new Date(log.timestamp), 'MMM d, yyyy - HH:mm')}
+          {format(new Date(log.timestamp), 'd MMM, yyyy - HH:mm', { locale: es })}
         </div>
       </div>
       <Separator className="mt-3" />

@@ -1,3 +1,4 @@
+// src/app/activity/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,7 +21,7 @@ export default function ActivityPage() {
         const res = await fetch('/api/activity');
         
         if (!res.ok) {
-          throw new Error('Failed to fetch activity logs');
+          throw new Error('Error al obtener registros de actividad');
         }
         
         const data = await res.json();
@@ -40,11 +41,11 @@ export default function ActivityPage() {
     <div className="max-w-4xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">Activity Log</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Registro de Actividad</h1>
           <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
             <Link href="/">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Bookings
+              Volver a Reservas
             </Link>
           </Button>
         </div>
@@ -60,10 +61,10 @@ export default function ActivityPage() {
         <CardHeader className="px-4 pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <ActivityIcon className="h-5 w-5" />
-            Recent Activity
+            Actividad Reciente
           </CardTitle>
           <CardDescription className="text-sm">
-            All activity related to community space bookings
+            Toda la actividad relacionada con las reservas de espacios comunitarios
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4">
@@ -78,7 +79,7 @@ export default function ActivityPage() {
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground py-6 sm:py-8 text-center">No activity recorded yet.</p>
+            <p className="text-muted-foreground py-6 sm:py-8 text-center">No se ha registrado actividad todavía.</p>
           )}
         </CardContent>
       </Card>

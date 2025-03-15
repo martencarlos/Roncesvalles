@@ -1,8 +1,10 @@
+// src/app/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, History, Filter, UtensilsCrossed, CalendarIcon } from "lucide-react";
@@ -15,7 +17,11 @@ import BookingCard from '@/components/BookingCard';
 import BookingFormModal from '@/components/BookingFormModal';
 import { IBooking, MealType } from '@/models/Booking';
 import DatePicker from "react-datepicker";
+import { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+
+// Registrar el idioma español para el datepicker
+registerLocale('es', es);
 
 export default function Home() {
   const [bookings, setBookings] = useState<IBooking[]>([]);
@@ -28,7 +34,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [filtering, setFiltering] = useState<boolean>(false);
   
-  // Function to fetch all bookings
+  // Función para obtener todas las reservas
   const fetchBookings = async () => {
     setLoading(true);
     setError('');
@@ -37,12 +43,12 @@ export default function Home() {
       const res = await fetch('/api/bookings');
       
       if (!res.ok) {
-        throw new Error('Failed to fetch bookings');
+        throw new Error('Error al obtener las reservas');
       }
       
       const data = await res.json();
       
-      // Sort bookings by date (newest first)
+      // Ordenar reservas por fecha (más recientes primero)
       const sortedData = [...data].sort((a, b) => 
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
@@ -61,7 +67,7 @@ export default function Home() {
     fetchBookings();
   }, []);
   
-  // Filter bookings by selected date and meal type when filtering is enabled
+  // Filtrar reservas por fecha y tipo de comida seleccionados cuando el filtrado está habilitado
   useEffect(() => {
     if (filtering && selectedDate) {
       const selectedDateStart = new Date(selectedDate);
@@ -94,14 +100,14 @@ export default function Home() {
       
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to create booking');
+        throw new Error(errorData.message || 'Error al crear la reserva');
       }
       
-      // Close form and refresh bookings
+      // Cerrar formulario y actualizar reservas
       setShowForm(false);
       fetchBookings();
-      toast.success("Booking Created", {
-        description: `Apt #${data.apartmentNumber} booked tables ${data.tables?.join(', ')} for ${data.mealType} on ${format(data.date as Date, 'MMM d, yyyy')}`,
+      toast.success("Reserva Creada", {
+        description: `Apt #${data.apartmentNumber} ha reservado las mesas ${data.tables?.join(', ')} para ${data.mealType === 'lunch' ? 'comida' : 'cena'} el ${format(data.date as Date, 'd MMM, yyyy', { locale: es })}`,
       });
     } catch (err: any) {
       throw err;
@@ -122,14 +128,14 @@ export default function Home() {
       
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to update booking');
+        throw new Error(errorData.message || 'Error al actualizar la reserva');
       }
       
-      // Close form and refresh bookings
+      // Cerrar formulario y actualizar reservas
       setEditingBooking(null);
       fetchBookings();
-      toast.success("Booking Updated", {
-        description: `Updated booking for Apt #${data.apartmentNumber}`,
+      toast.success("Reserva Actualizada", {
+        description: `Actualizada reserva para Apt #${data.apartmentNumber}`,
       });
     } catch (err: any) {
       throw err;
@@ -137,7 +143,7 @@ export default function Home() {
   };
   
   const handleDeleteBooking = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this booking?')) {
+    if (!window.confirm('¿Está seguro de que desea eliminar esta reserva?')) {
       return;
     }
     
@@ -147,13 +153,13 @@ export default function Home() {
       });
       
       if (!res.ok) {
-        throw new Error('Failed to delete booking');
+        throw new Error('Error al eliminar la reserva');
       }
       
-      // Refresh bookings
+      // Actualizar reservas
       fetchBookings();
-      toast.error("Booking Deleted", {
-        description: "The booking has been successfully deleted",
+      toast.error("Reserva Eliminada", {
+        description: "La reserva ha sido eliminada correctamente",
       });
     } catch (err: any) {
       setError(err.message);
@@ -161,7 +167,7 @@ export default function Home() {
     }
   };
   
-  // Get all booked tables for the selected date and meal type
+  // Obtener todas las mesas reservadas para la fecha y tipo de comida seleccionados
   const getBookedTablesForDateAndMeal = (date: Date, mealType: MealType) => {
     const selectedDateStart = new Date(date);
     selectedDateStart.setHours(0, 0, 0, 0);
@@ -189,7 +195,7 @@ export default function Home() {
     setFiltering(!filtering);
   };
   
-  // Group bookings by date for better organization
+  // Agrupar reservas por fecha para mejor organización
   const groupedBookings: {[key: string]: IBooking[]} = {};
   
   filteredBookings.forEach(booking => {
@@ -200,28 +206,33 @@ export default function Home() {
     groupedBookings[dateKey].push(booking);
   });
   
-  // Sort date keys chronologically
+  // Ordenar claves de fecha cronológicamente
   const sortedDateKeys = Object.keys(groupedBookings).sort();
   
   const handleNewBooking = () => {
     setShowForm(true);
   };
   
+  // Formatear fecha en español
+  const formatDateEs = (date: Date, formatStr: string) => {
+    return format(date, formatStr, { locale: es });
+  };
+  
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6 sm:mb-8">
-        {/* Title and activity log button */}
+        {/* Título y botón de registro de actividad */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold">Sociedad Roncesvalles</h1>
           <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
             <Link href="/activity">
               <History className="h-4 w-4 mr-2" />
-              View Activity Log
+              Ver Registro de Actividad
             </Link>
           </Button>
         </div>
         
-        {/* Date picker and filter button - better mobile layout */}
+        {/* Selector de fecha y botón de filtro - mejor diseño móvil */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <div className="relative flex items-center w-full sm:w-auto">
@@ -231,7 +242,8 @@ export default function Home() {
               <DatePicker
                 selected={selectedDate}
                 onChange={(date: Date) => setSelectedDate(date)}
-                dateFormat="MMMM d, yyyy"
+                dateFormat="d MMMM, yyyy"
+                locale="es"
                 className="w-full pl-10 p-2 border rounded-md"
               />
             </div>
@@ -242,27 +254,27 @@ export default function Home() {
               size="sm"
             >
               <Filter className="h-4 w-4" />
-              {filtering ? "Clear Filter" : "Filter"}
+              {filtering ? "Limpiar Filtro" : "Filtrar"}
             </Button>
           </div>
           
           <Button onClick={handleNewBooking} className="w-full sm:w-auto" size="sm">
             <PlusCircle className="h-4 w-4 mr-2" />
-            New Booking
+            Nueva Reserva
           </Button>
         </div>
         
         <Tabs defaultValue="lunch" onValueChange={(value) => setSelectedMealType(value as MealType)} className="w-full">
           <TabsList className="mb-4 w-full">
-            <TabsTrigger value="lunch" className="flex-1">Lunch</TabsTrigger>
-            <TabsTrigger value="dinner" className="flex-1">Dinner</TabsTrigger>
+            <TabsTrigger value="lunch" className="flex-1">Comida</TabsTrigger>
+            <TabsTrigger value="dinner" className="flex-1">Cena</TabsTrigger>
           </TabsList>
           <TabsContent value="lunch">
             <Card>
               <CardHeader className="pb-3 px-4">
                 <CardTitle className="text-sm sm:text-md flex items-center gap-2">
                   <UtensilsCrossed className="h-4 w-4" />
-                  Available Tables for Lunch on {format(selectedDate, 'MMM d, yyyy')}
+                  Mesas disponibles para comida el {formatDateEs(selectedDate, 'd MMM, yyyy')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-4">
@@ -270,12 +282,12 @@ export default function Home() {
                   <div className="flex flex-wrap gap-2">
                     {availableTablesLunch.map(table => (
                       <Badge key={table} variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Table #{table}
+                        Mesa #{table}
                       </Badge>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-red-500 text-sm">All tables are booked for lunch on this date.</p>
+                  <p className="text-red-500 text-sm">Todas las mesas están reservadas para comida en esta fecha.</p>
                 )}
               </CardContent>
             </Card>
@@ -285,7 +297,7 @@ export default function Home() {
               <CardHeader className="pb-3 px-4">
                 <CardTitle className="text-sm sm:text-md flex items-center gap-2">
                   <UtensilsCrossed className="h-4 w-4" />
-                  Available Tables for Dinner on {format(selectedDate, 'MMM d, yyyy')}
+                  Mesas disponibles para cena el {formatDateEs(selectedDate, 'd MMM, yyyy')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-4">
@@ -293,12 +305,12 @@ export default function Home() {
                   <div className="flex flex-wrap gap-2">
                     {availableTablesDinner.map(table => (
                       <Badge key={table} variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Table #{table}
+                        Mesa #{table}
                       </Badge>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-red-500 text-sm">All tables are booked for dinner on this date.</p>
+                  <p className="text-red-500 text-sm">Todas las mesas están reservadas para cena en esta fecha.</p>
                 )}
               </CardContent>
             </Card>
@@ -312,7 +324,7 @@ export default function Home() {
         </Alert>
       )}
       
-      {/* Booking Form Modal */}
+      {/* Modal del Formulario de Reserva */}
       <BookingFormModal
         isOpen={showForm}
         onClose={() => setShowForm(false)}
@@ -321,7 +333,7 @@ export default function Home() {
         isEditing={false}
       />
       
-      {/* Edit Booking Modal */}
+      {/* Modal de Edición de Reserva */}
       {editingBooking && (
         <BookingFormModal
           isOpen={!!editingBooking}
@@ -336,12 +348,12 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
           <h2 className="text-lg sm:text-xl font-semibold">
             {filtering 
-              ? `Bookings for ${format(selectedDate, 'MMMM d, yyyy')}` 
-              : "All Bookings"}
+              ? `Reservas para ${formatDateEs(selectedDate, 'd MMMM, yyyy')}` 
+              : "Todas las Reservas"}
           </h2>
           {filtering && filteredBookings.length === 0 && (
             <Button variant="outline" onClick={() => setFiltering(false)} size="sm" className="w-full sm:w-auto">
-              Show All Bookings
+              Mostrar Todas las Reservas
             </Button>
           )}
         </div>
@@ -356,16 +368,16 @@ export default function Home() {
             {sortedDateKeys.map(dateKey => (
               <div key={dateKey}>
                 <h3 className="text-base sm:text-lg font-medium mb-3 bg-gray-100 p-2 rounded">
-                  {format(new Date(dateKey), 'EEEE, MMMM d, yyyy')}
+                  {formatDateEs(new Date(dateKey), 'EEEE, d MMMM, yyyy')}
                 </h3>
                 <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   {groupedBookings[dateKey]
                     .sort((a, b) => {
-                      // Sort by meal type first (lunch first, then dinner)
+                      // Ordenar por tipo de comida primero (comida primero, luego cena)
                       if (a.mealType !== b.mealType) {
                         return a.mealType === 'lunch' ? -1 : 1;
                       }
-                      // Then by apartment number
+                      // Luego por número de apartamento
                       return a.apartmentNumber - b.apartmentNumber;
                     })
                     .map(booking => (
@@ -383,7 +395,7 @@ export default function Home() {
           </div>
         ) : (
           <p className="text-muted-foreground py-6 sm:py-8 text-center">
-            {filtering ? "No bookings for this date." : "No bookings available."}
+            {filtering ? "No hay reservas para esta fecha." : "No hay reservas disponibles."}
           </p>
         )}
       </div>

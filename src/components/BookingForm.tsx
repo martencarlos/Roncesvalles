@@ -9,8 +9,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
+import { registerLocale } from "react-datepicker";
+import {es} from 'date-fns/locale/es';
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarIcon } from 'lucide-react';
+
+// Registrar el locale español para el datepicker
+registerLocale('es', es);
 
 interface BookingFormProps {
   onSubmit: (data: Partial<IBooking>) => Promise<void>;
@@ -41,7 +46,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Toggle table selection
+  // Toggle para selección de mesa
   const toggleTable = (tableNumber: number) => {
     setSelectedTables(prev => {
       if (prev.includes(tableNumber)) {
@@ -52,7 +57,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     });
   };
 
-  // Check if a table is selected
+  // Comprobar si una mesa está seleccionada
   const isSelected = (tableNumber: number) => selectedTables.includes(tableNumber);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,9 +65,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setError('');
 
     if (selectedTables.length === 0) {
-      setError('Please select at least one table');
-      toast.error("Validation Error", {
-        description: "Please select at least one table"
+      setError('Por favor, seleccione al menos una mesa');
+      toast.error("Error de Validación", {
+        description: "Por favor, seleccione al menos una mesa"
       });
       return;
     }
@@ -78,9 +83,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
         tables: selectedTables,
       });
     } catch (error: any) {
-      setError(error.message || 'Failed to submit booking');
+      setError(error.message || 'Error al enviar la reserva');
       toast.error("Error", {
-        description: error.message || 'Failed to submit booking'
+        description: error.message || 'Error al enviar la reserva'
       });
     } finally {
       setIsSubmitting(false);
@@ -96,7 +101,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="apartmentNumber">Apartment Number</Label>
+        <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
         <Input
           id="apartmentNumber"
           type="number"
@@ -109,7 +114,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="date">Date</Label>
+        <Label htmlFor="date">Fecha</Label>
         <div className="relative flex items-center w-full sm:w-auto">
           <div className="absolute left-3 pointer-events-none text-muted-foreground">
             <CalendarIcon className="h-4 w-4" />
@@ -118,15 +123,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
             selected={date}
             onChange={(date: Date) => setDate(date)}
             minDate={new Date()}
-            dateFormat="MMMM d, yyyy"
-            className="w-full p-2 border rounded-md"
+            dateFormat="d MMMM, yyyy"
+            locale="es"
+            className="w-full p-2 border rounded-md pl-10"
             wrapperClassName="w-full"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="mealType">Meal Type</Label>
+        <Label htmlFor="mealType">Tipo de Comida</Label>
         <RadioGroup 
           value={mealType} 
           onValueChange={(value) => setMealType(value as MealType)} 
@@ -134,17 +140,17 @@ const BookingForm: React.FC<BookingFormProps> = ({
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="lunch" id="lunch" />
-            <Label htmlFor="lunch">Lunch</Label>
+            <Label htmlFor="lunch">Comida</Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="dinner" id="dinner" />
-            <Label htmlFor="dinner">Dinner</Label>
+            <Label htmlFor="dinner">Cena</Label>
           </div>
         </RadioGroup>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="numberOfPeople">Number of People</Label>
+        <Label htmlFor="numberOfPeople">Número de Personas</Label>
         <Input
           id="numberOfPeople"
           type="number"
@@ -156,12 +162,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       <div className="space-y-2">
-        <Label>Select Tables</Label>
+        <Label>Seleccionar Mesas</Label>
         <Card className="w-full">
           <CardContent className="p-2 sm:p-4">
-            {/* U-shaped table layout - Mobile optimized */}
+            {/* Disposición de mesa en forma de U - Optimizado para móvil */}
             <div className="relative w-full aspect-video bg-gray-100 rounded-md mb-4">
-              {/* Left side tables (1 and 2) */}
+              {/* Mesas del lado izquierdo (1 y 2) */}
               <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
                 <div 
                   className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(1) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
@@ -177,7 +183,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 </div>
               </div>
               
-              {/* Center top tables (3 and 4) */}
+              {/* Mesas centrales superiores (3 y 4) */}
               <div className="absolute flex justify-center space-x-2 sm:space-x-4 w-full top-2 sm:top-4">
                 <div 
                   className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(3) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
@@ -193,7 +199,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 </div>
               </div>
               
-              {/* Right side tables (5 and 6) */}
+              {/* Mesas del lado derecho (5 y 6) */}
               <div className="absolute flex flex-col items-end justify-end h-full right-0 py-2 sm:py-4">
                 <div 
                   className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(5) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
@@ -210,12 +216,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
             </div>
             
-            {/* Selected tables display */}
+            {/* Mostrar mesas seleccionadas */}
             <div className="mb-2">
-              <p className="font-medium text-sm sm:text-base">Selected Tables: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'None'}</p>
+              <p className="font-medium text-sm sm:text-base">Mesas seleccionadas: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'Ninguna'}</p>
             </div>
             
-            {/* Clear selection button */}
+            {/* Botón para limpiar selección */}
             <Button 
               variant="outline" 
               type="button"
@@ -223,7 +229,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               className="w-full"
               size="sm"
             >
-              Clear Selection
+              Limpiar Selección
             </Button>
           </CardContent>
         </Card>
@@ -231,10 +237,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
       <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">
         <Button variant="outline" type="button" onClick={onCancel} className="w-full sm:w-auto">
-          Cancel
+          Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? 'Saving...' : initialData?._id ? 'Update Booking' : 'Create Booking'}
+          {isSubmitting ? 'Guardando...' : initialData?._id ? 'Actualizar Reserva' : 'Crear Reserva'}
         </Button>
       </div>
     </form>

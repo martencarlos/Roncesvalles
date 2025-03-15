@@ -8,12 +8,12 @@ export async function GET(req: NextRequest) {
   try {
     await connectDB();
     
-    // Get query parameters
+    // Obtener parámetros de consulta
     const url = new URL(req.url);
     const dateParam = url.searchParams.get('date');
     const mealTypeParam = url.searchParams.get('mealType');
     
-    // Build query
+    // Construir consulta
     let query: any = {};
     
     if (dateParam) {
@@ -31,13 +31,13 @@ export async function GET(req: NextRequest) {
       query.mealType = mealTypeParam;
     }
     
-    // Sort by date, meal type, then by apartment number
+    // Ordenar por fecha, tipo de comida, luego por número de apartamento
     const bookings = await Booking.find(query).sort({ date: 1, mealType: 1, apartmentNumber: 1 });
     return NextResponse.json(bookings);
   } catch (error) {
     console.error('GET /api/bookings error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch bookings' },
+      { error: 'Error al obtener las reservas' },
       { status: 500 }
     );
   }
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     
     const body = await req.json();
     
-    // Check for conflicting tables on the same date and meal type
+    // Verificar si hay mesas conflictivas en la misma fecha y tipo de comida
     const bookingDate = new Date(body.date);
     const startOfDay = new Date(bookingDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(bookingDate.setHours(23, 59, 59, 999));
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       mealType: body.mealType
     });
     
-    // Check for table conflicts
+    // Verificar conflictos de mesa
     const bookedTables = existingBookings.flatMap(booking => booking.tables);
     const requestedTables = body.tables;
     
@@ -73,21 +73,21 @@ export async function POST(req: NextRequest) {
     if (conflictingTables.length > 0) {
       return NextResponse.json(
         { 
-          error: 'Booking conflict', 
-          message: `Tables ${conflictingTables.join(', ')} are already booked for ${body.mealType} on this date.` 
+          error: 'Conflicto de reserva', 
+          message: `Las mesas ${conflictingTables.join(', ')} ya están reservadas para ${body.mealType === 'lunch' ? 'comida' : 'cena'} en esta fecha.` 
         },
         { status: 409 }
       );
     }
     
-    // Create new booking
+    // Crear nueva reserva
     const newBooking = await Booking.create(body);
     
-    // Log activity
+    // Registrar actividad
     await ActivityLog.create({
       action: 'create',
       apartmentNumber: body.apartmentNumber,
-      details: `Apt #${body.apartmentNumber} booked tables ${body.tables.join(', ')} for ${body.mealType} on ${new Date(body.date).toLocaleDateString()}`,
+      details: `Apto. #${body.apartmentNumber} ha reservado las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}`,
     });
     
     return NextResponse.json(newBooking, { status: 201 });
@@ -96,13 +96,13 @@ export async function POST(req: NextRequest) {
     
     if (error.name === 'ValidationError') {
       return NextResponse.json(
-        { error: 'Validation Error', details: error.message },
+        { error: 'Error de Validación', details: error.message },
         { status: 400 }
       );
     }
     
     return NextResponse.json(
-      { error: 'Failed to create booking' },
+      { error: 'Error al crear la reserva' },
       { status: 500 }
     );
   }
