@@ -21,7 +21,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto w-[95vw] p-3 sm:p-6">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Booking' : 'New Booking'}</DialogTitle>
         </DialogHeader>

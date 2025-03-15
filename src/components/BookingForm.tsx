@@ -154,19 +154,19 @@ const BookingForm: React.FC<BookingFormProps> = ({
       <div className="space-y-2">
         <Label>Select Tables</Label>
         <Card className="w-full">
-          <CardContent className="p-4">
-            {/* U-shaped table layout */}
+          <CardContent className="p-2 sm:p-4">
+            {/* U-shaped table layout - Mobile optimized */}
             <div className="relative w-full aspect-video bg-gray-100 rounded-md mb-4">
               {/* Left side tables (1 and 2) */}
-              <div className="absolute flex flex-col items-start justify-end h-full left-0 py-4">
+              <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
                 <div 
-                  className={`w-24 h-16 m-2 rounded-md flex items-center justify-center cursor-pointer ${isSelected(1) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(1) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
                   onClick={() => toggleTable(1)}
                 >
                   <span className="font-bold">1</span>
                 </div>
                 <div 
-                  className={`w-24 h-16 m-2 rounded-md flex items-center justify-center cursor-pointer ${isSelected(2) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(2) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
                   onClick={() => toggleTable(2)}
                 >
                   <span className="font-bold">2</span>
@@ -174,15 +174,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
               
               {/* Center top tables (3 and 4) */}
-              <div className="absolute flex justify-center space-x-4 w-full top-4">
+              <div className="absolute flex justify-center space-x-2 sm:space-x-4 w-full top-2 sm:top-4">
                 <div 
-                  className={`w-24 h-16 rounded-md flex items-center justify-center cursor-pointer ${isSelected(3) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(3) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
                   onClick={() => toggleTable(3)}
                 >
                   <span className="font-bold">3</span>
                 </div>
                 <div 
-                  className={`w-24 h-16 rounded-md flex items-center justify-center cursor-pointer ${isSelected(4) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(4) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
                   onClick={() => toggleTable(4)}
                 >
                   <span className="font-bold">4</span>
@@ -190,15 +190,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
               
               {/* Right side tables (5 and 6) */}
-              <div className="absolute flex flex-col items-end justify-end h-full right-0 py-4">
+              <div className="absolute flex flex-col items-end justify-end h-full right-0 py-2 sm:py-4">
                 <div 
-                  className={`w-24 h-16 m-2 rounded-md flex items-center justify-center cursor-pointer ${isSelected(5) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(5) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
                   onClick={() => toggleTable(5)}
                 >
                   <span className="font-bold">5</span>
                 </div>
                 <div 
-                  className={`w-24 h-16 m-2 rounded-md flex items-center justify-center cursor-pointer ${isSelected(6) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(6) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
                   onClick={() => toggleTable(6)}
                 >
                   <span className="font-bold">6</span>
@@ -208,7 +208,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             
             {/* Selected tables display */}
             <div className="mb-2">
-              <p className="font-medium">Selected Tables: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'None'}</p>
+              <p className="font-medium text-sm sm:text-base">Selected Tables: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'None'}</p>
             </div>
             
             {/* Clear selection button */}
@@ -225,11 +225,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </Card>
       </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button variant="outline" type="button" onClick={onCancel}>
+      <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">
+        <Button variant="outline" type="button" onClick={onCancel} className="w-full sm:w-auto">
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
           {isSubmitting ? 'Saving...' : initialData?._id ? 'Update Booking' : 'Create Booking'}
         </Button>
       </div>
