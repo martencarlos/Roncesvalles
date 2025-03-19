@@ -83,11 +83,21 @@ export async function POST(req: NextRequest) {
     // Crear nueva reserva
     const newBooking = await Booking.create(body);
     
+    // Preparar detalles adicionales para el registro de actividad
+    let additionalDetails = '';
+    if (body.reservaHorno && body.reservaBrasa) {
+      additionalDetails = ' con reserva de horno y brasa';
+    } else if (body.reservaHorno) {
+      additionalDetails = ' con reserva de horno';
+    } else if (body.reservaBrasa) {
+      additionalDetails = ' con reserva de brasa';
+    }
+    
     // Registrar actividad
     await ActivityLog.create({
       action: 'create',
       apartmentNumber: body.apartmentNumber,
-      details: `Apto. #${body.apartmentNumber} ha reservado las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}`,
+      details: `Apto. #${body.apartmentNumber} ha reservado las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
     });
     
     return NextResponse.json(newBooking, { status: 201 });

@@ -48,6 +48,26 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onEdit, onDelete }) 
           </div>
           <span className="text-sm">{booking.tables.map(t => `#${t}`).join(', ')}</span>
         </div>
+        
+        {(booking.reservaHorno || booking.reservaBrasa) && (
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-1 text-sm">
+              <span className="font-medium">Servicios:</span>
+            </div>
+            <div className="text-sm flex gap-1">
+              {booking.reservaHorno && (
+                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                  Horno
+                </Badge>
+              )}
+              {booking.reservaBrasa && (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                  Brasa
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="pt-2 flex justify-end gap-2 px-4">
         <Button variant="outline" size="sm" onClick={onEdit} className="h-7 text-xs px-2">

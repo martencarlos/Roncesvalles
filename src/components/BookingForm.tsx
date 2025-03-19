@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
@@ -42,6 +43,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
   );
   const [selectedTables, setSelectedTables] = useState<number[]>(
     initialData?.tables || []
+  );
+  const [reservaHorno, setReservaHorno] = useState<boolean>(
+    initialData?.reservaHorno || false
+  );
+  const [reservaBrasa, setReservaBrasa] = useState<boolean>(
+    initialData?.reservaBrasa || false
   );
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -81,6 +88,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
         mealType,
         numberOfPeople,
         tables: selectedTables,
+        reservaHorno,
+        reservaBrasa,
       });
     } catch (error: any) {
       setError(error.message || 'Error al enviar la reserva');
@@ -233,6 +242,32 @@ const BookingForm: React.FC<BookingFormProps> = ({
             </Button>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Opciones Adicionales</Label>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="reservaHorno" 
+              checked={reservaHorno} 
+              onCheckedChange={() => setReservaHorno(!reservaHorno)} 
+            />
+            <Label htmlFor="reservaHorno" className="font-normal cursor-pointer">
+              Reserva de horno
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="reservaBrasa" 
+              checked={reservaBrasa} 
+              onCheckedChange={() => setReservaBrasa(!reservaBrasa)} 
+            />
+            <Label htmlFor="reservaBrasa" className="font-normal cursor-pointer">
+              Reserva de brasa
+            </Label>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">

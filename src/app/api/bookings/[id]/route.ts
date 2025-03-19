@@ -89,11 +89,21 @@ export async function PUT(
       { new: true, runValidators: true }
     );
     
+    // Prepare additional details for activity log
+    let additionalDetails = '';
+    if (body.reservaHorno && body.reservaBrasa) {
+      additionalDetails = ' with oven and grill reservation';
+    } else if (body.reservaHorno) {
+      additionalDetails = ' with oven reservation';
+    } else if (body.reservaBrasa) {
+      additionalDetails = ' with grill reservation';
+    }
+    
     // Log activity
     await ActivityLog.create({
       action: 'update',
       apartmentNumber: body.apartmentNumber,
-      details: `Apt #${body.apartmentNumber} modified booking for ${body.mealType} on ${new Date(body.date).toLocaleDateString()}, tables ${body.tables.join(', ')}`,
+      details: `Apt #${body.apartmentNumber} modified booking for ${body.mealType} on ${new Date(body.date).toLocaleDateString()}, tables ${body.tables.join(', ')}${additionalDetails}`,
     });
     
     return NextResponse.json(updatedBooking);
@@ -133,6 +143,16 @@ export async function DELETE(
       );
     }
     
+    // Prepare additional details for activity log
+    let additionalDetails = '';
+    if (booking.reservaHorno && booking.reservaBrasa) {
+      additionalDetails = ' with oven and grill reservation';
+    } else if (booking.reservaHorno) {
+      additionalDetails = ' with oven reservation';
+    } else if (booking.reservaBrasa) {
+      additionalDetails = ' with grill reservation';
+    }
+    
     // Delete the booking
     await Booking.findByIdAndDelete(bookingId);
     
@@ -140,7 +160,7 @@ export async function DELETE(
     await ActivityLog.create({
       action: 'delete',
       apartmentNumber: booking.apartmentNumber,
-      details: `Apt #${booking.apartmentNumber} cancelled booking for ${booking.mealType} on ${new Date(booking.date).toLocaleDateString()}, tables ${booking.tables.join(', ')}`,
+      details: `Apt #${booking.apartmentNumber} cancelled booking for ${booking.mealType} on ${new Date(booking.date).toLocaleDateString()}, tables ${booking.tables.join(', ')}${additionalDetails}`,
     });
     
     return NextResponse.json({ message: 'Booking deleted successfully' });

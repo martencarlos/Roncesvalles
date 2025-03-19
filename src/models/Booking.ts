@@ -9,6 +9,8 @@ export interface IBooking {
   mealType: MealType;
   numberOfPeople: number;
   tables: number[];
+  reservaHorno: boolean; // New field
+  reservaBrasa: boolean; // New field
   createdAt: Date;
   updatedAt: Date;
   _id?: string;
@@ -49,6 +51,14 @@ const BookingSchema = new Schema<IBooking>(
         message: 'Selected tables must be between 1 and 6 and not duplicated'
       }
     },
+    reservaHorno: {
+      type: Boolean,
+      default: false
+    },
+    reservaBrasa: {
+      type: Boolean,
+      default: false
+    }
   },
   { timestamps: true }
 );

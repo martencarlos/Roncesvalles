@@ -61,7 +61,10 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
       .replace('cancelled booking for lunch on', 'ha cancelado la reserva para comida el')
       .replace('cancelled booking for dinner on', 'ha cancelado la reserva para cena el')
       .replace('tables', 'mesas')
-      .replace('Apt', 'Apto.');
+      .replace('Apt', 'Apto.')
+      .replace('with oven reservation', 'con reserva de horno')
+      .replace('with grill reservation', 'con reserva de brasa')
+      .replace('with oven and grill reservation', 'con reserva de horno y brasa');
   };
 
   return (
