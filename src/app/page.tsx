@@ -422,7 +422,7 @@ export default function Home() {
         
         {/* Date selector and filter section - improved mobile layout with enhanced DatePicker */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 w-full sm:w-auto">
             <div className="custom-datepicker-container">
               <div className="relative flex items-center w-full sm:w-auto">
                 <div className="absolute left-3 pointer-events-none text-muted-foreground">
