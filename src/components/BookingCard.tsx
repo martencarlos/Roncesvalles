@@ -12,11 +12,17 @@ interface BookingCardProps {
   booking: IBooking;
   onEdit: () => void;
   onDelete: () => void;
+  isPast?: boolean;
 }
 
-const BookingCard: React.FC<BookingCardProps> = ({ booking, onEdit, onDelete }) => {
+const BookingCard: React.FC<BookingCardProps> = ({ 
+  booking, 
+  onEdit, 
+  onDelete, 
+  isPast = false
+}) => {
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden ${isPast ? 'opacity-75' : ''}`}>
       <CardHeader className="pb-2 px-4">
         <div className="flex justify-between items-center">
           <h3 className="font-bold text-base sm:text-lg">Apto. #{booking.apartmentNumber}</h3>
@@ -70,11 +76,23 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking, onEdit, onDelete }) 
         )}
       </CardContent>
       <CardFooter className="pt-2 flex justify-end gap-2 px-4">
-        <Button variant="outline" size="sm" onClick={onEdit} className="h-7 text-xs px-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onEdit} 
+          className="h-7 text-xs px-2"
+          disabled={isPast}
+        >
           <Edit className="h-3 w-3 mr-1" />
           Editar
         </Button>
-        <Button variant="destructive" size="sm" onClick={onDelete} className="h-7 text-xs px-2">
+        <Button 
+          variant="destructive" 
+          size="sm" 
+          onClick={onDelete} 
+          className="h-7 text-xs px-2"
+          disabled={isPast}
+        >
           <Trash2 className="h-3 w-3 mr-1" />
           Eliminar
         </Button>

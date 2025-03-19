@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, isToday, isFuture, isPast, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,8 @@ import "react-datepicker/dist/react-datepicker.css";
 // Registrar el idioma español para el datepicker
 registerLocale('es', es);
 
+type DateFilter = 'all' | 'today' | 'future' | 'past' | 'specific';
+
 export default function Home() {
   const [bookings, setBookings] = useState<IBooking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
@@ -32,9 +34,10 @@ export default function Home() {
   const [selectedMealType, setSelectedMealType] = useState<MealType>('lunch');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filtering, setFiltering] = useState<boolean>(false);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('today');
+  const [datesWithBookings, setDatesWithBookings] = useState<Date[]>([]);
   
-  // Función para obtener todas las reservas
+  // Fetch all bookings
   const fetchBookings = async () => {
     setLoading(true);
     setError('');
@@ -48,13 +51,22 @@ export default function Home() {
       
       const data = await res.json();
       
-      // Ordenar reservas por fecha (más recientes primero)
+      // Sort bookings by date (ascending)
       const sortedData = [...data].sort((a, b) => 
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
       
       setBookings(sortedData);
-      setFilteredBookings(sortedData);
+      applyFilters(sortedData, dateFilter, selectedDate);
+      
+      // Extract unique dates with bookings
+      const uniqueDates = [...new Set(sortedData.map(booking => {
+        const date = new Date(booking.date);
+        return format(date, 'yyyy-MM-dd');
+      }))].map(dateStr => new Date(dateStr));
+      
+      setDatesWithBookings(uniqueDates);
+      
     } catch (err: any) {
       setError(err.message);
       console.error(err);
@@ -67,26 +79,50 @@ export default function Home() {
     fetchBookings();
   }, []);
   
-  // Filtrar reservas por fecha y tipo de comida seleccionados cuando el filtrado está habilitado
-  useEffect(() => {
-    if (filtering && selectedDate) {
-      const selectedDateStart = new Date(selectedDate);
-      selectedDateStart.setHours(0, 0, 0, 0);
-      
-      const selectedDateEnd = new Date(selectedDate);
-      selectedDateEnd.setHours(23, 59, 59, 999);
-      
-      const filtered = bookings.filter(booking => {
-        const bookingDate = new Date(booking.date);
-        const dateMatches = bookingDate >= selectedDateStart && bookingDate <= selectedDateEnd;
-        return filtering ? dateMatches : true;
-      });
-      
-      setFilteredBookings(filtered);
-    } else {
-      setFilteredBookings(bookings);
+  // Apply filters to bookings
+  const applyFilters = (allBookings: IBooking[], filter: DateFilter, date: Date) => {
+    const today = startOfDay(new Date());
+    
+    let filtered: IBooking[] = [];
+    
+    switch (filter) {
+      case 'today':
+        filtered = allBookings.filter(booking => 
+          isToday(new Date(booking.date))
+        );
+        break;
+      case 'future':
+        filtered = allBookings.filter(booking => 
+          isFuture(new Date(booking.date)) || isToday(new Date(booking.date))
+        );
+        break;
+      case 'past':
+        filtered = allBookings.filter(booking => 
+          isPast(new Date(booking.date)) && !isToday(new Date(booking.date))
+        );
+        break;
+      case 'specific':
+        const selectedDateStart = startOfDay(date);
+        const selectedDateEnd = endOfDay(date);
+        
+        filtered = allBookings.filter(booking => {
+          const bookingDate = new Date(booking.date);
+          return bookingDate >= selectedDateStart && bookingDate <= selectedDateEnd;
+        });
+        break;
+      case 'all':
+      default:
+        filtered = allBookings;
+        break;
     }
-  }, [filtering, selectedDate, bookings]);
+    
+    setFilteredBookings(filtered);
+  };
+  
+  // Update filters when date filter or selected date changes
+  useEffect(() => {
+    applyFilters(bookings, dateFilter, selectedDate);
+  }, [dateFilter, selectedDate, bookings]);
   
   const handleCreateBooking = async (data: Partial<IBooking>) => {
     try {
@@ -103,7 +139,7 @@ export default function Home() {
         throw new Error(errorData.message || 'Error al crear la reserva');
       }
       
-      // Cerrar formulario y actualizar reservas
+      // Close form and update bookings
       setShowForm(false);
       fetchBookings();
       toast.success("Reserva Creada", {
@@ -131,7 +167,7 @@ export default function Home() {
         throw new Error(errorData.message || 'Error al actualizar la reserva');
       }
       
-      // Cerrar formulario y actualizar reservas
+      // Close form and update bookings
       setEditingBooking(null);
       fetchBookings();
       toast.success("Reserva Actualizada", {
@@ -156,7 +192,7 @@ export default function Home() {
         throw new Error('Error al eliminar la reserva');
       }
       
-      // Actualizar reservas
+      // Update bookings
       fetchBookings();
       toast.error("Reserva Eliminada", {
         description: "La reserva ha sido eliminada correctamente",
@@ -167,13 +203,10 @@ export default function Home() {
     }
   };
   
-  // Obtener todas las mesas reservadas para la fecha y tipo de comida seleccionados
+  // Get all booked tables for selected date and meal type
   const getBookedTablesForDateAndMeal = (date: Date, mealType: MealType) => {
-    const selectedDateStart = new Date(date);
-    selectedDateStart.setHours(0, 0, 0, 0);
-    
-    const selectedDateEnd = new Date(date);
-    selectedDateEnd.setHours(23, 59, 59, 999);
+    const selectedDateStart = startOfDay(date);
+    const selectedDateEnd = endOfDay(date);
     
     const bookingsForDate = bookings.filter(booking => {
       const bookingDate = new Date(booking.date);
@@ -191,11 +224,16 @@ export default function Home() {
   const bookedTablesDinner = getBookedTablesForDateAndMeal(selectedDate, 'dinner');
   const availableTablesDinner = [1, 2, 3, 4, 5, 6].filter(table => !bookedTablesDinner.has(table));
   
-  const toggleFiltering = () => {
-    setFiltering(!filtering);
+  const handleDateFilterChange = (filter: DateFilter) => {
+    setDateFilter(filter);
+    
+    // If switching to 'specific' and not already on a specific date, set today
+    if (filter === 'specific') {
+      setSelectedDate(new Date());
+    }
   };
   
-  // Agrupar reservas por fecha para mejor organización
+  // Group bookings by date for list view
   const groupedBookings: {[key: string]: IBooking[]} = {};
   
   filteredBookings.forEach(booking => {
@@ -206,22 +244,49 @@ export default function Home() {
     groupedBookings[dateKey].push(booking);
   });
   
-  // Ordenar claves de fecha cronológicamente
+  // Sort date keys chronologically
   const sortedDateKeys = Object.keys(groupedBookings).sort();
   
   const handleNewBooking = () => {
     setShowForm(true);
   };
   
-  // Formatear fecha en español
+  // Format date in Spanish
   const formatDateEs = (date: Date, formatStr: string) => {
     return format(date, formatStr, { locale: es });
+  };
+  
+  // Helper function to check if a date has bookings
+  const hasBookingsOnDate = (date: Date) => {
+    return datesWithBookings.some(bookingDate => 
+      format(bookingDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+    );
+  };
+  
+  // Custom day rendering for the date picker to highlight dates with bookings
+  const renderDayContents = (day: number, date: Date | undefined) => {
+    if (!date) return <span>{day}</span>;
+    
+    // Check if this date has bookings
+    const hasBookings = hasBookingsOnDate(date);
+    
+    return (
+      <div className="relative">
+        <span>{day}</span>
+        {hasBookings && (
+          <div 
+            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-primary"
+            style={{ bottom: '2px' }}
+          />
+        )}
+      </div>
+    );
   };
   
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6 sm:mb-8">
-        {/* Título y botón de registro de actividad */}
+        {/* Title and activity log button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold">Sociedad Roncesvalles</h1>
           <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
@@ -232,7 +297,7 @@ export default function Home() {
           </Button>
         </div>
         
-        {/* Selector de fecha y botón de filtro - mejor diseño móvil */}
+        {/* Date selector and filter - better mobile design */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <div className="relative flex items-center w-full sm:w-auto">
@@ -241,21 +306,49 @@ export default function Home() {
               </div>
               <DatePicker
                 selected={selectedDate}
-                onChange={(date: Date) => setSelectedDate(date)}
+                onChange={(date: Date) => {
+                  setSelectedDate(date);
+                  setDateFilter('specific');
+                }}
                 dateFormat="d MMMM, yyyy"
                 locale="es"
                 className="w-full pl-10 p-2 border rounded-md"
+                renderDayContents={renderDayContents}
+                highlightDates={datesWithBookings}
+                customInput={
+                  <input 
+                    className="w-full pl-10 p-2 border rounded-md cursor-pointer" 
+                    readOnly 
+                  />
+                }
               />
             </div>
-            <Button 
-              variant={filtering ? "default" : "outline"} 
-              onClick={toggleFiltering}
-              className="flex items-center gap-2 w-full sm:w-auto"
-              size="sm"
-            >
-              <Filter className="h-4 w-4" />
-              {filtering ? "Limpiar Filtro" : "Filtrar"}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant={dateFilter === 'today' ? "default" : "outline"} 
+                onClick={() => handleDateFilterChange('today')}
+                className="flex-1 sm:flex-none"
+                size="sm"
+              >
+                Hoy
+              </Button>
+              <Button 
+                variant={dateFilter === 'future' ? "default" : "outline"} 
+                onClick={() => handleDateFilterChange('future')}
+                className="flex-1 sm:flex-none"
+                size="sm"
+              >
+                Próximas
+              </Button>
+              <Button 
+                variant={dateFilter === 'past' ? "default" : "outline"} 
+                onClick={() => handleDateFilterChange('past')}
+                className="flex-1 sm:flex-none"
+                size="sm"
+              >
+                Pasadas
+              </Button>
+            </div>
           </div>
           
           <Button onClick={handleNewBooking} className="w-full sm:w-auto" size="sm">
@@ -324,7 +417,7 @@ export default function Home() {
         </Alert>
       )}
       
-      {/* Modal del Formulario de Reserva */}
+      {/* Booking Form Modal */}
       <BookingFormModal
         isOpen={showForm}
         onClose={() => setShowForm(false)}
@@ -333,7 +426,7 @@ export default function Home() {
         isEditing={false}
       />
       
-      {/* Modal de Edición de Reserva */}
+      {/* Booking Edit Modal */}
       {editingBooking && (
         <BookingFormModal
           isOpen={!!editingBooking}
@@ -344,40 +437,63 @@ export default function Home() {
         />
       )}
       
-      <div>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-          <h2 className="text-lg sm:text-xl font-semibold">
-            {filtering 
-              ? `Reservas para ${formatDateEs(selectedDate, 'd MMMM, yyyy')}` 
-              : "Todas las Reservas"}
-          </h2>
-          {filtering && filteredBookings.length === 0 && (
-            <Button variant="outline" onClick={() => setFiltering(false)} size="sm" className="w-full sm:w-auto">
-              Mostrar Todas las Reservas
-            </Button>
-          )}
+      {/* List view title with filter info */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+        <h2 className="text-lg sm:text-xl font-semibold">
+          {dateFilter === 'today' && 'Reservas de Hoy'}
+          {dateFilter === 'future' && 'Próximas Reservas'}
+          {dateFilter === 'past' && 'Reservas Pasadas'}
+          {dateFilter === 'specific' && `Reservas para ${formatDateEs(selectedDate, 'd MMMM, yyyy')}`}
+          {dateFilter === 'all' && 'Todas las Reservas'}
+        </h2>
+        {filteredBookings.length === 0 && (
+          <Button variant="outline" onClick={() => setDateFilter('future')} size="sm" className="w-full sm:w-auto">
+            Ver Próximas Reservas
+          </Button>
+        )}
+      </div>
+      <Separator className="mb-4" />
+      
+      {/* Bookings list view */}
+      {loading ? (
+        <div className="flex justify-center p-8">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
         </div>
-        <Separator className="mb-4" />
-        
-        {loading ? (
-          <div className="flex justify-center p-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-          </div>
-        ) : filteredBookings.length > 0 ? (
-          <div className="space-y-6 sm:space-y-8">
-            {sortedDateKeys.map(dateKey => (
+      ) : filteredBookings.length > 0 ? (
+        <div className="space-y-6 sm:space-y-8">
+          {sortedDateKeys.map(dateKey => {
+            const bookingsForDate = groupedBookings[dateKey];
+            const bookingDate = new Date(dateKey);
+            const isBookingToday = isToday(bookingDate);
+            const isBookingFuture = isFuture(bookingDate);
+            const isBookingPast = isPast(bookingDate) && !isToday(bookingDate);
+            
+            // Determine the appropriate status badge
+            let statusBadge = null;
+            if (isBookingToday) {
+              statusBadge = <Badge className="bg-blue-100 text-blue-800 border-blue-200">Hoy</Badge>;
+            } else if (isBookingFuture) {
+              statusBadge = <Badge className="bg-green-100 text-green-800 border-green-200">Próxima</Badge>;
+            } else if (isBookingPast) {
+              statusBadge = <Badge className="bg-gray-100 text-gray-800 border-gray-200">Pasada</Badge>;
+            }
+            
+            return (
               <div key={dateKey}>
-                <h3 className="text-base sm:text-lg font-medium mb-3 bg-gray-100 p-2 rounded">
-                  {formatDateEs(new Date(dateKey), 'EEEE, d MMMM, yyyy')}
-                </h3>
+                <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
+                  <h3 className="text-base sm:text-lg font-medium">
+                    {formatDateEs(bookingDate, 'EEEE, d MMMM, yyyy')}
+                  </h3>
+                  {statusBadge}
+                </div>
                 <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {groupedBookings[dateKey]
+                  {bookingsForDate
                     .sort((a, b) => {
-                      // Ordenar por tipo de comida primero (comida primero, luego cena)
+                      // First by meal type (lunch first, then dinner)
                       if (a.mealType !== b.mealType) {
                         return a.mealType === 'lunch' ? -1 : 1;
                       }
-                      // Luego por número de apartamento
+                      // Then by apartment number
                       return a.apartmentNumber - b.apartmentNumber;
                     })
                     .map(booking => (
@@ -386,19 +502,24 @@ export default function Home() {
                         booking={booking}
                         onEdit={() => setEditingBooking(booking)}
                         onDelete={() => handleDeleteBooking(booking._id as string)}
+                        isPast={isBookingPast}
                       />
                     ))
                   }
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground py-6 sm:py-8 text-center">
-            {filtering ? "No hay reservas para esta fecha." : "No hay reservas disponibles."}
-          </p>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-muted-foreground py-6 sm:py-8 text-center">
+          {dateFilter === 'today' && 'No hay reservas para hoy.'}
+          {dateFilter === 'future' && 'No hay próximas reservas.'}
+          {dateFilter === 'past' && 'No hay reservas pasadas.'}
+          {dateFilter === 'specific' && `No hay reservas para ${formatDateEs(selectedDate, 'd MMMM, yyyy')}.`}
+          {dateFilter === 'all' && 'No hay reservas disponibles.'}
+        </p>
+      )}
     </div>
   );
 }
