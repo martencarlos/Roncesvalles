@@ -7,7 +7,7 @@ import { format, isToday, isFuture, isPast, startOfDay, endOfDay } from 'date-fn
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2, LayoutGrid, List, InfoIcon } from "lucide-react";
+import { Download, PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2, LayoutGrid, List, InfoIcon, BookOpen } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -392,33 +392,39 @@ export default function Home() {
       <header className="mb-6 sm:mb-8">
         {/* Title and activity log button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold">Sociedad Roncesvalles</h1>
-          <div className="flex gap-2 w-full sm:w-auto">
-            {pendingConfirmations > 0 && (
-              <Button variant="outline" size="sm" 
-                onClick={() => handleDateFilterChange('pending-confirmation')}
-                className="flex-1 sm:flex-none text-amber-700 border-amber-500">
-                <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
-                {pendingConfirmations} por confirmar
-              </Button>
-            )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowExportDialog(true)}
-              className="flex-1 sm:flex-none"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-            <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
-              <Link href="/activity">
-                <History className="h-4 w-4 mr-2" />
-                Ver Actividad
-              </Link>
-            </Button>
-          </div>
-        </div>
+  <h1 className="text-2xl sm:text-3xl font-bold">Sociedad Roncesvalles</h1>
+  <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+    {pendingConfirmations > 0 && (
+      <Button variant="outline" size="sm" 
+        onClick={() => handleDateFilterChange('pending-confirmation')}
+        className="flex-1 sm:flex-none text-amber-700 border-amber-500">
+        <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
+        {pendingConfirmations} por confirmar
+      </Button>
+    )}
+    <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
+      <Link href="/how-to-use">
+        <BookOpen className="h-4 w-4 mr-2" />
+        Guía de Uso
+      </Link>
+    </Button>
+    <Button 
+      variant="outline" 
+      size="sm" 
+      onClick={() => setShowExportDialog(true)}
+      className="flex-1 sm:flex-none"
+    >
+      <Download className="h-4 w-4 mr-2" />
+      Exportar
+    </Button>
+    <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
+      <Link href="/activity">
+        <History className="h-4 w-4 mr-2" />
+        Ver Actividad
+      </Link>
+    </Button>
+  </div>
+</div>
         
         {/* Date selector and filter section - improved mobile layout with enhanced DatePicker */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
