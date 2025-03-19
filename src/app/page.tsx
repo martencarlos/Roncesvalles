@@ -7,7 +7,7 @@ import { format, isToday, isFuture, isPast, startOfDay, endOfDay } from 'date-fn
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2, LayoutGrid, List } from "lucide-react";
+import { Download, PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2, LayoutGrid, List } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +17,7 @@ import BookingCard from '@/components/BookingCard';
 import BookingListItem from '@/components/BookingListItem';
 import BookingFormModal from '@/components/BookingFormModal';
 import BookingConfirmationDialog from '@/components/BookingConfirmationDialog';
+import ExportDialog from '@/components/ExportDialog';
 import { IBooking, MealType } from '@/models/Booking';
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
@@ -41,6 +42,7 @@ export default function Home() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
   const [datesWithBookings, setDatesWithBookings] = useState<Date[]>([]);
   const [pendingConfirmations, setPendingConfirmations] = useState<number>(0);
+  const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   
   // Add view mode state
   const [viewMode, setViewMode] = useState<ViewMode>(undefined);
@@ -375,6 +377,15 @@ export default function Home() {
                 {pendingConfirmations} por confirmar
               </Button>
             )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowExportDialog(true)}
+              className="flex-1 sm:flex-none"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
             <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
               <Link href="/activity">
                 <History className="h-4 w-4 mr-2" />
@@ -561,6 +572,12 @@ export default function Home() {
           onConfirm={handleConfirmBooking}
         />
       )}
+      
+      {/* Export Dialog */}
+      <ExportDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+      />
       
       {/* List view title with filter info */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
