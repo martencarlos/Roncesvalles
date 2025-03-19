@@ -7,7 +7,7 @@ import { format, isToday, isFuture, isPast, startOfDay, endOfDay } from 'date-fn
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2, LayoutGrid, List } from "lucide-react";
+import { Download, PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2, LayoutGrid, List, InfoIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -47,6 +47,9 @@ export default function Home() {
   // Add view mode state
   const [viewMode, setViewMode] = useState<ViewMode>(undefined);
   
+  // Add state for bookings by date and meal type
+  const [bookingsByDate, setBookingsByDate] = useState<{[key: string]: {lunch: boolean, dinner: boolean}}>({});
+  
   // Fetch all bookings
   const fetchBookings = async () => {
     setLoading(true);
@@ -69,13 +72,28 @@ export default function Home() {
       setBookings(sortedData);
       applyFilters(sortedData, dateFilter, selectedDate);
       
+      // Create a map of dates with booking info for lunch and dinner
+      const bookingsByDateMap: {[key: string]: {lunch: boolean, dinner: boolean}} = {};
+      
+      sortedData.forEach(booking => {
+        const dateKey = format(new Date(booking.date), 'yyyy-MM-dd');
+        
+        if (!bookingsByDateMap[dateKey]) {
+          bookingsByDateMap[dateKey] = { lunch: false, dinner: false };
+        }
+        
+        if (booking.mealType === 'lunch') {
+          bookingsByDateMap[dateKey].lunch = true;
+        } else {
+          bookingsByDateMap[dateKey].dinner = true;
+        }
+      });
+      
       // Extract unique dates with bookings
-      const uniqueDates = [...new Set(sortedData.map(booking => {
-        const date = new Date(booking.date);
-        return format(date, 'yyyy-MM-dd');
-      }))].map(dateStr => new Date(dateStr));
+      const uniqueDates = Object.keys(bookingsByDateMap).map(dateStr => new Date(dateStr));
       
       setDatesWithBookings(uniqueDates);
+      setBookingsByDate(bookingsByDateMap);
       
       // Count pending confirmations
       const pendingCount = sortedData.filter(booking => 
@@ -100,7 +118,7 @@ export default function Home() {
       const savedViewMode = localStorage.getItem('bookingViewMode');
       if (savedViewMode === 'list' || savedViewMode === 'card') {
         setViewMode(savedViewMode as ViewMode);
-      }else{
+      } else {
         setViewMode('card');  
       }
     }
@@ -109,8 +127,6 @@ export default function Home() {
   useEffect(() => {
     fetchBookings();
   }, []);
-
-
   
   // Apply filters to bookings
   const applyFilters = (allBookings: IBooking[], filter: DateFilter, date: Date) => {
@@ -335,28 +351,37 @@ export default function Home() {
     return format(date, formatStr, { locale: es });
   };
   
-  // Helper function to check if a date has bookings
-  const hasBookingsOnDate = (date: Date) => {
-    return datesWithBookings.some(bookingDate => 
-      format(bookingDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-    );
-  };
-  
   // Custom day rendering for the date picker to highlight dates with bookings
   const renderDayContents = (day: number, date: Date | undefined) => {
     if (!date) return <span>{day}</span>;
     
-    // Check if this date has bookings
-    const hasBookings = hasBookingsOnDate(date);
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const bookingInfo = bookingsByDate[dateKey];
     
     return (
       <div className="relative">
         <span>{day}</span>
-        {hasBookings && (
-          <div 
-            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-primary"
-            style={{ bottom: '2px' }}
-          />
+        {bookingInfo && (
+          <>
+            {bookingInfo.lunch && bookingInfo.dinner && (
+              <div 
+                className="booking-indicator booking-dot-both"
+                title="Reservas para comida y cena"
+              />
+            )}
+            {bookingInfo.lunch && !bookingInfo.dinner && (
+              <div 
+                className="booking-indicator booking-indicator-lunch booking-dot-lunch"
+                title="Reservas para comida"
+              />
+            )}
+            {!bookingInfo.lunch && bookingInfo.dinner && (
+              <div 
+                className="booking-indicator booking-indicator-dinner booking-dot-dinner"
+                title="Reservas para cena"
+              />
+            )}
+          </>
         )}
       </div>
     );
@@ -395,93 +420,114 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Date selector and filter section - improved mobile layout */}
-<div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
-  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-    <div className="relative flex items-center w-full sm:w-auto">
-      <div className="absolute left-3 pointer-events-none text-muted-foreground">
-        <CalendarIcon className="h-4 w-4" />
-      </div>
-      <DatePicker
-        selected={selectedDate}
-        onChange={(date: Date) => {
-          setSelectedDate(date);
-          setDateFilter('specific');
-        }}
-        dateFormat="d MMMM, yyyy"
-        locale="es"
-        className="w-full pl-10 p-2 border rounded-md"
-        renderDayContents={renderDayContents}
-        highlightDates={datesWithBookings}
-        customInput={
-          <input 
-            className="w-full pl-10 p-2 border rounded-md cursor-pointer" 
-            readOnly 
-          />
-        }
-      />
-    </div>
-    <div className="flex gap-2">
-      <Button 
-        variant={dateFilter === 'today' ? "default" : "outline"} 
-        onClick={() => handleDateFilterChange('today')}
-        className="flex-1 sm:flex-none"
-        size="sm"
-      >
-        Hoy
-      </Button>
-      <Button 
-        variant={dateFilter === 'future' ? "default" : "outline"} 
-        onClick={() => handleDateFilterChange('future')}
-        className="flex-1 sm:flex-none"
-        size="sm"
-      >
-        Próximas
-      </Button>
-      <Button 
-        variant={dateFilter === 'past' ? "default" : "outline"} 
-        onClick={() => handleDateFilterChange('past')}
-        className="flex-1 sm:flex-none"
-        size="sm"
-      >
-        Pasadas
-      </Button>
-    </div>
-  </div>
-  
-  {/* Action buttons - fixed for mobile view */}
-  <div className="flex flex-row gap-2 w-full sm:w-auto">
-    <Button 
-      onClick={toggleViewMode} 
-      variant="outline" 
-      size="sm" 
-      className="flex-1 sm:flex-none"
-    >
-      {viewMode === 'card' ? (
-        <>
-          <List className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">Vista Lista</span>
-          <span className="sm:hidden">Lista</span>
-        </>
-      ) : (
-        <>
-          <LayoutGrid className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">Vista Tarjetas</span>
-          <span className="sm:hidden">Tarjetas</span>
-        </>
-      )}
-    </Button>
-    <Button 
-      onClick={handleNewBooking} 
-      size="sm" 
-      className="flex-1 sm:flex-none"
-    >
-      <PlusCircle className="h-4 w-4 mr-2" />
-      <span className="hidden sm:inline">Nueva Reserva</span>
-      <span className="sm:hidden">Reservar</span>
-    </Button>
-  </div>
-</div>
+        {/* Date selector and filter section - improved mobile layout with enhanced DatePicker */}
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="custom-datepicker-container">
+              <div className="relative flex items-center w-full sm:w-auto">
+                <div className="absolute left-3 pointer-events-none text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4" />
+                </div>
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={(date: Date) => {
+                    setSelectedDate(date);
+                    setDateFilter('specific');
+                  }}
+                  dateFormat="d MMMM, yyyy"
+                  locale="es"
+                  className="w-full pl-10 p-2 border rounded-md"
+                  renderDayContents={renderDayContents}
+                  customInput={
+                    <input 
+                      className="w-full pl-10 p-2 border rounded-md cursor-pointer" 
+                      readOnly 
+                    />
+                  }
+                />
+              </div>
+              
+              <div className="datepicker-legend">
+                <div className="datepicker-legend-item">
+                  <div className="datepicker-legend-dot booking-dot-lunch"></div>
+                  <span>Comida</span>
+                </div>
+                <div className="datepicker-legend-item">
+                  <div className="datepicker-legend-dot booking-dot-dinner"></div>
+                  <span>Cena</span>
+                </div>
+                <div className="datepicker-legend-item">
+                  <div className="datepicker-legend-dot booking-dot-both"></div>
+                  <span>Ambas</span>
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground ml-auto">
+                  <InfoIcon className="h-3 w-3" />
+                  <span>Fechas con reservas</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                variant={dateFilter === 'today' ? "default" : "outline"} 
+                onClick={() => handleDateFilterChange('today')}
+                className="flex-1 sm:flex-none"
+                size="sm"
+              >
+                Hoy
+              </Button>
+              <Button 
+                variant={dateFilter === 'future' ? "default" : "outline"} 
+                onClick={() => handleDateFilterChange('future')}
+                className="flex-1 sm:flex-none"
+                size="sm"
+              >
+                Próximas
+              </Button>
+              <Button 
+                variant={dateFilter === 'past' ? "default" : "outline"} 
+                onClick={() => handleDateFilterChange('past')}
+                className="flex-1 sm:flex-none"
+                size="sm"
+              >
+                Pasadas
+              </Button>
+            </div>
+          </div>
+          
+          {/* Action buttons - fixed for mobile view */}
+          <div className="flex flex-row gap-2 w-full sm:w-auto">
+            <Button 
+              onClick={toggleViewMode} 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 sm:flex-none"
+            >
+              {viewMode === 'card' ? (
+                <>
+                  <List className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Vista Lista</span>
+                  <span className="sm:hidden">Lista</span>
+                </>
+              ) : (
+                <>
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Vista Tarjetas</span>
+                  <span className="sm:hidden">Tarjetas</span>
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={handleNewBooking} 
+              size="sm" 
+              className="flex-1 sm:flex-none"
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Nueva Reserva</span>
+              <span className="sm:hidden">Reservar</span>
+            </Button>
+          </div>
+        </div>
         
         <Tabs defaultValue="lunch" onValueChange={(value) => setSelectedMealType(value as MealType)} className="w-full">
           <TabsList className="mb-4 w-full">

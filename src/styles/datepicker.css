@@ -87,7 +87,7 @@
 /* Custom styles for booking indicators */
 .booking-indicator {
   position: absolute;
-  bottom: 2px;
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
   width: 6px;
@@ -97,11 +97,11 @@
 }
 
 .booking-indicator-lunch {
-  left: 40%;
+  left: 50%;
 }
 
 .booking-indicator-dinner {
-  left: 60%;
+  left: 50%;
 }
 
 .booking-dot-lunch {
