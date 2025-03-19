@@ -7,13 +7,14 @@ import { format, isToday, isFuture, isPast, startOfDay, endOfDay } from 'date-fn
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2 } from "lucide-react";
+import { PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2, LayoutGrid, List } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import BookingCard from '@/components/BookingCard';
+import BookingListItem from '@/components/BookingListItem';
 import BookingFormModal from '@/components/BookingFormModal';
 import BookingConfirmationDialog from '@/components/BookingConfirmationDialog';
 import { IBooking, MealType } from '@/models/Booking';
@@ -25,6 +26,7 @@ import "react-datepicker/dist/react-datepicker.css";
 registerLocale('es', es);
 
 type DateFilter = 'all' | 'today' | 'future' | 'past' | 'pending-confirmation' | 'specific';
+type ViewMode = 'card' | 'list' | undefined;
 
 export default function Home() {
   const [bookings, setBookings] = useState<IBooking[]>([]);
@@ -39,6 +41,9 @@ export default function Home() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
   const [datesWithBookings, setDatesWithBookings] = useState<Date[]>([]);
   const [pendingConfirmations, setPendingConfirmations] = useState<number>(0);
+  
+  // Add view mode state
+  const [viewMode, setViewMode] = useState<ViewMode>(undefined);
   
   // Fetch all bookings
   const fetchBookings = async () => {
@@ -86,10 +91,24 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Check if we're in the browser environment (not during SSR)
+    if (typeof window !== 'undefined') {
+      const savedViewMode = localStorage.getItem('bookingViewMode');
+      if (savedViewMode === 'list' || savedViewMode === 'card') {
+        setViewMode(savedViewMode as ViewMode);
+      }else{
+        setViewMode('card');  
+      }
+    }
+  }, []);
   
   useEffect(() => {
     fetchBookings();
   }, []);
+
+
   
   // Apply filters to bookings
   const applyFilters = (allBookings: IBooking[], filter: DateFilter, date: Date) => {
@@ -297,6 +316,14 @@ export default function Home() {
   // Sort date keys chronologically
   const sortedDateKeys = Object.keys(groupedBookings).sort();
   
+  // Toggle view mode
+  const toggleViewMode = () => {
+    const newMode = viewMode === 'card' ? 'list' : 'card';
+    setViewMode(newMode);
+    // Save to localStorage
+    localStorage.setItem('bookingViewMode', newMode);
+  };
+  
   const handleNewBooking = () => {
     setShowForm(true);
   };
@@ -357,65 +384,93 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Date selector and filter - better mobile design */}
-        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex items-center w-full sm:w-auto">
-              <div className="absolute left-3 pointer-events-none text-muted-foreground">
-                <CalendarIcon className="h-4 w-4" />
-              </div>
-              <DatePicker
-                selected={selectedDate}
-                onChange={(date: Date) => {
-                  setSelectedDate(date);
-                  setDateFilter('specific');
-                }}
-                dateFormat="d MMMM, yyyy"
-                locale="es"
-                className="w-full pl-10 p-2 border rounded-md"
-                renderDayContents={renderDayContents}
-                highlightDates={datesWithBookings}
-                customInput={
-                  <input 
-                    className="w-full pl-10 p-2 border rounded-md cursor-pointer" 
-                    readOnly 
-                  />
-                }
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant={dateFilter === 'today' ? "default" : "outline"} 
-                onClick={() => handleDateFilterChange('today')}
-                className="flex-1 sm:flex-none"
-                size="sm"
-              >
-                Hoy
-              </Button>
-              <Button 
-                variant={dateFilter === 'future' ? "default" : "outline"} 
-                onClick={() => handleDateFilterChange('future')}
-                className="flex-1 sm:flex-none"
-                size="sm"
-              >
-                Próximas
-              </Button>
-              <Button 
-                variant={dateFilter === 'past' ? "default" : "outline"} 
-                onClick={() => handleDateFilterChange('past')}
-                className="flex-1 sm:flex-none"
-                size="sm"
-              >
-                Pasadas
-              </Button>
-            </div>
-          </div>
-          
-          <Button onClick={handleNewBooking} className="w-full sm:w-auto" size="sm">
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Nueva Reserva
-          </Button>
-        </div>
+        {/* Date selector and filter section - improved mobile layout */}
+<div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
+  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+    <div className="relative flex items-center w-full sm:w-auto">
+      <div className="absolute left-3 pointer-events-none text-muted-foreground">
+        <CalendarIcon className="h-4 w-4" />
+      </div>
+      <DatePicker
+        selected={selectedDate}
+        onChange={(date: Date) => {
+          setSelectedDate(date);
+          setDateFilter('specific');
+        }}
+        dateFormat="d MMMM, yyyy"
+        locale="es"
+        className="w-full pl-10 p-2 border rounded-md"
+        renderDayContents={renderDayContents}
+        highlightDates={datesWithBookings}
+        customInput={
+          <input 
+            className="w-full pl-10 p-2 border rounded-md cursor-pointer" 
+            readOnly 
+          />
+        }
+      />
+    </div>
+    <div className="flex gap-2">
+      <Button 
+        variant={dateFilter === 'today' ? "default" : "outline"} 
+        onClick={() => handleDateFilterChange('today')}
+        className="flex-1 sm:flex-none"
+        size="sm"
+      >
+        Hoy
+      </Button>
+      <Button 
+        variant={dateFilter === 'future' ? "default" : "outline"} 
+        onClick={() => handleDateFilterChange('future')}
+        className="flex-1 sm:flex-none"
+        size="sm"
+      >
+        Próximas
+      </Button>
+      <Button 
+        variant={dateFilter === 'past' ? "default" : "outline"} 
+        onClick={() => handleDateFilterChange('past')}
+        className="flex-1 sm:flex-none"
+        size="sm"
+      >
+        Pasadas
+      </Button>
+    </div>
+  </div>
+  
+  {/* Action buttons - fixed for mobile view */}
+  <div className="flex flex-row gap-2 w-full sm:w-auto">
+    <Button 
+      onClick={toggleViewMode} 
+      variant="outline" 
+      size="sm" 
+      className="flex-1 sm:flex-none"
+    >
+      {viewMode === 'card' ? (
+        <>
+          <List className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Vista Lista</span>
+          <span className="sm:hidden">Lista</span>
+        </>
+      ) : (
+        <>
+          <LayoutGrid className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Vista Tarjetas</span>
+          <span className="sm:hidden">Tarjetas</span>
+        </>
+      )}
+    </Button>
+    <Button 
+      onClick={handleNewBooking} 
+      size="sm" 
+      className="flex-1 sm:flex-none"
+    >
+      <PlusCircle className="h-4 w-4 mr-2" />
+      <span className="hidden sm:inline">Nueva Reserva</span>
+      <span className="sm:hidden">Reservar</span>
+    </Button>
+  </div>
+</div>
         
         <Tabs defaultValue="lunch" onValueChange={(value) => setSelectedMealType(value as MealType)} className="w-full">
           <TabsList className="mb-4 w-full">
@@ -531,7 +586,7 @@ export default function Home() {
       </div>
       <Separator className="mb-4" />
       
-      {/* Bookings list view */}
+      {/* Bookings display - Card or List view */}
       {loading ? (
         <div className="flex justify-center p-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -573,28 +628,56 @@ export default function Home() {
                   </h3>
                   {statusBadge}
                 </div>
-                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {bookingsForDate
-                    .sort((a, b) => {
-                      // First by meal type (lunch first, then dinner)
-                      if (a.mealType !== b.mealType) {
-                        return a.mealType === 'lunch' ? -1 : 1;
-                      }
-                      // Then by apartment number
-                      return a.apartmentNumber - b.apartmentNumber;
-                    })
-                    .map(booking => (
-                      <BookingCard
-                        key={booking._id as string}
-                        booking={booking}
-                        onEdit={() => setEditingBooking(booking)}
-                        onDelete={() => handleDeleteBooking(booking._id as string)}
-                        onConfirm={() => setConfirmingBooking(booking)}
-                        isPast={isBookingPast}
-                      />
-                    ))
-                  }
-                </div>
+
+                {viewMode === 'card' ? (
+                  // Card View
+                  <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {bookingsForDate
+                      .sort((a, b) => {
+                        // First by meal type (lunch first, then dinner)
+                        if (a.mealType !== b.mealType) {
+                          return a.mealType === 'lunch' ? -1 : 1;
+                        }
+                        // Then by apartment number
+                        return a.apartmentNumber - b.apartmentNumber;
+                      })
+                      .map(booking => (
+                        <BookingCard
+                          key={booking._id as string}
+                          booking={booking}
+                          onEdit={() => setEditingBooking(booking)}
+                          onDelete={() => handleDeleteBooking(booking._id as string)}
+                          onConfirm={() => setConfirmingBooking(booking)}
+                          isPast={isBookingPast}
+                        />
+                      ))
+                    }
+                  </div>
+                ) : (
+                  // List View
+                  <div className="flex flex-col gap-3">
+                    {bookingsForDate
+                      .sort((a, b) => {
+                        // First by meal type (lunch first, then dinner)
+                        if (a.mealType !== b.mealType) {
+                          return a.mealType === 'lunch' ? -1 : 1;
+                        }
+                        // Then by apartment number
+                        return a.apartmentNumber - b.apartmentNumber;
+                      })
+                      .map(booking => (
+                        <BookingListItem
+                          key={booking._id as string}
+                          booking={booking}
+                          onEdit={() => setEditingBooking(booking)}
+                          onDelete={() => handleDeleteBooking(booking._id as string)}
+                          onConfirm={() => setConfirmingBooking(booking)}
+                          isPast={isBookingPast}
+                        />
+                      ))
+                    }
+                  </div>
+                )}
               </div>
             );
           })}
