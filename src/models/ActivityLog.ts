@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 
 export interface IActivityLog {
   _id: string
-  action: 'create' | 'update' | 'delete';
+  action: 'create' | 'update' | 'delete' | 'confirm';
   apartmentNumber: number;
   details: string;
   timestamp: Date;
@@ -12,7 +12,7 @@ export interface IActivityLog {
 const ActivityLogSchema = new Schema<IActivityLog>({
   action: {
     type: String,
-    enum: ['create', 'update', 'delete'],
+    enum: ['create', 'update', 'delete', 'confirm'],
     required: true,
   },
   apartmentNumber: {

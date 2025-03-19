@@ -7,7 +7,7 @@ import { format, isToday, isFuture, isPast, startOfDay, endOfDay } from 'date-fn
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, History, Filter, UtensilsCrossed, CalendarIcon } from "lucide-react";
+import { PlusCircle, History, AlertCircle, UtensilsCrossed, CalendarIcon, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import BookingCard from '@/components/BookingCard';
 import BookingFormModal from '@/components/BookingFormModal';
+import BookingConfirmationDialog from '@/components/BookingConfirmationDialog';
 import { IBooking, MealType } from '@/models/Booking';
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
@@ -23,19 +24,21 @@ import "react-datepicker/dist/react-datepicker.css";
 // Registrar el idioma español para el datepicker
 registerLocale('es', es);
 
-type DateFilter = 'all' | 'today' | 'future' | 'past' | 'specific';
+type DateFilter = 'all' | 'today' | 'future' | 'past' | 'pending-confirmation' | 'specific';
 
 export default function Home() {
   const [bookings, setBookings] = useState<IBooking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingBooking, setEditingBooking] = useState<IBooking | null>(null);
+  const [confirmingBooking, setConfirmingBooking] = useState<IBooking | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedMealType, setSelectedMealType] = useState<MealType>('lunch');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
   const [datesWithBookings, setDatesWithBookings] = useState<Date[]>([]);
+  const [pendingConfirmations, setPendingConfirmations] = useState<number>(0);
   
   // Fetch all bookings
   const fetchBookings = async () => {
@@ -66,6 +69,15 @@ export default function Home() {
       }))].map(dateStr => new Date(dateStr));
       
       setDatesWithBookings(uniqueDates);
+      
+      // Count pending confirmations
+      const pendingCount = sortedData.filter(booking => 
+        booking.status === 'pending' && 
+        isPast(new Date(booking.date)) && 
+        !isToday(new Date(booking.date))
+      ).length;
+      
+      setPendingConfirmations(pendingCount);
       
     } catch (err: any) {
       setError(err.message);
@@ -101,6 +113,13 @@ export default function Home() {
           isPast(new Date(booking.date)) && !isToday(new Date(booking.date))
         );
         break;
+      case 'pending-confirmation':
+        filtered = allBookings.filter(booking => 
+          booking.status === 'pending' &&
+          isPast(new Date(booking.date)) && 
+          !isToday(new Date(booking.date))
+        );
+        break;
       case 'specific':
         const selectedDateStart = startOfDay(date);
         const selectedDateEnd = endOfDay(date);
@@ -131,7 +150,10 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          status: 'pending' // Ensure new bookings are created with pending status
+        }),
       });
       
       if (!res.ok) {
@@ -200,6 +222,34 @@ export default function Home() {
     } catch (err: any) {
       setError(err.message);
       console.error(err);
+    }
+  };
+  
+  // Handle booking confirmation
+  const handleConfirmBooking = async (id: string, data: { finalAttendees: number; notes: string }) => {
+    try {
+      const res = await fetch(`/api/bookings/${id}/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Error al confirmar la reserva');
+      }
+      
+      // Update bookings
+      fetchBookings();
+      toast.success("Reserva Confirmada", {
+        description: `Reserva confirmada con ${data.finalAttendees} asistentes finales`,
+      });
+    } catch (err: any) {
+      setError(err.message);
+      console.error(err);
+      throw err;
     }
   };
   
@@ -289,12 +339,22 @@ export default function Home() {
         {/* Title and activity log button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold">Sociedad Roncesvalles</h1>
-          <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-            <Link href="/activity">
-              <History className="h-4 w-4 mr-2" />
-              Ver Registro de Actividad
-            </Link>
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            {pendingConfirmations > 0 && (
+              <Button variant="outline" size="sm" 
+                onClick={() => handleDateFilterChange('pending-confirmation')}
+                className="flex-1 sm:flex-none text-amber-700 border-amber-500">
+                <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
+                {pendingConfirmations} por confirmar
+              </Button>
+            )}
+            <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
+              <Link href="/activity">
+                <History className="h-4 w-4 mr-2" />
+                Ver Actividad
+              </Link>
+            </Button>
+          </div>
         </div>
         
         {/* Date selector and filter - better mobile design */}
@@ -437,19 +497,36 @@ export default function Home() {
         />
       )}
       
+      {/* Booking Confirmation Modal */}
+      {confirmingBooking && (
+        <BookingConfirmationDialog
+          isOpen={!!confirmingBooking}
+          onClose={() => setConfirmingBooking(null)}
+          booking={confirmingBooking}
+          onConfirm={handleConfirmBooking}
+        />
+      )}
+      
       {/* List view title with filter info */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
         <h2 className="text-lg sm:text-xl font-semibold">
           {dateFilter === 'today' && 'Reservas de Hoy'}
           {dateFilter === 'future' && 'Próximas Reservas'}
           {dateFilter === 'past' && 'Reservas Pasadas'}
+          {dateFilter === 'pending-confirmation' && 'Reservas Pendientes de Confirmación'}
           {dateFilter === 'specific' && `Reservas para ${formatDateEs(selectedDate, 'd MMMM, yyyy')}`}
           {dateFilter === 'all' && 'Todas las Reservas'}
         </h2>
-        {filteredBookings.length === 0 && (
+        {filteredBookings.length === 0 && dateFilter !== 'pending-confirmation' && (
           <Button variant="outline" onClick={() => setDateFilter('future')} size="sm" className="w-full sm:w-auto">
             Ver Próximas Reservas
           </Button>
+        )}
+        {dateFilter === 'pending-confirmation' && filteredBookings.length === 0 && (
+          <div className="flex items-center text-muted-foreground text-sm">
+            <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+            No hay reservas pendientes de confirmación
+          </div>
         )}
       </div>
       <Separator className="mb-4" />
@@ -478,11 +555,21 @@ export default function Home() {
               statusBadge = <Badge className="bg-gray-100 text-gray-800 border-gray-200">Pasada</Badge>;
             }
             
+            // Check if there are any pending confirmations for this date
+            const pendingForDate = bookingsForDate.some(booking => 
+              booking.status === 'pending' && isBookingPast
+            );
+            
             return (
               <div key={dateKey}>
                 <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
-                  <h3 className="text-base sm:text-lg font-medium">
+                  <h3 className="text-base sm:text-lg font-medium flex items-center gap-2">
                     {formatDateEs(bookingDate, 'EEEE, d MMMM, yyyy')}
+                    {pendingForDate && (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 ml-2">
+                        Confirmaciones pendientes
+                      </Badge>
+                    )}
                   </h3>
                   {statusBadge}
                 </div>
@@ -502,6 +589,7 @@ export default function Home() {
                         booking={booking}
                         onEdit={() => setEditingBooking(booking)}
                         onDelete={() => handleDeleteBooking(booking._id as string)}
+                        onConfirm={() => setConfirmingBooking(booking)}
                         isPast={isBookingPast}
                       />
                     ))
@@ -516,6 +604,7 @@ export default function Home() {
           {dateFilter === 'today' && 'No hay reservas para hoy.'}
           {dateFilter === 'future' && 'No hay próximas reservas.'}
           {dateFilter === 'past' && 'No hay reservas pasadas.'}
+          {dateFilter === 'pending-confirmation' && 'No hay reservas pendientes de confirmación.'}
           {dateFilter === 'specific' && `No hay reservas para ${formatDateEs(selectedDate, 'd MMMM, yyyy')}.`}
           {dateFilter === 'all' && 'No hay reservas disponibles.'}
         </p>

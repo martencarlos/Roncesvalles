@@ -3,7 +3,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { IActivityLog } from '@/models/ActivityLog';
-import { Check, RefreshCw, Trash2 } from "lucide-react";
+import { Check, RefreshCw, Trash2, CheckCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface ActivityLogItemProps {
@@ -19,6 +19,8 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
         return <RefreshCw className="h-4 w-4 text-blue-600 shrink-0" />;
       case 'delete':
         return <Trash2 className="h-4 w-4 text-red-600 shrink-0" />;
+      case 'confirm':
+        return <CheckCircle className="h-4 w-4 text-purple-600 shrink-0" />;
       default:
         return null;
     }
@@ -32,6 +34,8 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
         return 'text-blue-600';
       case 'delete':
         return 'text-red-600';
+      case 'confirm':
+        return 'text-purple-600';
       default:
         return 'text-muted-foreground';
     }
@@ -45,6 +49,8 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
         return 'ACTUALIZAR';
       case 'delete':
         return 'ELIMINAR';
+      case 'confirm':
+        return 'CONFIRMAR';
       default:
         return action.toUpperCase();
     }
@@ -60,11 +66,14 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
       .replace('modified booking for dinner on', 'ha modificado la reserva para cena el')
       .replace('cancelled booking for lunch on', 'ha cancelado la reserva para comida el')
       .replace('cancelled booking for dinner on', 'ha cancelado la reserva para cena el')
+      .replace('confirmed booking for lunch on', 'ha confirmado la reserva para comida el')
+      .replace('confirmed booking for dinner on', 'ha confirmado la reserva para cena el')
       .replace('tables', 'mesas')
       .replace('Apt', 'Apto.')
       .replace('with oven reservation', 'con reserva de horno')
       .replace('with grill reservation', 'con reserva de brasa')
-      .replace('with oven and grill reservation', 'con reserva de horno y brasa');
+      .replace('with oven and grill reservation', 'con reserva de horno y brasa')
+      .replace('with final attendees', 'con asistentes finales');
   };
 
   return (

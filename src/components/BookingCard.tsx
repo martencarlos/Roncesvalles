@@ -5,24 +5,31 @@ import { es } from 'date-fns/locale';
 import { IBooking } from '@/models/Booking';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Users, Table } from "lucide-react";
+import { Edit, Trash2, Users, Table, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface BookingCardProps {
   booking: IBooking;
   onEdit: () => void;
   onDelete: () => void;
+  onConfirm: () => void;
   isPast?: boolean;
 }
 
 const BookingCard: React.FC<BookingCardProps> = ({ 
   booking, 
   onEdit, 
-  onDelete, 
+  onDelete,
+  onConfirm,
   isPast = false
 }) => {
+  // Check if booking is confirmed, pending, or cancelled
+  const isConfirmed = booking.status === 'confirmed';
+  const isPending = booking.status === 'pending';
+  const isCancelled = booking.status === 'cancelled';
+
   return (
-    <Card className={`overflow-hidden ${isPast ? 'opacity-75' : ''}`}>
+    <Card className={`overflow-hidden ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>
       <CardHeader className="pb-2 px-4">
         <div className="flex justify-between items-center">
           <h3 className="font-bold text-base sm:text-lg">Apto. #{booking.apartmentNumber}</h3>
@@ -44,7 +51,16 @@ const BookingCard: React.FC<BookingCardProps> = ({
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="font-medium">Personas:</span>
           </div>
-          <span className="text-sm">{booking.numberOfPeople}</span>
+          <span className="text-sm">
+            {isConfirmed && booking.finalAttendees !== undefined ? (
+              <>
+                <span className="line-through text-muted-foreground mr-1">{booking.numberOfPeople}</span>
+                {booking.finalAttendees}
+              </>
+            ) : (
+              booking.numberOfPeople
+            )}
+          </span>
         </div>
         
         <div className="flex items-center justify-between">
@@ -74,24 +90,74 @@ const BookingCard: React.FC<BookingCardProps> = ({
             </div>
           </div>
         )}
+        
+        {/* Status indicator */}
+        <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center gap-1 text-sm">
+            <span className="font-medium">Estado:</span>
+          </div>
+          <div>
+            {isConfirmed && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                Confirmado
+              </Badge>
+            )}
+            {isPending && !isPast && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                Pendiente
+              </Badge>
+            )}
+            {isPending && isPast && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                Por confirmar
+              </Badge>
+            )}
+            {isCancelled && (
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                Cancelado
+              </Badge>
+            )}
+          </div>
+        </div>
+        
+        {/* Notes section (only for confirmed bookings) */}
+        {isConfirmed && booking.notes && (
+          <div className="mt-2 pt-2 border-t text-sm">
+            <div className="font-medium mb-1">Notas:</div>
+            <p className="text-muted-foreground text-xs">{booking.notes}</p>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="pt-2 flex justify-end gap-2 px-4">
+        {isPending && isPast && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onConfirm} 
+            className="h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+          >
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Confirmar
+          </Button>
+        )}
+        
         <Button 
           variant="outline" 
           size="sm" 
           onClick={onEdit} 
           className="h-7 text-xs px-2"
-          disabled={isPast}
+          disabled={isPast && isConfirmed}
         >
           <Edit className="h-3 w-3 mr-1" />
           Editar
         </Button>
+        
         <Button 
           variant="destructive" 
           size="sm" 
           onClick={onDelete} 
           className="h-7 text-xs px-2"
-          disabled={isPast}
+          disabled={isPast && isConfirmed}
         >
           <Trash2 className="h-3 w-3 mr-1" />
           Eliminar

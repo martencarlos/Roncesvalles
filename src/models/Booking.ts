@@ -2,6 +2,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export type MealType = 'lunch' | 'dinner';
+export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
 
 export interface IBooking {
   apartmentNumber: number;
@@ -9,8 +10,11 @@ export interface IBooking {
   mealType: MealType;
   numberOfPeople: number;
   tables: number[];
-  reservaHorno: boolean; // New field
-  reservaBrasa: boolean; // New field
+  reservaHorno: boolean;
+  reservaBrasa: boolean;
+  status: BookingStatus;
+  finalAttendees?: number; // Optional field for actual number of attendees
+  notes?: string; // Optional field for any notes after the event
   createdAt: Date;
   updatedAt: Date;
   _id?: string;
@@ -58,6 +62,18 @@ const BookingSchema = new Schema<IBooking>(
     reservaBrasa: {
       type: Boolean,
       default: false
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'confirmed', 'cancelled'],
+      default: 'pending'
+    },
+    finalAttendees: {
+      type: Number,
+      min: [0, 'Final number of attendees cannot be negative']
+    },
+    notes: {
+      type: String
     }
   },
   { timestamps: true }
