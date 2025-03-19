@@ -6,26 +6,34 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, ActivityIcon } from "lucide-react";
+import { ArrowLeft, ActivityIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import ActivityLogItem from '@/components/ActivityLogItem';
 import { IActivityLog } from '@/models/ActivityLog';
+import Pagination from '@/components/Pagination';
 
 export default function ActivityPage() {
   const [activityLogs, setActivityLogs] = useState<IActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
   useEffect(() => {
     const fetchActivityLogs = async () => {
       try {
-        const res = await fetch('/api/activity');
+        setLoading(true);
+        const res = await fetch(`/api/activity?page=${currentPage}&limit=${itemsPerPage}`);
         
         if (!res.ok) {
           throw new Error('Error al obtener registros de actividad');
         }
         
         const data = await res.json();
-        setActivityLogs(data);
+        setActivityLogs(data.logs);
+        setTotalPages(data.totalPages);
       } catch (err: any) {
         setError(err.message);
         console.error(err);
@@ -35,7 +43,18 @@ export default function ActivityPage() {
     };
     
     fetchActivityLogs();
-  }, []);
+  }, [currentPage, itemsPerPage]);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when changing page
+    window.scrollTo(0, 0);
+  };
+  
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    setItemsPerPage(itemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
   
   return (
     <div className="max-w-4xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
@@ -68,16 +87,30 @@ export default function ActivityPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4">
-          {loading ? (
+          {loading && currentPage === 1 ? (
             <div className="flex justify-center p-6 sm:p-8">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             </div>
           ) : activityLogs.length > 0 ? (
-            <div className="space-y-1">
-              {activityLogs.map((log) => (
-                <ActivityLogItem key={log._id as string} log={log} />
-              ))}
-            </div>
+            <>
+              <div className="space-y-1">
+                {activityLogs.map((log) => (
+                  <ActivityLogItem key={log._id as string} log={log} />
+                ))}
+              </div>
+              
+              {totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination 
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-muted-foreground py-6 sm:py-8 text-center">No se ha registrado actividad todavía.</p>
           )}
