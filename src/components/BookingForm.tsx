@@ -12,11 +12,24 @@ import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
 import {es} from 'date-fns/locale/es';
+import { format } from 'date-fns';
 import "react-datepicker/dist/react-datepicker.css";
-import { CalendarIcon, LockIcon } from 'lucide-react';
+import { CalendarIcon, LockIcon, InfoIcon } from 'lucide-react';
 
 // Registrar el locale español para el datepicker
 registerLocale('es', es);
+
+interface BookingForm {
+  date: Date;
+  mealType: MealType;
+}
+
+interface BookingsForDate {
+  [date: string]: {
+    lunch: boolean;
+    dinner: boolean;
+  };
+}
 
 interface BookingFormProps {
   onSubmit: (data: Partial<IBooking>) => Promise<void>;
@@ -54,6 +67,44 @@ const BookingForm: React.FC<BookingFormProps> = ({
   );
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [bookingsForDates, setBookingsForDates] = useState<BookingsForDate>({});
+
+  // Fetch all bookings to highlight dates in calendar
+  useEffect(() => {
+    const fetchAllBookings = async () => {
+      try {
+        const res = await fetch('/api/bookings');
+        if (!res.ok) {
+          throw new Error('Error al obtener reservas');
+        }
+        
+        const bookings: IBooking[] = await res.json();
+        
+        // Organize bookings by date and meal type
+        const bookingMap: BookingsForDate = {};
+        
+        bookings.forEach(booking => {
+          const dateKey = format(new Date(booking.date), 'yyyy-MM-dd');
+          
+          if (!bookingMap[dateKey]) {
+            bookingMap[dateKey] = { lunch: false, dinner: false };
+          }
+          
+          if (booking.mealType === 'lunch') {
+            bookingMap[dateKey].lunch = true;
+          } else {
+            bookingMap[dateKey].dinner = true;
+          }
+        });
+        
+        setBookingsForDates(bookingMap);
+      } catch (err) {
+        console.error('Error fetching all bookings:', err);
+      }
+    };
+    
+    fetchAllBookings();
+  }, []);
 
   // Get booked tables for selected date and meal type
   useEffect(() => {
@@ -113,6 +164,42 @@ const BookingForm: React.FC<BookingFormProps> = ({
   
   // Check if a table is booked by someone else
   const isBooked = (tableNumber: number) => bookedTables.includes(tableNumber);
+
+  // Custom day rendering for the date picker to highlight dates with bookings
+  const renderDayContents = (day: number, date: Date | undefined) => {
+    if (!date) return <span>{day}</span>;
+    
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const bookingInfo = bookingsForDates[dateKey];
+    
+    return (
+      <div className="relative">
+        <span>{day}</span>
+        {bookingInfo && (
+          <>
+            {bookingInfo.lunch && bookingInfo.dinner && (
+              <div 
+                className="booking-indicator booking-dot-both"
+                title="Reservas para comida y cena"
+              />
+            )}
+            {bookingInfo.lunch && !bookingInfo.dinner && (
+              <div 
+                className="booking-indicator booking-indicator-lunch booking-dot-lunch"
+                title="Reservas para comida"
+              />
+            )}
+            {!bookingInfo.lunch && bookingInfo.dinner && (
+              <div 
+                className="booking-indicator booking-indicator-dinner booking-dot-dinner"
+                title="Reservas para cena"
+              />
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,19 +271,41 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
       <div className="space-y-2">
         <Label htmlFor="date">Fecha</Label>
-        <div className="relative flex items-center w-full sm:w-auto">
-          <div className="absolute left-3 pointer-events-none text-muted-foreground">
-            <CalendarIcon className="h-4 w-4" />
+        <div className="custom-datepicker-container">
+          <div className="relative flex items-center w-full">
+            <div className="absolute left-3 pointer-events-none text-muted-foreground">
+              <CalendarIcon className="h-4 w-4" />
+            </div>
+            <DatePicker
+              selected={date}
+              onChange={(date: Date) => setDate(date)}
+              minDate={new Date()}
+              dateFormat="d MMMM, yyyy"
+              locale="es"
+              className="w-full p-2 border rounded-md pl-10"
+              wrapperClassName="w-full"
+              renderDayContents={renderDayContents}
+            />
           </div>
-          <DatePicker
-            selected={date}
-            onChange={(date: Date) => setDate(date)}
-            minDate={new Date()}
-            dateFormat="d MMMM, yyyy"
-            locale="es"
-            className="w-full p-2 border rounded-md pl-10"
-            wrapperClassName="w-full"
-          />
+          
+          <div className="datepicker-legend">
+            <div className="datepicker-legend-item">
+              <div className="datepicker-legend-dot booking-dot-lunch"></div>
+              <span>Comida</span>
+            </div>
+            <div className="datepicker-legend-item">
+              <div className="datepicker-legend-dot booking-dot-dinner"></div>
+              <span>Cena</span>
+            </div>
+            <div className="datepicker-legend-item">
+              <div className="datepicker-legend-dot booking-dot-both"></div>
+              <span>Ambas</span>
+            </div>
+            <div className="flex items-center gap-1 text-muted-foreground ml-auto">
+              <InfoIcon className="h-3 w-3" />
+              <span>Fechas con reservas</span>
+            </div>
+          </div>
         </div>
       </div>
 
