@@ -1,5 +1,5 @@
 // src/components/BookingForm.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IBooking, MealType } from '@/models/Booking';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
 import {es} from 'date-fns/locale/es';
 import "react-datepicker/dist/react-datepicker.css";
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, LockIcon } from 'lucide-react';
 
 // Registrar el locale español para el datepicker
 registerLocale('es', es);
@@ -44,6 +44,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [selectedTables, setSelectedTables] = useState<number[]>(
     initialData?.tables || []
   );
+  const [bookedTables, setBookedTables] = useState<number[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const [reservaHorno, setReservaHorno] = useState<boolean>(
     initialData?.reservaHorno || false
   );
@@ -53,8 +55,50 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Toggle para selección de mesa
+  // Get booked tables for selected date and meal type
+  useEffect(() => {
+    const fetchBookedTables = async () => {
+      if (!date || !mealType) return;
+      
+      setLoading(true);
+      
+      try {
+        // Format date to ISO string
+        const dateString = date.toISOString().split('T')[0];
+        
+        // Fetch bookings for selected date and meal type
+        const res = await fetch(`/api/bookings?date=${dateString}&mealType=${mealType}`);
+        
+        if (!res.ok) {
+          throw new Error('Error al obtener reservas');
+        }
+        
+        const bookings: IBooking[] = await res.json();
+        
+        // Filter out the current booking being edited if applicable
+        const filteredBookings = initialData?._id 
+          ? bookings.filter(booking => booking._id !== initialData._id)
+          : bookings;
+        
+        // Get all booked tables
+        const tables = filteredBookings.flatMap(booking => booking.tables);
+        
+        setBookedTables(tables);
+      } catch (err) {
+        console.error('Error fetching booked tables:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchBookedTables();
+  }, [date, mealType, initialData?._id]);
+
+  // Toggle for table selection
   const toggleTable = (tableNumber: number) => {
+    // Don't allow toggling of booked tables
+    if (bookedTables.includes(tableNumber)) return;
+    
     setSelectedTables(prev => {
       if (prev.includes(tableNumber)) {
         return prev.filter(t => t !== tableNumber);
@@ -64,8 +108,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
     });
   };
 
-  // Comprobar si una mesa está seleccionada
+  // Check if a table is selected
   const isSelected = (tableNumber: number) => selectedTables.includes(tableNumber);
+  
+  // Check if a table is booked by someone else
+  const isBooked = (tableNumber: number) => bookedTables.includes(tableNumber);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +146,19 @@ const BookingForm: React.FC<BookingFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Helper function to get table style classes based on status
+  const getTableClasses = (tableNumber: number) => {
+    if (isBooked(tableNumber)) {
+      return 'bg-gray-300 text-gray-500 cursor-not-allowed relative';
+    }
+    
+    if (isSelected(tableNumber)) {
+      return 'bg-primary text-primary-foreground cursor-pointer';
+    }
+    
+    return 'bg-orange-300 hover:bg-orange-400 cursor-pointer';
   };
 
   return (
@@ -174,72 +234,102 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Label>Seleccionar Mesas</Label>
         <Card className="w-full">
           <CardContent className="p-2 sm:p-4">
-            {/* Disposición de mesa en forma de U - Optimizado para móvil */}
-            <div className="relative w-full aspect-video bg-gray-100 rounded-md mb-4">
-              {/* Mesas del lado izquierdo (1 y 2) */}
-              <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
-                <div 
-                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(2) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
-                  onClick={() => toggleTable(2)}
-                >
-                  <span className="font-bold">2</span>
-                </div>
-                <div 
-                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(1) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
-                  onClick={() => toggleTable(1)}
-                >
-                  <span className="font-bold">1</span>
-                </div>
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
               </div>
-              
-              {/* Mesas centrales superiores (3 y 4) */}
-              <div className="absolute flex justify-center space-x-2 sm:space-x-4 w-full top-2 sm:top-4">
-                <div 
-                  className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(3) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
-                  onClick={() => toggleTable(3)}
-                >
-                  <span className="font-bold">3</span>
+            ) : (
+              <>
+                {/* Leyenda para mesas */}
+                <div className="flex justify-end mb-2 gap-3 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-orange-300 rounded-sm"></div>
+                    <span>Disponible</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-primary rounded-sm"></div>
+                    <span>Seleccionada</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-gray-300 rounded-sm"></div>
+                    <span>Reservada</span>
+                  </div>
                 </div>
-                <div 
-                  className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(4) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
-                  onClick={() => toggleTable(4)}
-                >
-                  <span className="font-bold">4</span>
+                
+                {/* Disposición de mesa en forma de U - Optimizado para móvil */}
+                <div className="relative w-full aspect-video bg-gray-100 rounded-md mb-4">
+                  {/* Mesas del lado izquierdo (1 y 2) */}
+                  <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
+                    <div 
+                      className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(2)}`}
+                      onClick={() => toggleTable(2)}
+                    >
+                      <span className="font-bold">2</span>
+                      {isBooked(2) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
+                    </div>
+                    <div 
+                      className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(1)}`}
+                      onClick={() => toggleTable(1)}
+                    >
+                      <span className="font-bold">1</span>
+                      {isBooked(1) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
+                    </div>
+                  </div>
+                  
+                  {/* Mesas centrales superiores (3 y 4) */}
+                  <div className="absolute flex justify-center space-x-2 sm:space-x-4 w-full top-2 sm:top-4">
+                    <div 
+                      className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(3)}`}
+                      onClick={() => toggleTable(3)}
+                    >
+                      <span className="font-bold">3</span>
+                      {isBooked(3) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
+                    </div>
+                    <div 
+                      className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(4)}`}
+                      onClick={() => toggleTable(4)}
+                    >
+                      <span className="font-bold">4</span>
+                      {isBooked(4) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
+                    </div>
+                  </div>
+                  
+                  {/* Mesas del lado derecho (5 y 6) */}
+                  <div className="absolute flex flex-col items-end justify-end h-full right-0 py-2 sm:py-4">
+                    <div 
+                      className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(5)}`}
+                      onClick={() => toggleTable(5)}
+                    >
+                      <span className="font-bold">5</span>
+                      {isBooked(5) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
+                    </div>
+                    <div 
+                      className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(6)}`}
+                      onClick={() => toggleTable(6)}
+                    >
+                      <span className="font-bold">6</span>
+                      {isBooked(6) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              {/* Mesas del lado derecho (5 y 6) */}
-              <div className="absolute flex flex-col items-end justify-end h-full right-0 py-2 sm:py-4">
-                <div 
-                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(5) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
-                  onClick={() => toggleTable(5)}
-                >
-                  <span className="font-bold">5</span>
+                
+                {/* Mostrar mesas seleccionadas */}
+                <div className="mb-2">
+                  <p className="font-medium text-sm sm:text-base">Mesas seleccionadas: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'Ninguna'}</p>
                 </div>
-                <div 
-                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(6) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
-                  onClick={() => toggleTable(6)}
+                
+                {/* Botón para limpiar selección */}
+                <Button 
+                  variant="outline" 
+                  type="button"
+                  onClick={() => setSelectedTables([])}
+                  className="w-full"
+                  size="sm"
                 >
-                  <span className="font-bold">6</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Mostrar mesas seleccionadas */}
-            <div className="mb-2">
-              <p className="font-medium text-sm sm:text-base">Mesas seleccionadas: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'Ninguna'}</p>
-            </div>
-            
-            {/* Botón para limpiar selección */}
-            <Button 
-              variant="outline" 
-              type="button"
-              onClick={() => setSelectedTables([])}
-              className="w-full"
-              size="sm"
-            >
-              Limpiar Selección
-            </Button>
+                  Limpiar Selección
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
