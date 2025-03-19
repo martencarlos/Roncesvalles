@@ -179,16 +179,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
               {/* Mesas del lado izquierdo (1 y 2) */}
               <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
                 <div 
-                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(1) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
-                  onClick={() => toggleTable(1)}
-                >
-                  <span className="font-bold">1</span>
-                </div>
-                <div 
                   className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(2) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
                   onClick={() => toggleTable(2)}
                 >
                   <span className="font-bold">2</span>
+                </div>
+                <div 
+                  className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center cursor-pointer text-sm sm:text-base ${isSelected(1) ? 'bg-primary text-primary-foreground' : 'bg-orange-300 hover:bg-orange-400'}`}
+                  onClick={() => toggleTable(1)}
+                >
+                  <span className="font-bold">1</span>
                 </div>
               </div>
               
