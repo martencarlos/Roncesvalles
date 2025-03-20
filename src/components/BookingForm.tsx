@@ -8,13 +8,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
 import {es} from 'date-fns/locale/es';
 import { format } from 'date-fns';
 import "react-datepicker/dist/react-datepicker.css";
-import { CalendarIcon, LockIcon, InfoIcon } from 'lucide-react';
+import { CalendarIcon, LockIcon, InfoIcon, AlertCircle } from 'lucide-react';
 
 // Registrar el locale español para el datepicker
 registerLocale('es', es);
@@ -37,13 +38,17 @@ interface BookingFormProps {
   onCancel: () => void;
 }
 
+const APARTMENT_NUMBERS = Array.from({ length: 48 }, (_, i) => i + 1);
+const LAST_APARTMENT_KEY = 'lastSelectedApartment';
+const MAX_PEOPLE_PER_TABLE = 8;
+
 const BookingForm: React.FC<BookingFormProps> = ({ 
   onSubmit, 
   initialData, 
   onCancel 
 }) => {
   const [apartmentNumber, setApartmentNumber] = useState<number>(
-    initialData?.apartmentNumber || 1
+    initialData?.apartmentNumber || getLastSelectedApartment() || 1
   );
   const [date, setDate] = useState<Date>(
     initialData?.date ? new Date(initialData.date) : new Date()
@@ -68,6 +73,25 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [bookingsForDates, setBookingsForDates] = useState<BookingsForDate>({});
+
+  // Calculate max people allowed based on selected tables
+  const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
+  
+  // Helper function to get last selected apartment from localStorage
+  function getLastSelectedApartment(): number | null {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(LAST_APARTMENT_KEY);
+      return saved ? parseInt(saved) : null;
+    }
+    return null;
+  }
+
+  // Helper function to save selected apartment to localStorage
+  function saveLastSelectedApartment(apartmentNum: number) {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(LAST_APARTMENT_KEY, apartmentNum.toString());
+    }
+  }
 
   // Fetch all bookings to highlight dates in calendar
   useEffect(() => {
@@ -145,17 +169,60 @@ const BookingForm: React.FC<BookingFormProps> = ({
     fetchBookedTables();
   }, [date, mealType, initialData?._id]);
 
+  // Adjust number of people if it exceeds the maximum allowed
+  useEffect(() => {
+    if (selectedTables.length > 0 && numberOfPeople > maxPeopleAllowed) {
+      setNumberOfPeople(maxPeopleAllowed);
+      toast.info("Número de personas ajustado", {
+        description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`
+      });
+    }
+  }, [selectedTables, maxPeopleAllowed]);
+
+  const handleApartmentChange = (value: string) => {
+    const apartmentNum = parseInt(value);
+    setApartmentNumber(apartmentNum);
+    saveLastSelectedApartment(apartmentNum);
+  };
+
+  const handleNumberOfPeopleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    
+    if (isNaN(value) || value < 1) {
+      setNumberOfPeople(1);
+      return;
+    }
+    
+    if (selectedTables.length > 0 && value > maxPeopleAllowed) {
+      setNumberOfPeople(maxPeopleAllowed);
+      toast.info("Límite de capacidad", {
+        description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`
+      });
+    } else {
+      setNumberOfPeople(value);
+    }
+  };
+
   // Toggle for table selection
   const toggleTable = (tableNumber: number) => {
     // Don't allow toggling of booked tables
     if (bookedTables.includes(tableNumber)) return;
     
     setSelectedTables(prev => {
-      if (prev.includes(tableNumber)) {
-        return prev.filter(t => t !== tableNumber);
-      } else {
-        return [...prev, tableNumber];
+      const newTables = prev.includes(tableNumber)
+        ? prev.filter(t => t !== tableNumber)
+        : [...prev, tableNumber];
+      
+      // Check if the new table selection would reduce capacity below current number of people
+      const newMaxCapacity = newTables.length * MAX_PEOPLE_PER_TABLE;
+      if (newTables.length > 0 && numberOfPeople > newMaxCapacity) {
+        setNumberOfPeople(newMaxCapacity);
+        toast.info("Número de personas ajustado", {
+          description: `El máximo de personas permitidas para ${newTables.length} mesa(s) es ${newMaxCapacity}.`
+        });
       }
+      
+      return newTables;
     });
   };
 
@@ -213,6 +280,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
       return;
     }
 
+    if (numberOfPeople > maxPeopleAllowed) {
+      setError(`El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`);
+      toast.error("Error de Validación", {
+        description: `El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -225,6 +300,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
         reservaHorno,
         reservaBrasa,
       });
+      
+      // Save the apartment number for future bookings
+      if (!initialData?._id) {
+        saveLastSelectedApartment(apartmentNumber);
+      }
     } catch (error: any) {
       setError(error.message || 'Error al enviar la reserva');
       toast.error("Error", {
@@ -256,17 +336,47 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </Alert>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
-        <Input
-          id="apartmentNumber"
-          type="number"
-          min="1"
-          max="48"
-          required
-          value={apartmentNumber}
-          onChange={(e) => setApartmentNumber(parseInt(e.target.value))}
-        />
+      {/* Apartment and People fields side by side on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
+          <Select
+            value={apartmentNumber.toString()}
+            onValueChange={handleApartmentChange}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Seleccionar apartamento" />
+            </SelectTrigger>
+            <SelectContent>
+              {APARTMENT_NUMBERS.map((num) => (
+                <SelectItem key={num} value={num.toString()}>
+                  Apartamento #{num}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="numberOfPeople">Número de Personas</Label>
+          <div className="relative">
+            <Input
+              id="numberOfPeople"
+              type="number"
+              min="1"
+              max={selectedTables.length > 0 ? maxPeopleAllowed : undefined}
+              required
+              value={numberOfPeople}
+              onChange={handleNumberOfPeopleChange}
+            />
+            {selectedTables.length > 0 && (
+              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <InfoIcon className="h-3 w-3" />
+                <span>Máximo: {maxPeopleAllowed} personas ({MAX_PEOPLE_PER_TABLE} por mesa)</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -328,18 +438,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="numberOfPeople">Número de Personas</Label>
-        <Input
-          id="numberOfPeople"
-          type="number"
-          min="1"
-          required
-          value={numberOfPeople}
-          onChange={(e) => setNumberOfPeople(parseInt(e.target.value))}
-        />
-      </div>
-
-      <div className="space-y-2">
         <Label>Seleccionar Mesas</Label>
         <Card className="w-full">
           <CardContent className="p-2 sm:p-4">
@@ -349,6 +447,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
             ) : (
               <>
+                {/* Capacity information */}
+                {/* <div className="mb-3 p-2 bg-blue-50 text-blue-700 rounded-md text-sm flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium">Capacidad de mesas</p>
+                    <p>Cada mesa tiene capacidad para {MAX_PEOPLE_PER_TABLE} personas. Seleccione mesas adicionales para grupos más grandes.</p>
+                  </div>
+                </div> */}
+                
                 {/* Leyenda para mesas */}
                 <div className="flex justify-end mb-2 gap-3 text-xs">
                   <div className="flex items-center gap-1">
@@ -422,9 +529,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   </div>
                 </div>
                 
-                {/* Mostrar mesas seleccionadas */}
-                <div className="mb-2">
+                {/* Mostrar mesas seleccionadas y capacidad */}
+                <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-2">
                   <p className="font-medium text-sm sm:text-base">Mesas seleccionadas: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'Ninguna'}</p>
+                  {selectedTables.length > 0 && (
+                    <p className="text-sm sm:text-base text-left sm:text-right">
+                      Capacidad total: <span className="font-medium">{maxPeopleAllowed} personas</span>
+                    </p>
+                  )}
                 </div>
                 
                 {/* Botón para limpiar selección */}

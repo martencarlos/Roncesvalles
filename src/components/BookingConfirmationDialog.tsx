@@ -1,5 +1,5 @@
 // src/components/BookingConfirmationDialog.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 import { IBooking } from '@/models/Booking';
 
 interface BookingConfirmationDialogProps {
@@ -16,6 +17,9 @@ interface BookingConfirmationDialogProps {
   booking: IBooking | null;
   onConfirm: (bookingId: string, data: { finalAttendees: number; notes: string }) => Promise<void>;
 }
+
+// Maximum number of people per table
+const MAX_PEOPLE_PER_TABLE = 8;
 
 const BookingConfirmationDialog: React.FC<BookingConfirmationDialogProps> = ({
   isOpen,
@@ -27,14 +31,35 @@ const BookingConfirmationDialog: React.FC<BookingConfirmationDialogProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  
+  // Calculate max capacity based on table count
+  const maxPeopleAllowed = booking ? booking.tables.length * MAX_PEOPLE_PER_TABLE : 0;
 
   // Reset form when booking changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (booking) {
       setFinalAttendees(booking.numberOfPeople);
       setNotes(booking.notes || '');
+      setError('');
     }
   }, [booking]);
+
+  const handleFinalAttendeesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    
+    if (isNaN(value) || value < 0) {
+      setFinalAttendees(0);
+      return;
+    }
+    
+    if (booking && value > maxPeopleAllowed) {
+      setFinalAttendees(maxPeopleAllowed);
+      setError(`El número máximo de asistentes permitidos para ${booking.tables.length} mesa(s) es ${maxPeopleAllowed}`);
+    } else {
+      setFinalAttendees(value);
+      setError('');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +67,13 @@ const BookingConfirmationDialog: React.FC<BookingConfirmationDialogProps> = ({
     if (!booking?._id) return;
     
     setError('');
+    
+    // Validate against maximum capacity
+    if (finalAttendees > maxPeopleAllowed) {
+      setError(`El número máximo de asistentes permitidos para ${booking.tables.length} mesa(s) es ${maxPeopleAllowed}`);
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -100,10 +132,15 @@ const BookingConfirmationDialog: React.FC<BookingConfirmationDialogProps> = ({
                   id="finalAttendees"
                   type="number"
                   min="0"
+                  max={maxPeopleAllowed}
                   value={finalAttendees}
-                  onChange={(e) => setFinalAttendees(parseInt(e.target.value))}
+                  onChange={handleFinalAttendeesChange}
                   required
                 />
+                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <InfoIcon className="h-3 w-3" />
+                  <span>Máximo: {maxPeopleAllowed} personas ({MAX_PEOPLE_PER_TABLE} por mesa)</span>
+                </div>
               </div>
               
               <div className="space-y-2">
