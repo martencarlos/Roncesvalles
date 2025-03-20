@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
         mealType: string;
         attendees: number;
         amount: number;
+        tables: number[];
+        services: string[];
       }>;
     }> = {};
     
@@ -52,6 +54,12 @@ export async function GET(req: NextRequest) {
       const amount = attendees * pricePerPerson;
       const date = new Date(booking.date).toLocaleDateString('es-ES');
       const mealType = booking.mealType === 'lunch' ? 'Comida' : 'Cena';
+      
+      // Determine which services were used
+      const services: string[] = [];
+      if (booking.prepararFuego) services.push('Fuego');
+      if (booking.reservaHorno) services.push('Horno');
+      if (booking.reservaBrasa) services.push('Brasa');
       
       if (!apartmentData[apartmentNumber]) {
         apartmentData[apartmentNumber] = {
@@ -69,7 +77,9 @@ export async function GET(req: NextRequest) {
         date,
         mealType,
         attendees,
-        amount
+        amount,
+        tables: booking.tables,
+        services
       });
     });
     

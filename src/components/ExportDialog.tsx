@@ -13,11 +13,29 @@ interface ExportDialogProps {
   onClose: () => void;
 }
 
+interface BookingDetail {
+  date: string;
+  mealType: string;
+  attendees: number;
+  amount: number;
+  tables: number[];
+  services: string[];
+}
+
+interface ApartmentData {
+  apartmentNumber: number;
+  totalBookings: number;
+  totalAttendees: number;
+  totalAmount: number;
+  bookingDetails: BookingDetail[];
+}
+
 const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
   const [format, setFormat] = useState<'excel' | 'pdf'>('excel');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [includeDetails, setIncludeDetails] = useState<boolean>(true);
   
   // Generate year options (last 5 years)
   const currentYear = new Date().getFullYear();
@@ -59,36 +77,46 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
     }
   };
   
-  const generateExcel = (data: any[], year: string) => {
-    // Create CSV content
+  const generateExcel = (data: ApartmentData[], year: string) => {
+    // Create CSV content with detailed breakdown
     let csvContent = "Apartamento,Total Reservas,Total Asistentes,Importe Total (€)\n";
     
+    // First add the summary rows
     data.forEach(apartment => {
       csvContent += `${apartment.apartmentNumber},${apartment.totalBookings},${apartment.totalAttendees},${apartment.totalAmount.toFixed(2)}\n`;
     });
     
-    // Add summary row
+    // Add grand total row
     const totalBookings = data.reduce((sum, apt) => sum + apt.totalBookings, 0);
     const totalAttendees = data.reduce((sum, apt) => sum + apt.totalAttendees, 0);
     const totalAmount = data.reduce((sum, apt) => sum + apt.totalAmount, 0);
     
-    csvContent += `\nTOTAL,${totalBookings},${totalAttendees},${totalAmount.toFixed(2)}\n`;
+    csvContent += `\nTOTAL,${totalBookings},${totalAttendees},${totalAmount.toFixed(2)}\n\n`;
+    
+    // If detailed view is requested, add a breakdown of each booking
+    if (includeDetails) {
+      csvContent += "\nDETALLE DE RESERVAS\n";
+      csvContent += "Apartamento,Fecha,Servicio,Asistentes,Mesas,Servicios,Importe (€)\n";
+      
+      data.forEach(apartment => {
+        apartment.bookingDetails.forEach(booking => {
+          csvContent += `${apartment.apartmentNumber},${booking.date},${booking.mealType},${booking.attendees},"${booking.tables.join(', ')}","${booking.services.join(', ')}",${booking.amount.toFixed(2)}\n`;
+        });
+      });
+    }
     
     // Create and download file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Reservas_${year}.csv`);
+    link.setAttribute('download', `Reservas_${year}${includeDetails ? '_Detallado' : ''}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
   
-  const generatePDF = (data: any[], year: string) => {
-    // For the PDF generation, we'll create a simple HTML table and use browser's print functionality
-    // This is a simple approach without adding dependencies
-    
+  const generatePDF = (data: ApartmentData[], year: string) => {
     // Create a new window
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -109,17 +137,20 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
         <title>Informe de Reservas ${year}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { text-align: center; }
+          h1, h2 { text-align: center; }
+          h2 { margin-top: 30px; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
           th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
           th { background-color: #f2f2f2; }
           .total-row { font-weight: bold; background-color: #f2f2f2; }
+          .page-break { page-break-before: always; }
         </style>
       </head>
       <body>
         <h1>Informe de Reservas Confirmadas ${year}</h1>
         <p>Fecha de generación: ${new Date().toLocaleDateString()}</p>
         
+        <h2>Resumen por Apartamento</h2>
         <table>
           <thead>
             <tr>
@@ -146,6 +177,42 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
             </tr>
           </tbody>
         </table>
+        
+        ${includeDetails ? `
+          <div class="page-break"></div>
+          <h2>Detalle de Reservas</h2>
+          ${data.map(apt => `
+            <h3>Apartamento ${apt.apartmentNumber}</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Servicio</th>
+                  <th>Asistentes</th>
+                  <th>Mesas</th>
+                  <th>Servicios</th>
+                  <th>Importe (€)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${apt.bookingDetails.map(booking => `
+                  <tr>
+                    <td>${booking.date}</td>
+                    <td>${booking.mealType}</td>
+                    <td>${booking.attendees}</td>
+                    <td>${booking.tables.join(', ')}</td>
+                    <td>${booking.services.join(', ')}</td>
+                    <td>${booking.amount.toFixed(2)} €</td>
+                  </tr>
+                `).join('')}
+                <tr class="total-row">
+                  <td colspan="5">TOTAL</td>
+                  <td>${apt.totalAmount.toFixed(2)} €</td>
+                </tr>
+              </tbody>
+            </table>
+          `).join('')}
+        ` : ''}
         
         <script>
           // Auto print and close the window after printing
@@ -207,6 +274,19 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
                 </Label>
               </div>
             </RadioGroup>
+          </div>
+          
+          <div className="flex items-center space-x-2 pt-2">
+            <input
+              type="checkbox"
+              id="includeDetails"
+              checked={includeDetails}
+              onChange={(e) => setIncludeDetails(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+            />
+            <Label htmlFor="includeDetails" className="text-sm cursor-pointer">
+              Incluir desglose detallado de reservas
+            </Label>
           </div>
         </div>
         
