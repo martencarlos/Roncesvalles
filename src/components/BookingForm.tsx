@@ -34,12 +34,13 @@ interface BookingsForDate {
 
 interface BookingFormProps {
   onSubmit: (data: Partial<IBooking>) => Promise<void>;
-  initialData?: Partial<IBooking>;
+  initialData?: Partial<IBooking> ;
   onCancel: () => void;
 }
 
 const APARTMENT_NUMBERS = Array.from({ length: 48 }, (_, i) => i + 1);
 const LAST_APARTMENT_KEY = 'lastSelectedApartment';
+const FIRST_BOOKING_KEY = 'hasCreatedFirstBooking';
 const MAX_PEOPLE_PER_TABLE = 8;
 
 const BookingForm: React.FC<BookingFormProps> = ({ 
@@ -47,9 +48,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
   initialData, 
   onCancel 
 }) => {
-  const [apartmentNumber, setApartmentNumber] = useState<number>(
-    initialData?.apartmentNumber || getLastSelectedApartment() || 1
+  // Check if this is a first-time booking
+  const [hasCreatedFirstBooking, setHasCreatedFirstBooking] = useState<boolean>(
+    typeof window !== "undefined" ? 
+    localStorage.getItem(FIRST_BOOKING_KEY) === 'true' : 
+    false
   );
+
+  const [apartmentNumber, setApartmentNumber] = useState<number | undefined>(
+    initialData?.apartmentNumber || 
+    (hasCreatedFirstBooking ? getLastSelectedApartment() : undefined)
+  );
+  
   const [date, setDate] = useState<Date>(
     initialData?.date ? new Date(initialData.date) : new Date()
   );
@@ -81,18 +91,23 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
   
   // Helper function to get last selected apartment from localStorage
-  function getLastSelectedApartment(): number | null {
+  function getLastSelectedApartment(): number | undefined {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(LAST_APARTMENT_KEY);
-      return saved ? parseInt(saved) : null;
+      return saved ? parseInt(saved) : undefined;
     }
-    return null;
+    return undefined;
   }
 
   // Helper function to save selected apartment to localStorage
   function saveLastSelectedApartment(apartmentNum: number) {
     if (typeof window !== "undefined") {
       localStorage.setItem(LAST_APARTMENT_KEY, apartmentNum.toString());
+      // Mark that user has created their first booking
+      if (!hasCreatedFirstBooking) {
+        localStorage.setItem(FIRST_BOOKING_KEY, 'true');
+        setHasCreatedFirstBooking(true);
+      }
     }
   }
 
@@ -185,7 +200,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const handleApartmentChange = (value: string) => {
     const apartmentNum = parseInt(value);
     setApartmentNumber(apartmentNum);
-    saveLastSelectedApartment(apartmentNum);
   };
 
   const handleNumberOfPeopleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,6 +289,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
     e.preventDefault();
     setError('');
 
+    if (!apartmentNumber) {
+      setError('Por favor, seleccione un número de apartamento');
+      toast.error("Error de Validación", {
+        description: "Por favor, seleccione un número de apartamento"
+      });
+      return;
+    }
+
     if (selectedTables.length === 0) {
       setError('Por favor, seleccione al menos una mesa');
       toast.error("Error de Validación", {
@@ -345,7 +367,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <div className="space-y-2">
           <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
           <Select
-            value={apartmentNumber.toString()}
+            value={apartmentNumber?.toString() || ""}
             onValueChange={handleApartmentChange}
           >
             <SelectTrigger className="w-full">
