@@ -29,7 +29,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
   const isCancelled = booking.status === 'cancelled';
 
   return (
-    <Card className={`overflow-hidden ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>
+    <Card className={`overflow-hidden group ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>
       <CardHeader className="pb-2 px-4">
         <div className="flex justify-between items-center">
           <h3 className="font-bold text-base sm:text-lg">Apto. #{booking.apartmentNumber}</h3>
@@ -134,39 +134,79 @@ const BookingCard: React.FC<BookingCardProps> = ({
         )}
       </CardContent>
       <CardFooter className="pt-2 flex justify-end gap-2 px-4">
-        {isPending && isPast && (
+        {/* Show buttons always on mobile, but only on hover for desktop */}
+        <div className="sm:hidden flex gap-2 w-full">
+          {isPending && isPast && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onConfirm} 
+              className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
+            >
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Confirmar
+            </Button>
+          )}
+          
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={onConfirm} 
-            className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+            onClick={onEdit} 
+            className="cursor-pointer h-7 text-xs px-2 flex-1"
+            disabled={isPast && isConfirmed}
           >
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Confirmar
+            <Edit className="h-3 w-3 mr-1" />
+            Editar
           </Button>
-        )}
+          
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={() => onDelete(booking)}
+            className="cursor-pointer h-7 text-xs px-2 flex-1"
+            disabled={isPast && isConfirmed}
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Eliminar
+          </Button>
+        </div>
         
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={onEdit} 
-          className="cursor-pointer h-7 text-xs px-2"
-          disabled={isPast && isConfirmed}
-        >
-          <Edit className="h-3 w-3 mr-1" />
-          Editar
-        </Button>
-        
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          onClick={() => onDelete(booking)}
-          className="cursor-pointer h-7 text-xs px-2"
-          disabled={isPast && isConfirmed}
-        >
-          <Trash2 className="h-3 w-3 mr-1" />
-          Eliminar
-        </Button>
+        {/* Desktop view - buttons only appear on hover */}
+        <div className="hidden sm:flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {isPending && isPast && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onConfirm} 
+              className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+            >
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Confirmar
+            </Button>
+          )}
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onEdit} 
+            className="cursor-pointer h-7 text-xs px-2"
+            disabled={isPast && isConfirmed}
+          >
+            <Edit className="h-3 w-3 mr-1" />
+            Editar
+          </Button>
+          
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={() => onDelete(booking)}
+            className="cursor-pointer h-7 text-xs px-2"
+            disabled={isPast && isConfirmed}
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Eliminar
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

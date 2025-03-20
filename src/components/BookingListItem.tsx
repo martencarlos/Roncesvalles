@@ -29,7 +29,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   const isCancelled = booking.status === 'cancelled';
 
   return (
-    <div className={`p-3 sm:p-4 rounded-md border ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>
+    <div className={`p-3 sm:p-4 rounded-md border group ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>
       {/* Mobile layout */}
       <div className="flex flex-col gap-3 sm:hidden">
         {/* Header with apartment number and status */}
@@ -121,7 +121,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         )}
 
-        {/* Actions */}
+        {/* Mobile Action buttons - always visible */}
         <div className="flex gap-2 justify-end mt-1">
           {isPending && isPast && (
             <Button 
@@ -249,8 +249,8 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-2 justify-end">
+        {/* Desktop Action buttons - only visible on hover */}
+        <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
           {isPending && isPast && (
             <Button 
               variant="outline" 
