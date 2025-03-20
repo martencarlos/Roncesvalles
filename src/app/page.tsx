@@ -463,7 +463,7 @@ export default function Home() {
         {/* Title and activity log button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold">
-            Sociedad Roncesvalles
+            <Link href="/">Sociedad Roncesvalles</Link>
           </h1>
           <div className="flex gap-2 w-full sm:w-auto flex-wrap">
             {pendingConfirmations > 0 && (
@@ -510,8 +510,8 @@ export default function Home() {
             </Button>
           </div>
         </div>
-
-        {/* Date selector and filter section - improved mobile layout with enhanced DatePicker */}
+        <br />
+        {/* Date selector with date picker - Removed date filter buttons */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 w-full sm:w-auto">
             <div className="custom-datepicker-container">
@@ -537,7 +537,7 @@ export default function Home() {
                   }
                 />
               </div>
-
+  
               <div className="datepicker-legend">
                 <div className="datepicker-legend-item">
                   <div className="datepicker-legend-dot booking-dot-lunch"></div>
@@ -557,61 +557,14 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant={dateFilter === "today" ? "default" : "outline"}
-                onClick={() => handleDateFilterChange("today")}
-                className="cursor-pointer flex-1 sm:flex-none"
-                size="sm"
-              >
-                Hoy
-              </Button>
-              <Button
-                variant={dateFilter === "future" ? "default" : "outline"}
-                onClick={() => handleDateFilterChange("future")}
-                className="cursor-pointer flex-1 sm:flex-none"
-                size="sm"
-              >
-                Próximas
-              </Button>
-              <Button
-                variant={dateFilter === "past" ? "default" : "outline"}
-                onClick={() => handleDateFilterChange("past")}
-                className="cursor-pointer flex-1 sm:flex-none"
-                size="sm"
-              >
-                Pasadas
-              </Button>
-            </div>
           </div>
-
-          {/* Action buttons - fixed for mobile view */}
+  
+          {/* Action button for New Reservation */}
           <div className="flex flex-row gap-2 w-full sm:w-auto">
-            <Button
-              onClick={toggleViewMode}
-              variant="outline"
-              size="sm"
-              className="cursor-pointer flex-1 sm:flex-none"
-            >
-              {viewMode === "card" ? (
-                <>
-                  <List className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Vista Lista</span>
-                  <span className="sm:hidden">Lista</span>
-                </>
-              ) : (
-                <>
-                  <LayoutGrid className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Vista Tarjetas</span>
-                  <span className="sm:hidden">Tarjetas</span>
-                </>
-              )}
-            </Button>
             <Button
               onClick={handleNewBooking}
               size="sm"
-              className="cursor-pointer flex-1 sm:flex-none"
+              className="cursor-pointer w-full sm:w-auto"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Nueva Reserva</span>
@@ -619,7 +572,7 @@ export default function Home() {
             </Button>
           </div>
         </div>
-
+  
         <Tabs
           defaultValue="lunch"
           onValueChange={(value) => setSelectedMealType(value as MealType)}
@@ -695,13 +648,13 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </header>
-
+  
       {error && (
         <Alert variant="destructive" className="mb-6">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-
+  
       {/* Booking Form Modal */}
       <BookingFormModal
         isOpen={showForm}
@@ -710,7 +663,7 @@ export default function Home() {
         initialData={{ date: selectedDate, mealType: selectedMealType }}
         isEditing={false}
       />
-
+  
       {/* Booking Edit Modal */}
       {editingBooking && (
         <BookingFormModal
@@ -721,7 +674,7 @@ export default function Home() {
           isEditing={true}
         />
       )}
-
+  
       {/* Booking Confirmation Modal */}
       {confirmingBooking && (
         <BookingConfirmationDialog
@@ -731,46 +684,102 @@ export default function Home() {
           onConfirm={handleConfirmBooking}
         />
       )}
-
+  
       {/* Export Dialog */}
       <ExportDialog
         isOpen={showExportDialog}
         onClose={() => setShowExportDialog(false)}
       />
-
-      {/* List view title with filter info */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-        <h2 className="text-lg sm:text-xl font-semibold">
-          {dateFilter === "today" && "Reservas de Hoy"}
-          {dateFilter === "future" && "Próximas Reservas"}
-          {dateFilter === "past" && "Reservas Pasadas"}
-          {dateFilter === "pending-confirmation" &&
-            "Reservas Pendientes de Confirmación"}
-          {dateFilter === "specific" &&
-            `Reservas para ${formatDateEs(selectedDate, "d MMMM, yyyy")}`}
-          {dateFilter === "all" && "Todas las Reservas"}
-        </h2>
-        {filteredBookings.length === 0 &&
-          dateFilter !== "pending-confirmation" && (
+  
+      <br />
+      {/* List view title with filter info - MOVED VIEW TOGGLE AND DATE FILTER BUTTONS HERE */}
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg sm:text-xl font-semibold">
+              {dateFilter === "today" && "Reservas de Hoy"}
+              {dateFilter === "future" && "Próximas Reservas"}
+              {dateFilter === "past" && "Reservas Pasadas"}
+              {dateFilter === "pending-confirmation" &&
+                "Reservas Pendientes de Confirmación"}
+              {dateFilter === "specific" &&
+                `Reservas para ${formatDateEs(selectedDate, "d MMMM, yyyy")}`}
+              {dateFilter === "all" && "Todas las Reservas"}
+            </h2>
+            
+            {/* VIEW TOGGLE BUTTON */}
             <Button
+              onClick={toggleViewMode}
               variant="outline"
-              onClick={() => setDateFilter("future")}
               size="sm"
-              className="w-full sm:w-auto"
+              className="cursor-pointer"
             >
-              Ver Próximas Reservas
+              {viewMode === "card" ? (
+                <>
+                  <List className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Vista Lista</span>
+                  <span className="sm:hidden">Lista</span>
+                </>
+              ) : (
+                <>
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Vista Tarjetas</span>
+                  <span className="sm:hidden">Tarjetas</span>
+                </>
+              )}
             </Button>
-          )}
-        {dateFilter === "pending-confirmation" &&
-          filteredBookings.length === 0 && (
-            <div className="flex items-center text-muted-foreground text-sm">
-              <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
-              No hay reservas pendientes de confirmación
-            </div>
-          )}
+          </div>
+          
+          {filteredBookings.length === 0 &&
+            dateFilter !== "pending-confirmation" && (
+              <Button
+                variant="outline"
+                onClick={() => setDateFilter("future")}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                Ver Próximas Reservas
+              </Button>
+            )}
+          {dateFilter === "pending-confirmation" &&
+            filteredBookings.length === 0 && (
+              <div className="flex items-center text-muted-foreground text-sm">
+                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                No hay reservas pendientes de confirmación
+              </div>
+            )}
+        </div>
+        
+        {/* DATE FILTER BUTTONS MOVED HERE */}
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant={dateFilter === "today" ? "default" : "outline"}
+            onClick={() => handleDateFilterChange("today")}
+            className="cursor-pointer"
+            size="sm"
+          >
+            Hoy
+          </Button>
+          <Button
+            variant={dateFilter === "future" ? "default" : "outline"}
+            onClick={() => handleDateFilterChange("future")}
+            className="cursor-pointer"
+            size="sm"
+          >
+            Próximas
+          </Button>
+          <Button
+            variant={dateFilter === "past" ? "default" : "outline"}
+            onClick={() => handleDateFilterChange("past")}
+            className="cursor-pointer"
+            size="sm"
+          >
+            Pasadas
+          </Button>
+        </div>
       </div>
       <Separator className="mb-4" />
-
+  
       {/* Bookings display - Card or List view */}
       {loading ? (
         <div className="flex justify-center p-8">
@@ -784,7 +793,7 @@ export default function Home() {
             const isBookingToday = isToday(bookingDate);
             const isBookingFuture = isFuture(bookingDate);
             const isBookingPast = isPast(bookingDate) && !isToday(bookingDate);
-
+  
             // Determine the appropriate status badge
             let statusBadge = null;
             if (isBookingToday) {
@@ -806,12 +815,12 @@ export default function Home() {
                 </Badge>
               );
             }
-
+  
             // Check if there are any pending confirmations for this date
             const pendingForDate = bookingsForDate.some(
               (booking) => booking.status === "pending" && isBookingPast
             );
-
+  
             return (
               <div key={dateKey}>
                 <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
@@ -828,7 +837,7 @@ export default function Home() {
                   </h3>
                   {statusBadge}
                 </div>
-
+  
                 {viewMode === "card" ? (
                   // Card View
                   <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -846,7 +855,7 @@ export default function Home() {
                           key={booking._id as string}
                           booking={booking}
                           onEdit={() => setEditingBooking(booking)}
-                          onDelete={() => handleDeleteBooking(booking)} // Change this
+                          onDelete={() => handleDeleteBooking(booking)}
                           onConfirm={() => setConfirmingBooking(booking)}
                           isPast={isBookingPast}
                         />
@@ -869,7 +878,7 @@ export default function Home() {
                           key={booking._id as string}
                           booking={booking}
                           onEdit={() => setEditingBooking(booking)}
-                          onDelete={() => handleDeleteBooking(booking)} // Change this
+                          onDelete={() => handleDeleteBooking(booking)}
                           onConfirm={() => setConfirmingBooking(booking)}
                           isPast={isBookingPast}
                         />
