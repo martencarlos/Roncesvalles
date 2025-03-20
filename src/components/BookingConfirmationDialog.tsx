@@ -120,10 +120,10 @@ const BookingConfirmationDialog: React.FC<BookingConfirmationDialogProps> = ({
           </div>
           
           <DialogFooter className="pt-4">
-            <Button variant="outline" type="button" onClick={onClose}>
+            <Button variant="outline" className='cursor-pointer' type="button" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" className='cursor-pointer' disabled={isSubmitting}>
               {isSubmitting ? 'Confirmando...' : 'Confirmar Reserva'}
             </Button>
           </DialogFooter>

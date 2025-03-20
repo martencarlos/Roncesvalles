@@ -470,10 +470,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">
-        <Button variant="outline" type="button" onClick={onCancel} className="w-full sm:w-auto">
+        <Button variant="outline" type="button" onClick={onCancel} className="cursor-pointer w-full sm:w-auto">
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+        <Button type="submit" disabled={isSubmitting} className="cursor-pointer w-full sm:w-auto">
           {isSubmitting ? 'Guardando...' : initialData?._id ? 'Actualizar Reserva' : 'Crear Reserva'}
         </Button>
       </div>

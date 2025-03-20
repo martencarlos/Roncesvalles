@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 interface BookingListItemProps {
   booking: IBooking;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete: (booking: IBooking) => void; // Changed from () => void
   onConfirm: () => void;
   isPast?: boolean;
 }
@@ -123,9 +123,9 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
               variant="outline" 
               size="sm" 
               onClick={onConfirm} 
-              className="h-8 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
+              className="cursor-pointer h-8 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
             >
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+              <CheckCircle2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
               Confirmar
             </Button>
           )}
@@ -134,21 +134,21 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             variant="outline" 
             size="sm" 
             onClick={onEdit} 
-            className="h-8 text-xs px-2 flex-1"
+            className="cursor-pointer h-8 text-xs px-2 flex-1"
             disabled={isPast && isConfirmed}
           >
-            <Edit className="h-3.5 w-3.5 mr-1.5" />
+            <Edit className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
             Editar
           </Button>
           
           <Button 
             variant="destructive" 
             size="sm" 
-            onClick={onDelete} 
-            className="h-8 text-xs px-2 flex-1"
+            onClick={() => onDelete(booking)} // Changed from onClick={onDelete}
+            className="cursor-pointer h-8 text-xs px-2 flex-1"
             disabled={isPast && isConfirmed}
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+            <Trash2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
             Eliminar
           </Button>
         </div>
@@ -246,9 +246,9 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
               variant="outline" 
               size="sm" 
               onClick={onConfirm} 
-              className="h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+              className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
             >
-              <CheckCircle2 className="h-3 w-3 mr-1" />
+              <CheckCircle2 className="cursor-pointer h-3 w-3 mr-1" />
               Confirmar
             </Button>
           )}
@@ -257,21 +257,21 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             variant="outline" 
             size="sm" 
             onClick={onEdit} 
-            className="h-7 text-xs px-2"
+            className="cursor-pointer h-7 text-xs px-2"
             disabled={isPast && isConfirmed}
           >
-            <Edit className="h-3 w-3 mr-1" />
+            <Edit className="cursor-pointer h-3 w-3 mr-1" />
             Editar
           </Button>
           
           <Button 
             variant="destructive" 
             size="sm" 
-            onClick={onDelete} 
-            className="h-7 text-xs px-2"
+            onClick={() => onDelete(booking)} // Changed from onClick={onDelete}
+            className="cursor-pointer h-7 text-xs px-2"
             disabled={isPast && isConfirmed}
           >
-            <Trash2 className="h-3 w-3 mr-1" />
+            <Trash2 className="cursor-pointer h-3 w-3 mr-1" />
             Eliminar
           </Button>
         </div>

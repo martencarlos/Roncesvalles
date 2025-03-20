@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 interface BookingCardProps {
   booking: IBooking;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete: (booking: IBooking) => void; // Changed from () => void
   onConfirm: () => void;
   isPast?: boolean;
 }
@@ -134,7 +134,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
             variant="outline" 
             size="sm" 
             onClick={onConfirm} 
-            className="h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+            className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
           >
             <CheckCircle2 className="h-3 w-3 mr-1" />
             Confirmar
@@ -145,7 +145,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
           variant="outline" 
           size="sm" 
           onClick={onEdit} 
-          className="h-7 text-xs px-2"
+          className="cursor-pointer h-7 text-xs px-2"
           disabled={isPast && isConfirmed}
         >
           <Edit className="h-3 w-3 mr-1" />
@@ -155,8 +155,8 @@ const BookingCard: React.FC<BookingCardProps> = ({
         <Button 
           variant="destructive" 
           size="sm" 
-          onClick={onDelete} 
-          className="h-7 text-xs px-2"
+          onClick={() => onDelete(booking)} // Changed from onClick={onDelete}
+          className="cursor-pointer h-7 text-xs px-2"
           disabled={isPast && isConfirmed}
         >
           <Trash2 className="h-3 w-3 mr-1" />

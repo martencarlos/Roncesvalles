@@ -211,10 +211,10 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" className='cursor-pointer' onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={handleExport} disabled={isLoading}>
+          <Button onClick={handleExport} className='cursor-pointer' disabled={isLoading}>
             {isLoading ? (
               <span className="flex items-center">
                 <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></span>
