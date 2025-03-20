@@ -53,8 +53,10 @@ export async function POST(
     
     // Additional details for activity log
     const serviceDetails = [];
+    if (booking.prepararFuego) serviceDetails.push('preparación de fuego');
     if (booking.reservaHorno) serviceDetails.push('horno');
     if (booking.reservaBrasa) serviceDetails.push('brasa');
+    
     const serviceText = serviceDetails.length > 0 
       ? ` con ${serviceDetails.join(' y ')}` 
       : '';

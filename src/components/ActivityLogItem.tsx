@@ -70,6 +70,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
       .replace('confirmed booking for dinner on', 'ha confirmado la reserva para cena el')
       .replace('tables', 'mesas')
       .replace('Apt', 'Apto.')
+      .replace('with fire preparation', 'con preparación de fuego')
       .replace('with oven reservation', 'con reserva de horno')
       .replace('with grill reservation', 'con reserva de brasa')
       .replace('with oven and grill reservation', 'con reserva de horno y brasa')

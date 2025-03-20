@@ -64,6 +64,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
   );
   const [bookedTables, setBookedTables] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [prepararFuego, setPrepararFuego] = useState<boolean>(
+    initialData?.prepararFuego || false
+  );
   const [reservaHorno, setReservaHorno] = useState<boolean>(
     initialData?.reservaHorno || false
   );
@@ -297,6 +300,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         mealType,
         numberOfPeople,
         tables: selectedTables,
+        prepararFuego,
         reservaHorno,
         reservaBrasa,
       });
@@ -447,15 +451,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
             ) : (
               <>
-                {/* Capacity information */}
-                {/* <div className="mb-3 p-2 bg-blue-50 text-blue-700 rounded-md text-sm flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">Capacidad de mesas</p>
-                    <p>Cada mesa tiene capacidad para {MAX_PEOPLE_PER_TABLE} personas. Seleccione mesas adicionales para grupos más grandes.</p>
-                  </div>
-                </div> */}
-                
                 {/* Leyenda para mesas */}
                 <div className="flex justify-end mb-2 gap-3 text-xs">
                   <div className="flex items-center gap-1">
@@ -558,6 +553,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
       <div className="space-y-2">
         <Label>Opciones Adicionales</Label>
         <div className="flex flex-col gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="prepararFuego" 
+              checked={prepararFuego} 
+              onCheckedChange={() => setPrepararFuego(!prepararFuego)} 
+            />
+            <Label htmlFor="prepararFuego" className="font-normal cursor-pointer">
+              Preparar fuego para la reserva
+            </Label>
+          </div>
           <div className="flex items-center space-x-2">
             <Checkbox 
               id="reservaHorno" 

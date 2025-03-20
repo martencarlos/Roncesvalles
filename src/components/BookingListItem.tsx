@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 interface BookingListItemProps {
   booking: IBooking;
   onEdit: () => void;
-  onDelete: (booking: IBooking) => void; // Changed from () => void
+  onDelete: (booking: IBooking) => void;
   onConfirm: () => void;
   isPast?: boolean;
 }
@@ -91,10 +91,15 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
         </div>
 
         {/* Services */}
-        {(booking.reservaHorno || booking.reservaBrasa) && (
+        {(booking.prepararFuego || booking.reservaHorno || booking.reservaBrasa) && (
           <div className="flex flex-wrap gap-2 items-center text-sm">
             <span>Servicios:</span>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
+              {booking.prepararFuego && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  Fuego
+                </Badge>
+              )}
               {booking.reservaHorno && (
                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                   Horno
@@ -144,7 +149,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           <Button 
             variant="destructive" 
             size="sm" 
-            onClick={() => onDelete(booking)} // Changed from onClick={onDelete}
+            onClick={() => onDelete(booking)}
             className="cursor-pointer h-8 text-xs px-2 flex-1"
             disabled={isPast && isConfirmed}
           >
@@ -212,10 +217,15 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
 
           {/* Services */}
-          {(booking.reservaHorno || booking.reservaBrasa) && (
+          {(booking.prepararFuego || booking.reservaHorno || booking.reservaBrasa) && (
             <div className="flex items-center gap-2">
               <span className="text-sm">Servicios:</span>
               <div className="flex gap-1">
+                {booking.prepararFuego && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    Fuego
+                  </Badge>
+                )}
                 {booking.reservaHorno && (
                   <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                     Horno
@@ -267,7 +277,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           <Button 
             variant="destructive" 
             size="sm" 
-            onClick={() => onDelete(booking)} // Changed from onClick={onDelete}
+            onClick={() => onDelete(booking)}
             className="cursor-pointer h-7 text-xs px-2"
             disabled={isPast && isConfirmed}
           >

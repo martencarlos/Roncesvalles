@@ -10,6 +10,7 @@ export interface IBooking {
   mealType: MealType;
   numberOfPeople: number;
   tables: number[];
+  prepararFuego: boolean;  // New field for "Preparar fuego para la reserva"
   reservaHorno: boolean;
   reservaBrasa: boolean;
   status: BookingStatus;
@@ -54,6 +55,10 @@ const BookingSchema = new Schema<IBooking>(
         },
         message: 'Selected tables must be between 1 and 6 and not duplicated'
       }
+    },
+    prepararFuego: {
+      type: Boolean,
+      default: false
     },
     reservaHorno: {
       type: Boolean,

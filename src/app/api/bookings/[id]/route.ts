@@ -91,12 +91,19 @@ export async function PUT(
     
     // Prepare additional details for activity log
     let additionalDetails = '';
+    
+    if (body.prepararFuego) {
+      additionalDetails += ' with fire preparation';
+    }
     if (body.reservaHorno && body.reservaBrasa) {
-      additionalDetails = ' with oven and grill reservation';
+      additionalDetails += additionalDetails ? ' and' : ' with';
+      additionalDetails += ' oven and grill reservation';
     } else if (body.reservaHorno) {
-      additionalDetails = ' with oven reservation';
+      additionalDetails += additionalDetails ? ' and' : ' with';
+      additionalDetails += ' oven reservation';
     } else if (body.reservaBrasa) {
-      additionalDetails = ' with grill reservation';
+      additionalDetails += additionalDetails ? ' and' : ' with';
+      additionalDetails += ' grill reservation';
     }
     
     // Log activity
@@ -144,13 +151,20 @@ export async function DELETE(
     }
     
     // Prepare additional details for activity log
+    // Prepare additional details for activity log
     let additionalDetails = '';
+    if (booking.prepararFuego) {
+      additionalDetails += ' with fire preparation';
+    }
     if (booking.reservaHorno && booking.reservaBrasa) {
-      additionalDetails = ' with oven and grill reservation';
+      additionalDetails += additionalDetails ? ' and' : ' with';
+      additionalDetails += ' oven and grill reservation';
     } else if (booking.reservaHorno) {
-      additionalDetails = ' with oven reservation';
+      additionalDetails += additionalDetails ? ' and' : ' with';
+      additionalDetails += ' oven reservation';
     } else if (booking.reservaBrasa) {
-      additionalDetails = ' with grill reservation';
+      additionalDetails += additionalDetails ? ' and' : ' with';
+      additionalDetails += ' grill reservation';
     }
     
     // Delete the booking

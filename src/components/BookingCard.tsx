@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 interface BookingCardProps {
   booking: IBooking;
   onEdit: () => void;
-  onDelete: (booking: IBooking) => void; // Changed from () => void
+  onDelete: (booking: IBooking) => void;
   onConfirm: () => void;
   isPast?: boolean;
 }
@@ -71,12 +71,17 @@ const BookingCard: React.FC<BookingCardProps> = ({
           <span className="text-sm">{booking.tables.map(t => `#${t}`).join(', ')}</span>
         </div>
         
-        {(booking.reservaHorno || booking.reservaBrasa) && (
+        {(booking.prepararFuego || booking.reservaHorno || booking.reservaBrasa) && (
           <div className="flex items-center justify-between mt-1">
             <div className="flex items-center gap-1 text-sm">
               <span className="font-medium">Servicios:</span>
             </div>
-            <div className="text-sm flex gap-1">
+            <div className="text-sm flex gap-1 flex-wrap justify-end">
+              {booking.prepararFuego && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  Fuego
+                </Badge>
+              )}
               {booking.reservaHorno && (
                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                   Horno
@@ -155,7 +160,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
         <Button 
           variant="destructive" 
           size="sm" 
-          onClick={() => onDelete(booking)} // Changed from onClick={onDelete}
+          onClick={() => onDelete(booking)}
           className="cursor-pointer h-7 text-xs px-2"
           disabled={isPast && isConfirmed}
         >

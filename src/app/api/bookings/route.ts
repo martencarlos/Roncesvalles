@@ -85,12 +85,20 @@ export async function POST(req: NextRequest) {
     
     // Preparar detalles adicionales para el registro de actividad
     let additionalDetails = '';
+    
+    if (body.prepararFuego) {
+      additionalDetails += ' con preparación de fuego';
+    }
+    
     if (body.reservaHorno && body.reservaBrasa) {
-      additionalDetails = ' con reserva de horno y brasa';
+      additionalDetails += additionalDetails ? ' y' : ' con';
+      additionalDetails += ' reserva de horno y brasa';
     } else if (body.reservaHorno) {
-      additionalDetails = ' con reserva de horno';
+      additionalDetails += additionalDetails ? ' y' : ' con';
+      additionalDetails += ' reserva de horno';
     } else if (body.reservaBrasa) {
-      additionalDetails = ' con reserva de brasa';
+      additionalDetails += additionalDetails ? ' y' : ' con';
+      additionalDetails += ' reserva de brasa';
     }
     
     // Registrar actividad
