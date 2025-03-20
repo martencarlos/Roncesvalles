@@ -67,7 +67,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     initialData?.mealType || 'lunch'
   );
   const [numberOfPeople, setNumberOfPeople] = useState<number>(
-    initialData?.numberOfPeople || 1
+    initialData?.numberOfPeople || 4
   );
   const [selectedTables, setSelectedTables] = useState<number[]>(
     initialData?.tables || []
