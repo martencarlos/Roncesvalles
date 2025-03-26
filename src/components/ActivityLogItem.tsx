@@ -44,13 +44,13 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
   const getActionText = (action: string) => {
     switch (action) {
       case 'create':
-        return 'CREAR';
+        return 'RESERVA';
       case 'update':
-        return 'ACTUALIZAR';
+        return 'MODIF.';
       case 'delete':
-        return 'ELIMINAR';
+        return 'CANCELACIÓN';
       case 'confirm':
-        return 'CONFIRMAR';
+        return 'CONFIRMACIÓN';
       default:
         return action.toUpperCase();
     }
