@@ -56,44 +56,67 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
     }
   };
 
-  // Traducir texto específico en la descripción
+  // Complete Spanish translation of all text in details
   const translateDetails = (details: string) => {
     return details
-      .replace('booked tables', 'ha reservado las mesas')
-      .replace('for lunch on', 'para comida el')
-      .replace('for dinner on', 'para cena el')
-      .replace('modified booking for lunch on', 'ha modificado la reserva para comida el')
-      .replace('modified booking for dinner on', 'ha modificado la reserva para cena el')
-      .replace('cancelled booking for lunch on', 'ha cancelado la reserva para comida el')
-      .replace('cancelled booking for dinner on', 'ha cancelado la reserva para cena el')
-      .replace('confirmed booking for lunch on', 'ha confirmado la reserva para comida el')
-      .replace('confirmed booking for dinner on', 'ha confirmado la reserva para cena el')
-      .replace('tables', 'mesas')
-      .replace('Apt', 'Apto.')
-      .replace('with fire preparation', 'con preparación de fuego')
-      .replace('with oven reservation', 'con reserva de horno')
-      .replace('with grill reservation', 'con reserva de brasa')
-      .replace('with oven and grill reservation', 'con reserva de horno y brasa')
-      .replace('with final attendees', 'con asistentes finales');
+      // Base translations
+      .replace(/booked tables/g, 'ha reservado las mesas')
+      .replace(/for lunch on/g, 'para comida el')
+      .replace(/for dinner on/g, 'para cena el')
+      // Fix "modified booking" translation
+      .replace(/modified booking/g, 'ha modificado la reserva')
+      .replace(/modified booking for lunch on/g, 'ha modificado la reserva para comida el')
+      .replace(/modified booking for dinner on/g, 'ha modificado la reserva para cena el')
+      .replace(/cancelled booking for lunch on/g, 'ha cancelado la reserva para comida el')
+      .replace(/cancelled booking for dinner on/g, 'ha cancelado la reserva para cena el')
+      .replace(/confirmed booking for lunch on/g, 'ha confirmado la reserva para comida el')
+      .replace(/confirmed booking for dinner on/g, 'ha confirmado la reserva para cena el')
+      // Table references
+      .replace(/tables/g, 'mesas')
+      .replace(/table/g, 'mesa')
+      // Apartment references
+      // .replace(/Apt #/g, 'Apto. #')
+      .replace(/Apto/g, 'Apt')
+      // Services
+      .replace(/with fire preparation/g, 'con preparación de fuego')
+      .replace(/with oven reservation/g, 'con reserva de horno')
+      .replace(/with grill reservation/g, 'con reserva de brasa')
+      .replace(/with oven and grill reservation/g, 'con reserva de horno y brasa')
+      .replace(/with final attendees/g, 'con asistentes finales')
+      // Additional translations to catch English terms
+      .replace(/lunch/g, 'comida')
+      .replace(/dinner/g, 'cena');
   };
 
   return (
-    <div className="py-3">
-      <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:items-start">
-        <div className="flex gap-2 items-center">
+    <div className="w-full">
+      <div className="py-4 w-full grid grid-cols-[auto_100px_1fr_auto] gap-3 items-start">
+        {/* Icon column */}
+        <div className={`p-2 rounded-full self-center bg-opacity-10 ${getActionColor(log.action).replace('text-', 'bg-')}`}>
           {getActionIcon(log.action)}
-          <div>
-            <span className={`font-medium ${getActionColor(log.action)}`}>
-              {getActionText(log.action)}
-            </span>{' '}
-            <span className="text-sm">{translateDetails(log.details)}</span>
-          </div>
         </div>
-        <div className="text-xs text-muted-foreground mt-1 sm:mt-0 ml-6 sm:ml-0">
+        
+        {/* Action text column - fixed width */}
+        <div className="self-center">
+          <span className={`font-medium ${getActionColor(log.action)} whitespace-nowrap text-sm`}>
+            {getActionText(log.action)}
+          </span>
+        </div>
+        
+        {/* Details column - limited to 2 lines */}
+        <div className="min-w-0 self-center">
+          <p className="text-sm line-clamp-2 break-words">
+            {translateDetails(log.details)}
+          </p>
+        </div>
+        
+        {/* Date column */}
+        <div className="text-xs text-muted-foreground whitespace-nowrap self-center">
           {format(new Date(log.timestamp), 'd MMM, yyyy - HH:mm', { locale: es })}
         </div>
       </div>
-      <Separator className="mt-3" />
+      
+      <Separator className="w-full" />
     </div>
   );
 };
