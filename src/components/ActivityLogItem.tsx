@@ -90,7 +90,8 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
 
   return (
     <div className="w-full">
-      <div className="py-4 w-full grid grid-cols-[auto_100px_1fr_auto] gap-3 items-start">
+      {/* Desktop layout - hidden on mobile */}
+      <div className="hidden sm:grid py-4 w-full grid-cols-[auto_100px_1fr_auto] gap-3 items-start">
         {/* Icon column */}
         <div className={`p-2 rounded-full self-center bg-opacity-10 ${getActionColor(log.action).replace('text-', 'bg-')}`}>
           {getActionIcon(log.action)}
@@ -103,7 +104,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
           </span>
         </div>
         
-        {/* Details column - limited to 2 lines */}
+        {/* Details column */}
         <div className="min-w-0 self-center">
           <p className="text-sm line-clamp-2 break-words">
             {translateDetails(log.details)}
@@ -114,6 +115,26 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
         <div className="text-xs text-muted-foreground whitespace-nowrap self-center">
           {format(new Date(log.timestamp), 'd MMM, yyyy - HH:mm', { locale: es })}
         </div>
+      </div>
+      
+      {/* Mobile layout - shown only on mobile */}
+      <div className="sm:hidden py-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div className={`p-2 rounded-full bg-opacity-10 ${getActionColor(log.action).replace('text-', 'bg-')}`}>
+              {getActionIcon(log.action)}
+            </div>
+            <span className={`font-medium ${getActionColor(log.action)} text-sm`}>
+              {getActionText(log.action)}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {format(new Date(log.timestamp), 'd MMM, yyyy - HH:mm', { locale: es })}
+          </div>
+        </div>
+        <p className="text-sm ml-10 mb-1">
+          {translateDetails(log.details)}
+        </p>
       </div>
       
       <Separator className="w-full" />
