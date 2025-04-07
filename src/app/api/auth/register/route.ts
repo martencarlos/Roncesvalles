@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       
       if (existingUserWithApartment) {
         return NextResponse.json(
-          { error: "This apartment already has a registered user" },
+          { error: "Este apartamento ya tiene un usuario registrado" },
           { status: 409 }
         );
       }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     
     if (existingUser) {
       return NextResponse.json(
-        { error: "Email already registered" },
+        { error: "Correo electrónico ya registrado" },
         { status: 409 }
       );
     }
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     if (error.code === 11000) {
       // MongoDB duplicate key error
       return NextResponse.json(
-        { error: "Email or apartment already registered" },
+        { error: "Correo electrónico o apartamento ya registrado" },
         { status: 409 }
       );
     }
