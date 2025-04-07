@@ -239,6 +239,14 @@ export default function BookingsPage() {
   }, [dateFilter, selectedDate, bookings]);
 
   const handleCreateBooking = async (data: Partial<IBooking>) => {
+    // Prevent admin (read-only) from creating bookings
+    if (session?.user.role === 'admin') {
+      toast.error("Acceso Denegado", {
+        description: "No tiene permisos para crear reservas.",
+      });
+      return;
+    }
+  
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -250,12 +258,12 @@ export default function BookingsPage() {
           status: "pending", // Ensure new bookings are created with pending status
         }),
       });
-
+  
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al crear la reserva");
       }
-
+  
       // Close form and update bookings
       setShowForm(false);
       fetchBookings();
@@ -273,7 +281,15 @@ export default function BookingsPage() {
 
   const handleUpdateBooking = async (data: Partial<IBooking>) => {
     if (!editingBooking?._id) return;
-
+  
+    // Prevent admin (read-only) from updating bookings
+    if (session?.user.role === 'admin') {
+      toast.error("Acceso Denegado", {
+        description: "No tiene permisos para actualizar reservas.",
+      });
+      return;
+    }
+  
     try {
       const res = await fetch(`/api/bookings/${editingBooking._id}`, {
         method: "PUT",
@@ -282,12 +298,12 @@ export default function BookingsPage() {
         },
         body: JSON.stringify(data),
       });
-
+  
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al actualizar la reserva");
       }
-
+  
       // Close form and update bookings
       setEditingBooking(null);
       fetchBookings();
@@ -306,16 +322,26 @@ export default function BookingsPage() {
 
   const confirmDeleteBooking = async () => {
     if (!deletingBooking?._id) return;
-
+  
+    // Prevent admin (read-only) from deleting bookings
+    if (session?.user.role === 'admin') {
+      toast.error("Acceso Denegado", {
+        description: "No tiene permisos para eliminar reservas.",
+      });
+      setShowDeleteDialog(false);
+      setDeletingBooking(null);
+      return;
+    }
+  
     try {
       const res = await fetch(`/api/bookings/${deletingBooking._id}`, {
         method: "DELETE",
       });
-
+  
       if (!res.ok) {
         throw new Error("Error al eliminar la reserva");
       }
-
+  
       // Update bookings
       fetchBookings();
       toast.error("Reserva Eliminada", {
@@ -329,12 +355,19 @@ export default function BookingsPage() {
       setDeletingBooking(null);
     }
   };
-
   // Handle booking confirmation
   const handleConfirmBooking = async (
     id: string,
     data: { finalAttendees: number; notes: string }
   ) => {
+    // Prevent admin (read-only) from confirming bookings
+    if (session?.user.role === 'admin') {
+      toast.error("Acceso Denegado", {
+        description: "No tiene permisos para confirmar reservas.",
+      });
+      return;
+    }
+  
     try {
       const res = await fetch(`/api/bookings/${id}/confirm`, {
         method: "POST",
@@ -343,12 +376,12 @@ export default function BookingsPage() {
         },
         body: JSON.stringify(data),
       });
-
+  
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al confirmar la reserva");
       }
-
+  
       // Update bookings
       fetchBookings();
       toast.success("Reserva Confirmada", {

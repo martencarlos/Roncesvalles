@@ -19,6 +19,14 @@ export async function POST(
         { status: 401 }
       );
     }
+
+    // Prevent regular admins (read-only) from confirming bookings
+if (currentUser.role === 'admin') {
+  return NextResponse.json(
+    { error: "You don't have permission to confirm bookings" },
+    { status: 403 }
+  );
+}
     
     await connectDB();
     

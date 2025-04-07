@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import BookingsManagement from "@/components/admin/BookingsManagement";
+import UserMenu from "@/components/auth/UserMenu";
 
 export const metadata: Metadata = {
   title: "Gestión de Reservas | Panel de Administración",
@@ -14,14 +15,15 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminBookingsPage() {
-  // Check if user is authenticated and has admin/it_admin role
+  // Check if user is authenticated and has it_admin role
   const session = await getServerSession(authOptions);
   
   if (!session) {
     redirect("/auth/signin?callbackUrl=/admin/bookings");
   }
   
-  if (session.user.role !== "admin" && session.user.role !== "it_admin") {
+  // Only IT admins can access the admin panel
+  if (session.user.role !== "it_admin") {
     redirect("/unauthorized");
   }
   
@@ -30,15 +32,19 @@ export default async function AdminBookingsPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Reservas</h1>
-          <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+        {/* Top row with back button and user menu */}
+        <div className="flex justify-between items-center mb-4">
+          <Button asChild variant="outline" size="sm">
             <Link href="/admin">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver al Panel
             </Link>
           </Button>
+          <UserMenu />
         </div>
+        
+        {/* Title row */}
+        <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Reservas</h1>
       </header>
       
       <BookingsManagement isITAdmin={isITAdmin} />

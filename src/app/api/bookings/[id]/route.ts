@@ -67,6 +67,14 @@ export async function PUT(
         { status: 401 }
       );
     }
+
+    // Prevent regular admins (read-only) from updating bookings
+if (currentUser.role === 'admin') {
+  return NextResponse.json(
+    { error: "You don't have permission to update bookings" },
+    { status: 403 }
+  );
+}
     
     await connectDB();
     
@@ -212,6 +220,14 @@ export async function DELETE(
         { status: 401 }
       );
     }
+
+    // Prevent regular admins (read-only) from deleting bookings
+if (currentUser.role === 'admin') {
+  return NextResponse.json(
+    { error: "You don't have permission to delete bookings" },
+    { status: 403 }
+  );
+}
     
     await connectDB();
     

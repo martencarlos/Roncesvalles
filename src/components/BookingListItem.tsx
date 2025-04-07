@@ -1,4 +1,4 @@
-// src/components/BookingListItem.tsx (updated)
+// src/components/BookingListItem.tsx
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -34,17 +34,18 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   // Check user permissions
   const userRole = session?.user?.role || 'user';
   const isOwner = session?.user?.apartmentNumber === booking.apartmentNumber;
-  const isAdmin = userRole === 'admin';
+  const isAdmin = userRole === 'admin'; // Read-only admin
   const isITAdmin = userRole === 'it_admin';
   const isManager = userRole === 'manager';
   
   // Determine if user can edit/delete/confirm this booking
-  const canEdit = isITAdmin || isAdmin || (isOwner && (!isConfirmed || !isPast));
-  const canDelete = isITAdmin || isAdmin || (isOwner && (!isConfirmed || !isPast));
-  const canConfirm = isITAdmin || isAdmin || (isOwner && isPending && isPast);
+  // Only regular users (for their own bookings) and IT admins can edit/delete/confirm
+  const canEdit = isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === 'user');
+  const canDelete = isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === 'user');
+  const canConfirm = isITAdmin || (isOwner && isPending && isPast && userRole === 'user');
   
-  // Read-only view for managers
-  const isReadOnly = isManager;
+  // Read-only view for managers and regular admins
+  const isReadOnly = isManager || isAdmin;
 
   return (
     <div className={`p-3 sm:p-4 rounded-md border group ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>

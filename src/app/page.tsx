@@ -12,6 +12,11 @@ export default async function HomePage() {
     redirect("/auth/signin");
   }
   
-  // If authenticated, redirect to bookings page
+  // Redirect IT admins directly to admin panel
+  if (session.user.role === "it_admin") {
+    redirect("/admin");
+  }
+  
+  // For other roles including regular admins (read-only), redirect to bookings page
   redirect("/bookings");
 }

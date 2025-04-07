@@ -24,12 +24,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
   
-  // Handle role-specific routes
-  if (
-    pathname.startsWith("/admin") && 
-    token.role !== "admin" && 
-    token.role !== "it_admin"
-  ) {
+  // Redirect IT admin to admin panel after login if trying to access bookings
+  if (token.role === "it_admin" && pathname.startsWith("/bookings")) {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+  
+  // Handle role-specific routes access
+  if (pathname.startsWith("/admin")) {
+    // Only IT admins can access admin panel
+    if (token.role !== "it_admin") {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    }
+  }
+  
+  // Admin (read-only) role should not be able to access admin panel
+  if (token.role === "admin" && pathname.startsWith("/admin")) {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
   

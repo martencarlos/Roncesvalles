@@ -90,7 +90,7 @@ export default function UserMenu() {
                 <div className="flex flex-col">
                   <span>{session.user.name}</span>
                   <span className="text-muted-foreground text-xs capitalize">
-                    {session.user.role === "admin" ? "Administrador" : 
+                    {session.user.role === "admin" ? "Administrador (Lectura)" : 
                     session.user.role === "manager" ? "Conserje" : 
                     session.user.role === "it_admin" ? "Admin IT" : ""}
                   </span>
@@ -108,19 +108,6 @@ export default function UserMenu() {
                 Perfil
               </div>
             </Link>
-            
-            {(session.user.role === "admin" || session.user.role === "it_admin") && (
-              <Link
-                href="/admin"
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                onClick={() => setIsOpen(false)}
-              >
-                <div className="flex items-center">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Panel de Administración
-                </div>
-              </Link>
-            )}
             
             <div className="border-t border-gray-100 my-1"></div>
             

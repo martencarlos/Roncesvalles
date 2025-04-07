@@ -75,6 +75,13 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    if (currentUser.role === 'admin') {
+      return NextResponse.json(
+        { error: "You don't have permission to create bookings" },
+        { status: 403 }
+      );
+    }
     
     await connectDB();
     
