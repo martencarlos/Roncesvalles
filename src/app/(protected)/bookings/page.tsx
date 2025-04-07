@@ -591,15 +591,17 @@ export default function BookingsPage() {
           {/* Action buttons row */}
           <div className="flex flex-wrap gap-2">
             {/* Primary booking actions */}
-            <Button
-              onClick={handleNewBooking}
-              size="sm"
-              className="cursor-pointer flex-grow sm:flex-grow-0"
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Nueva Reserva</span>
-              <span className="sm:hidden">Reservar</span>
-            </Button>
+            {session?.user?.role !== "admin" && (
+              <Button
+                onClick={handleNewBooking}
+                size="sm"
+                className="cursor-pointer flex-grow sm:flex-grow-0"
+              >
+                <PlusCircle className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Nueva Reserva</span>
+                <span className="sm:hidden">Reservar</span>
+              </Button>
+            )}
 
             {pendingConfirmations > 0 && (
               <Button
