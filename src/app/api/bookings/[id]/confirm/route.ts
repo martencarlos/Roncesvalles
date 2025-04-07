@@ -1,14 +1,25 @@
-// src/app/api/bookings/[id]/confirm/route.ts
+// src/app/api/bookings/[id]/confirm/route.ts (updated)
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
+import { authenticate } from '@/lib/auth-utils';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Authenticate user
+    const currentUser = await authenticate(req);
+    
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    
     await connectDB();
     
     const body = await req.json();
@@ -21,6 +32,20 @@ export async function POST(
       return NextResponse.json(
         { error: 'Booking not found' },
         { status: 404 }
+      );
+    }
+    
+    // Permission check:
+    // - Regular users can only confirm their own apartment's bookings
+    // - Managers can view but not confirm bookings
+    // - Admins and IT admins can confirm any booking
+    if (
+      (currentUser.role === 'user' && booking.apartmentNumber !== currentUser.apartmentNumber) ||
+      currentUser.role === 'manager'
+    ) {
+      return NextResponse.json(
+        { error: 'You do not have permission to confirm this booking' },
+        { status: 403 }
       );
     }
     
@@ -65,6 +90,7 @@ export async function POST(
     await ActivityLog.create({
       action: 'confirm',
       apartmentNumber: booking.apartmentNumber,
+      userId: currentUser.id,
       details: `Apto. #${booking.apartmentNumber} ha confirmado la reserva para ${booking.mealType === 'lunch' ? 'comida' : 'cena'} del ${new Date(booking.date).toLocaleDateString('es-ES')}, mesas ${booking.tables.join(', ')}${serviceText} con ${body.finalAttendees || booking.numberOfPeople} asistentes finales`,
     });
     

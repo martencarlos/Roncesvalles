@@ -1,4 +1,4 @@
-// src/components/BookingListItem.tsx
+// src/components/BookingListItem.tsx (updated)
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Users, Table, CheckCircle2, UtensilsCrossed, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Session } from 'next-auth';
 
 interface BookingListItemProps {
   booking: IBooking;
@@ -14,6 +15,7 @@ interface BookingListItemProps {
   onDelete: (booking: IBooking) => void;
   onConfirm: () => void;
   isPast?: boolean;
+  session: Session | null;
 }
 
 const BookingListItem: React.FC<BookingListItemProps> = ({ 
@@ -21,12 +23,28 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   onEdit, 
   onDelete,
   onConfirm,
-  isPast = false
+  isPast = false,
+  session
 }) => {
   // Check if booking is confirmed, pending, or cancelled
   const isConfirmed = booking.status === 'confirmed';
   const isPending = booking.status === 'pending';
   const isCancelled = booking.status === 'cancelled';
+  
+  // Check user permissions
+  const userRole = session?.user?.role || 'user';
+  const isOwner = session?.user?.apartmentNumber === booking.apartmentNumber;
+  const isAdmin = userRole === 'admin';
+  const isITAdmin = userRole === 'it_admin';
+  const isManager = userRole === 'manager';
+  
+  // Determine if user can edit/delete/confirm this booking
+  const canEdit = isITAdmin || isAdmin || (isOwner && (!isConfirmed || !isPast));
+  const canDelete = isITAdmin || isAdmin || (isOwner && (!isConfirmed || !isPast));
+  const canConfirm = isITAdmin || isAdmin || (isOwner && isPending && isPast);
+  
+  // Read-only view for managers
+  const isReadOnly = isManager;
 
   return (
     <div className={`p-3 sm:p-4 rounded-md border group ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>
@@ -121,42 +139,46 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         )}
 
-        {/* Mobile Action buttons - always visible */}
-        <div className="flex gap-2 justify-end mt-1">
-          {isPending && isPast && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onConfirm} 
-              className="cursor-pointer h-8 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
-            >
-              <CheckCircle2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
-              Confirmar
-            </Button>
-          )}
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onEdit} 
-            className="cursor-pointer h-8 text-xs px-2 flex-1"
-            disabled={isPast && isConfirmed}
-          >
-            <Edit className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
-            Editar
-          </Button>
-          
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => onDelete(booking)}
-            className="cursor-pointer h-8 text-xs px-2 flex-1"
-            disabled={isPast && isConfirmed}
-          >
-            <Trash2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
-            Eliminar
-          </Button>
-        </div>
+        {/* Mobile Action buttons - always visible (if not read-only) */}
+        {!isReadOnly && (
+          <div className="flex gap-2 justify-end mt-1">
+            {canConfirm && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onConfirm} 
+                className="cursor-pointer h-8 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
+              >
+                <CheckCircle2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
+                Confirmar
+              </Button>
+            )}
+            
+            {canEdit && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onEdit} 
+                className="cursor-pointer h-8 text-xs px-2 flex-1"
+              >
+                <Edit className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
+                Editar
+              </Button>
+            )}
+            
+            {canDelete && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onDelete(booking)}
+                className="cursor-pointer h-8 text-xs px-2 flex-1"
+              >
+                <Trash2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
+                Eliminar
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Desktop layout */}
@@ -249,42 +271,46 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           )}
         </div>
 
-        {/* Desktop Action buttons - only visible on hover */}
-        <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-          {isPending && isPast && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onConfirm} 
-              className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
-            >
-              <CheckCircle2 className="cursor-pointer h-3 w-3 mr-1" />
-              Confirmar
-            </Button>
-          )}
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onEdit} 
-            className="cursor-pointer h-7 text-xs px-2"
-            disabled={isPast && isConfirmed}
-          >
-            <Edit className="cursor-pointer h-3 w-3 mr-1" />
-            Editar
-          </Button>
-          
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => onDelete(booking)}
-            className="cursor-pointer h-7 text-xs px-2"
-            disabled={isPast && isConfirmed}
-          >
-            <Trash2 className="cursor-pointer h-3 w-3 mr-1" />
-            Eliminar
-          </Button>
-        </div>
+        {/* Desktop Action buttons - only visible on hover (if not read-only) */}
+        {!isReadOnly && (
+          <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+            {canConfirm && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onConfirm} 
+                className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+              >
+                <CheckCircle2 className="cursor-pointer h-3 w-3 mr-1" />
+                Confirmar
+              </Button>
+            )}
+            
+            {canEdit && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onEdit} 
+                className="cursor-pointer h-7 text-xs px-2"
+              >
+                <Edit className="cursor-pointer h-3 w-3 mr-1" />
+                Editar
+              </Button>
+            )}
+            
+            {canDelete && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onDelete(booking)}
+                className="cursor-pointer h-7 text-xs px-2"
+              >
+                <Trash2 className="cursor-pointer h-3 w-3 mr-1" />
+                Eliminar
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

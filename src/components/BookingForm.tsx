@@ -16,6 +16,7 @@ import {es} from 'date-fns/locale/es';
 import { format } from 'date-fns';
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarIcon, LockIcon, InfoIcon, AlertCircle } from 'lucide-react';
+import { useSession } from "next-auth/react";
 
 // Registrar el locale español para el datepicker
 registerLocale('es', es);
@@ -48,6 +49,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
   initialData, 
   onCancel 
 }) => {
+  // Get current user session
+  const { data: session } = useSession();
+  
+  // Check if user is a regular user
+  const isRegularUser = session?.user?.role === 'user';
+  
+  // For regular users, use their apartment number from session
+  // For admin/IT admin users, use initialData or undefined
+  const initialApartment = isRegularUser 
+    ? session?.user.apartmentNumber?.toString() 
+    : initialData?.apartmentNumber?.toString() || '';
+
   // Check if this is a first-time booking
   const [hasCreatedFirstBooking, setHasCreatedFirstBooking] = useState<boolean>(
     typeof window !== "undefined" ? 
@@ -55,9 +68,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
     false
   );
 
-  const [apartmentNumber, setApartmentNumber] = useState<number | undefined>(
-    initialData?.apartmentNumber || 
-    (hasCreatedFirstBooking ? getLastSelectedApartment() : undefined)
+  const [apartmentNumber, setApartmentNumber] = useState<string>(
+    initialApartment || 
+    (hasCreatedFirstBooking && !isRegularUser ? getLastSelectedApartment()?.toString() : '') || ''
   );
   
   const [date, setDate] = useState<Date>(
@@ -101,7 +114,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   // Helper function to save selected apartment to localStorage
   function saveLastSelectedApartment(apartmentNum: number) {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && !isRegularUser) {
       localStorage.setItem(LAST_APARTMENT_KEY, apartmentNum.toString());
       // Mark that user has created their first booking
       if (!hasCreatedFirstBooking) {
@@ -198,8 +211,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
   }, [selectedTables, maxPeopleAllowed]);
 
   const handleApartmentChange = (value: string) => {
-    const apartmentNum = parseInt(value);
-    setApartmentNumber(apartmentNum);
+    if (!isRegularUser) {
+      // Only non-regular users can change the apartment
+      const apartmentNum = parseInt(value);
+      setApartmentNumber(apartmentNum.toString());
+    }
   };
 
   const handleNumberOfPeopleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -289,7 +305,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
     e.preventDefault();
     setError('');
 
-    if (!apartmentNumber) {
+    // For regular users, always use their apartment number from session
+    const effectiveApartmentNumber = isRegularUser 
+      ? session?.user.apartmentNumber 
+      : apartmentNumber ? parseInt(apartmentNumber) : undefined;
+
+    if (!effectiveApartmentNumber) {
       setError('Por favor, seleccione un número de apartamento');
       toast.error("Error de Validación", {
         description: "Por favor, seleccione un número de apartamento"
@@ -317,7 +338,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     try {
       await onSubmit({
-        apartmentNumber,
+        apartmentNumber: effectiveApartmentNumber,
         date,
         mealType,
         numberOfPeople,
@@ -327,9 +348,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
         reservaBrasa,
       });
       
-      // Save the apartment number for future bookings
-      if (!initialData?._id) {
-        saveLastSelectedApartment(apartmentNumber);
+      // Save the apartment number for future bookings (only for non-regular users)
+      if (!initialData?._id && !isRegularUser) {
+        saveLastSelectedApartment(effectiveApartmentNumber);
       }
     } catch (error: any) {
       setError(error.message || 'Error al enviar la reserva');
@@ -366,21 +387,37 @@ const BookingForm: React.FC<BookingFormProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
-          <Select
-            value={apartmentNumber?.toString() || ""}
-            onValueChange={handleApartmentChange}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Seleccionar apartamento" />
-            </SelectTrigger>
-            <SelectContent>
-              {APARTMENT_NUMBERS.map((num) => (
-                <SelectItem key={num} value={num.toString()}>
-                  Apartamento #{num}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isRegularUser ? (
+            // For regular users, show a disabled input with their apartment number
+            <div className="flex items-center">
+              <Input
+                id="apartmentNumber"
+                value={`Apartamento #${session?.user.apartmentNumber}`}
+                disabled
+                className="bg-muted"
+              />
+              <div className="ml-2 text-muted-foreground">
+                <LockIcon className="h-4 w-4" />
+              </div>
+            </div>
+          ) : (
+            // For admins and IT admins, show the dropdown
+            <Select
+              value={apartmentNumber}
+              onValueChange={handleApartmentChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar apartamento" />
+              </SelectTrigger>
+              <SelectContent>
+                {APARTMENT_NUMBERS.map((num) => (
+                  <SelectItem key={num} value={num.toString()}>
+                    Apartamento #{num}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <div className="space-y-2">

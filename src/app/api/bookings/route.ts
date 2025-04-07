@@ -1,19 +1,31 @@
-// src/app/api/bookings/route.ts
+// src/app/api/bookings/route.ts (updated)
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
+import { authenticate } from '@/lib/auth-utils';
 
 export async function GET(req: NextRequest) {
   try {
+    // Authenticate user
+    const currentUser = await authenticate(req);
+    
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    
     await connectDB();
     
-    // Obtener parámetros de consulta
+    // Get query parameters
     const url = new URL(req.url);
     const dateParam = url.searchParams.get('date');
     const mealTypeParam = url.searchParams.get('mealType');
+    const apartmentParam = url.searchParams.get('apartment');
     
-    // Construir consulta
+    // Build query
     let query: any = {};
     
     if (dateParam) {
@@ -31,7 +43,16 @@ export async function GET(req: NextRequest) {
       query.mealType = mealTypeParam;
     }
     
-    // Ordenar por fecha, tipo de comida, luego por número de apartamento
+    // Regular users can only see their own bookings
+    if (currentUser.role === 'user') {
+      query.apartmentNumber = currentUser.apartmentNumber;
+    } 
+    // If specifically filtering by apartment number
+    else if (apartmentParam && !isNaN(parseInt(apartmentParam))) {
+      query.apartmentNumber = parseInt(apartmentParam);
+    }
+    
+    // Sort by date, meal type, then apartment number
     const bookings = await Booking.find(query).sort({ date: 1, mealType: 1, apartmentNumber: 1 });
     return NextResponse.json(bookings);
   } catch (error) {
@@ -45,11 +66,32 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Authenticate user
+    const currentUser = await authenticate(req);
+    
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    
     await connectDB();
     
     const body = await req.json();
     
-    // Verificar si hay mesas conflictivas en la misma fecha y tipo de comida
+    // Regular users can only create bookings for their own apartment
+    if (
+      currentUser.role === 'user' && 
+      body.apartmentNumber !== currentUser.apartmentNumber
+    ) {
+      return NextResponse.json(
+        { error: "You can only create bookings for your own apartment" },
+        { status: 403 }
+      );
+    }
+    
+    // Check for conflicting tables on the same date and meal type
     const bookingDate = new Date(body.date);
     const startOfDay = new Date(bookingDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(bookingDate.setHours(23, 59, 59, 999));
@@ -62,7 +104,7 @@ export async function POST(req: NextRequest) {
       mealType: body.mealType
     });
     
-    // Verificar conflictos de mesa
+    // Check for table conflicts
     const bookedTables = existingBookings.flatMap(booking => booking.tables);
     const requestedTables = body.tables;
     
@@ -80,10 +122,13 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Crear nueva reserva
-    const newBooking = await Booking.create(body);
+    // Create booking
+    const newBooking = await Booking.create({
+      ...body,
+      userId: currentUser.id // Add the user ID to the booking
+    });
     
-    // Preparar detalles adicionales para el registro de actividad
+    // Prepare additional details for activity log
     let additionalDetails = '';
     
     if (body.prepararFuego) {
@@ -101,10 +146,11 @@ export async function POST(req: NextRequest) {
       additionalDetails += ' reserva de brasa';
     }
     
-    // Registrar actividad
+    // Log activity
     await ActivityLog.create({
       action: 'create',
       apartmentNumber: body.apartmentNumber,
+      userId: currentUser.id,
       details: `Apto. #${body.apartmentNumber} ha reservado las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
     });
     

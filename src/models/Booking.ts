@@ -1,4 +1,5 @@
-// src/models/Booking.ts
+// Update the Booking model to include userId
+// src/models/Booking.ts (updated)
 import mongoose, { Schema } from 'mongoose';
 
 export type MealType = 'lunch' | 'dinner';
@@ -10,14 +11,15 @@ export interface IBooking {
   mealType: MealType;
   numberOfPeople: number;
   tables: number[];
-  prepararFuego: boolean;  // New field for "Preparar fuego para la reserva"
+  prepararFuego: boolean;
   reservaHorno: boolean;
   reservaBrasa: boolean;
   status: BookingStatus;
-  finalAttendees?: number; // Optional field for actual number of attendees
-  notes?: string; // Optional field for any notes after the event
+  finalAttendees?: number;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
+  userId: string; // Reference to the User who created the booking
   _id?: string;
 }
 
@@ -48,7 +50,6 @@ const BookingSchema = new Schema<IBooking>(
       required: [true, 'Tables selection is required'],
       validate: {
         validator: function(tables: number[]) {
-          // Check if tables are valid (1-6) and unique
           const validTables = tables.every(table => table >= 1 && table <= 6);
           const uniqueTables = new Set(tables).size === tables.length;
           return validTables && uniqueTables;
@@ -79,12 +80,17 @@ const BookingSchema = new Schema<IBooking>(
     },
     notes: {
       type: String
+    },
+    userId: {
+      type: String,
+      ref: 'User',
+      required: [true, 'User ID is required']
     }
   },
   { timestamps: true }
 );
 
-// Create a compound index to ensure uniqueness of tables on the same date and meal type
+// Create index to ensure uniqueness of tables on the same date and meal type
 BookingSchema.index({ date: 1, mealType: 1, tables: 1 }, { unique: true });
 
 export default mongoose.models.Booking || mongoose.model<IBooking>('Booking', BookingSchema);

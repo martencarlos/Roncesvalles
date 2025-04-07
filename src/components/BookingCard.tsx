@@ -1,4 +1,4 @@
-// src/components/BookingCard.tsx
+// src/components/BookingCard.tsx (updated)
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Users, Table, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Session } from 'next-auth';
 
 interface BookingCardProps {
   booking: IBooking;
@@ -14,6 +15,7 @@ interface BookingCardProps {
   onDelete: (booking: IBooking) => void;
   onConfirm: () => void;
   isPast?: boolean;
+  session: Session | null;
 }
 
 const BookingCard: React.FC<BookingCardProps> = ({ 
@@ -21,12 +23,28 @@ const BookingCard: React.FC<BookingCardProps> = ({
   onEdit, 
   onDelete,
   onConfirm,
-  isPast = false
+  isPast = false,
+  session
 }) => {
   // Check if booking is confirmed, pending, or cancelled
   const isConfirmed = booking.status === 'confirmed';
   const isPending = booking.status === 'pending';
   const isCancelled = booking.status === 'cancelled';
+  
+  // Check user permissions
+  const userRole = session?.user?.role || 'user';
+  const isOwner = session?.user?.apartmentNumber === booking.apartmentNumber;
+  const isAdmin = userRole === 'admin';
+  const isITAdmin = userRole === 'it_admin';
+  const isManager = userRole === 'manager';
+  
+  // Determine if user can edit/delete/confirm this booking
+  const canEdit = isITAdmin || isAdmin || (isOwner && (!isConfirmed || !isPast));
+  const canDelete = isITAdmin || isAdmin || (isOwner && (!isConfirmed || !isPast));
+  const canConfirm = isITAdmin || isAdmin || (isOwner && isPending && isPast);
+  
+  // Read-only view for managers
+  const isReadOnly = isManager;
 
   return (
     <Card className={`overflow-hidden group ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>
@@ -133,81 +151,89 @@ const BookingCard: React.FC<BookingCardProps> = ({
           </div>
         )}
       </CardContent>
-      <CardFooter className="pt-2 flex justify-end gap-2 px-4">
-        {/* Show buttons always on mobile, but only on hover for desktop */}
-        <div className="sm:hidden flex gap-2 w-full">
-          {isPending && isPast && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onConfirm} 
-              className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
-            >
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Confirmar
-            </Button>
-          )}
+      
+      {/* Only show footer with buttons if not in read-only mode */}
+      {!isReadOnly && (
+        <CardFooter className="pt-2 flex justify-end gap-2 px-4">
+          {/* Show buttons always on mobile, but only on hover for desktop */}
+          <div className="sm:hidden flex gap-2 w-full">
+            {canConfirm && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onConfirm} 
+                className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
+              >
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Confirmar
+              </Button>
+            )}
+            
+            {canEdit && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onEdit} 
+                className="cursor-pointer h-7 text-xs px-2 flex-1"
+              >
+                <Edit className="h-3 w-3 mr-1" />
+                Editar
+              </Button>
+            )}
+            
+            {canDelete && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onDelete(booking)}
+                className="cursor-pointer h-7 text-xs px-2 flex-1"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Eliminar
+              </Button>
+            )}
+          </div>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onEdit} 
-            className="cursor-pointer h-7 text-xs px-2 flex-1"
-            disabled={isPast && isConfirmed}
-          >
-            <Edit className="h-3 w-3 mr-1" />
-            Editar
-          </Button>
-          
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => onDelete(booking)}
-            className="cursor-pointer h-7 text-xs px-2 flex-1"
-            disabled={isPast && isConfirmed}
-          >
-            <Trash2 className="h-3 w-3 mr-1" />
-            Eliminar
-          </Button>
-        </div>
-        
-        {/* Desktop view - buttons only appear on hover */}
-        <div className="hidden sm:flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {isPending && isPast && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onConfirm} 
-              className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
-            >
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Confirmar
-            </Button>
-          )}
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onEdit} 
-            className="cursor-pointer h-7 text-xs px-2"
-            disabled={isPast && isConfirmed}
-          >
-            <Edit className="h-3 w-3 mr-1" />
-            Editar
-          </Button>
-          
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => onDelete(booking)}
-            className="cursor-pointer h-7 text-xs px-2"
-            disabled={isPast && isConfirmed}
-          >
-            <Trash2 className="h-3 w-3 mr-1" />
-            Eliminar
-          </Button>
-        </div>
-      </CardFooter>
+          {/* Desktop view - buttons only appear on hover */}
+          <div className="hidden sm:flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            {canConfirm && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onConfirm} 
+                className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+              >
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Confirmar
+              </Button>
+            )}
+            
+            {canEdit && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onEdit} 
+                className="cursor-pointer h-7 text-xs px-2"
+              >
+                <Edit className="h-3 w-3 mr-1" />
+                Editar
+              </Button>
+            )}
+            
+            {canDelete && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onDelete(booking)}
+                className="cursor-pointer h-7 text-xs px-2"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Eliminar
+              </Button>
+            )}
+          </div>
+        </CardFooter>
+      )}
     </Card>
   );
 };

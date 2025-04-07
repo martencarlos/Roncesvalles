@@ -1,8 +1,12 @@
-// src/app/layout.tsx
+// src/app/layout.tsx (updated)
 import type { Metadata } from "next";
 import "./globals.css";
-import "../styles/datepicker.css"; // Importar estilos del datepicker
+import "../styles/datepicker.css";
 import { Toaster } from "sonner";
+import { NextAuthProvider } from "@/providers/NextAuthProvider";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Reserva de Espacios Comunitarios",
@@ -12,18 +16,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Check authentication status
+  const session = await getServerSession(authOptions);
+  
   return (
     <html lang="es">
-      <body
-        className="font-sans antialiased text-primary-background bg-primary-foreground"
-      >
-        {children}
-        <Toaster richColors position="top-right" />
+      <body className="relative font-sans antialiased text-primary-background bg-primary-foreground">
+        <NextAuthProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </NextAuthProvider>
       </body>
     </html>
   );
