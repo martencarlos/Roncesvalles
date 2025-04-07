@@ -59,7 +59,7 @@ type ViewMode = "card" | "list" | undefined;
 
 export default function BookingsPage() {
   const { data: session, status } = useSession();
-  
+
   const [bookings, setBookings] = useState<IBooking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -181,9 +181,9 @@ export default function BookingsPage() {
 
     // For regular users, only show their own apartment's bookings
     let userBookings = allBookings;
-    if (session?.user.role === 'user') {
-      userBookings = allBookings.filter(booking => 
-        booking.apartmentNumber === session.user.apartmentNumber
+    if (session?.user.role === "user") {
+      userBookings = allBookings.filter(
+        (booking) => booking.apartmentNumber === session.user.apartmentNumber
       );
     }
 
@@ -240,13 +240,13 @@ export default function BookingsPage() {
 
   const handleCreateBooking = async (data: Partial<IBooking>) => {
     // Prevent admin (read-only) from creating bookings
-    if (session?.user.role === 'admin') {
+    if (session?.user.role === "admin") {
       toast.error("Acceso Denegado", {
         description: "No tiene permisos para crear reservas.",
       });
       return;
     }
-  
+
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -258,12 +258,12 @@ export default function BookingsPage() {
           status: "pending", // Ensure new bookings are created with pending status
         }),
       });
-  
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al crear la reserva");
       }
-  
+
       // Close form and update bookings
       setShowForm(false);
       fetchBookings();
@@ -281,15 +281,15 @@ export default function BookingsPage() {
 
   const handleUpdateBooking = async (data: Partial<IBooking>) => {
     if (!editingBooking?._id) return;
-  
+
     // Prevent admin (read-only) from updating bookings
-    if (session?.user.role === 'admin') {
+    if (session?.user.role === "admin") {
       toast.error("Acceso Denegado", {
         description: "No tiene permisos para actualizar reservas.",
       });
       return;
     }
-  
+
     try {
       const res = await fetch(`/api/bookings/${editingBooking._id}`, {
         method: "PUT",
@@ -298,12 +298,12 @@ export default function BookingsPage() {
         },
         body: JSON.stringify(data),
       });
-  
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al actualizar la reserva");
       }
-  
+
       // Close form and update bookings
       setEditingBooking(null);
       fetchBookings();
@@ -322,9 +322,9 @@ export default function BookingsPage() {
 
   const confirmDeleteBooking = async () => {
     if (!deletingBooking?._id) return;
-  
+
     // Prevent admin (read-only) from deleting bookings
-    if (session?.user.role === 'admin') {
+    if (session?.user.role === "admin") {
       toast.error("Acceso Denegado", {
         description: "No tiene permisos para eliminar reservas.",
       });
@@ -332,16 +332,16 @@ export default function BookingsPage() {
       setDeletingBooking(null);
       return;
     }
-  
+
     try {
       const res = await fetch(`/api/bookings/${deletingBooking._id}`, {
         method: "DELETE",
       });
-  
+
       if (!res.ok) {
         throw new Error("Error al eliminar la reserva");
       }
-  
+
       // Update bookings
       fetchBookings();
       toast.error("Reserva Eliminada", {
@@ -361,13 +361,13 @@ export default function BookingsPage() {
     data: { finalAttendees: number; notes: string }
   ) => {
     // Prevent admin (read-only) from confirming bookings
-    if (session?.user.role === 'admin') {
+    if (session?.user.role === "admin") {
       toast.error("Acceso Denegado", {
         description: "No tiene permisos para confirmar reservas.",
       });
       return;
     }
-  
+
     try {
       const res = await fetch(`/api/bookings/${id}/confirm`, {
         method: "POST",
@@ -376,12 +376,12 @@ export default function BookingsPage() {
         },
         body: JSON.stringify(data),
       });
-  
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al confirmar la reserva");
       }
-  
+
       // Update bookings
       fetchBookings();
       toast.success("Reserva Confirmada", {
@@ -520,16 +520,16 @@ export default function BookingsPage() {
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6 sm:mb-8">
         {/* Top header with title, user guide, and user menu */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold">
+        <div className="flex justify-between items-center gap-2 mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold truncate">
             <Link href="/">Sociedad Roncesvalles</Link>
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               asChild
               variant="outline"
               size="sm"
-              className="cursor-pointer"
+              className="h-8 px-2 sm:h-9 sm:px-3"
             >
               <Link href="/how-to-use">
                 <BookOpen className="h-4 w-4 mr-2" />
@@ -540,7 +540,7 @@ export default function BookingsPage() {
             <UserMenu />
           </div>
         </div>
-        
+
         {/* Date picker and action buttons */}
         <div className="flex flex-col gap-3 mb-4 sm:mb-6">
           {/* Date picker container */}
@@ -567,7 +567,7 @@ export default function BookingsPage() {
                 }
               />
             </div>
-  
+
             <div className="datepicker-legend">
               <div className="datepicker-legend-item">
                 <div className="datepicker-legend-dot booking-dot-lunch"></div>
@@ -587,7 +587,7 @@ export default function BookingsPage() {
               </div>
             </div>
           </div>
-  
+
           {/* Action buttons row */}
           <div className="flex flex-wrap gap-2">
             {/* Primary booking actions */}
@@ -600,7 +600,7 @@ export default function BookingsPage() {
               <span className="hidden sm:inline">Nueva Reserva</span>
               <span className="sm:hidden">Reservar</span>
             </Button>
-            
+
             {pendingConfirmations > 0 && (
               <Button
                 variant="outline"
@@ -609,11 +609,15 @@ export default function BookingsPage() {
                 className="cursor-pointer flex-grow sm:flex-grow-0 text-amber-700 border-amber-500"
               >
                 <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
-                <span className="hidden sm:inline">{pendingConfirmations} por confirmar</span>
-                <span className="sm:hidden">{pendingConfirmations} confirmar</span>
+                <span className="hidden sm:inline">
+                  {pendingConfirmations} por confirmar
+                </span>
+                <span className="sm:hidden">
+                  {pendingConfirmations} confirmar
+                </span>
               </Button>
             )}
-            
+
             <Button
               asChild
               variant="outline"
@@ -626,9 +630,10 @@ export default function BookingsPage() {
                 <span className="sm:hidden">Actividad</span>
               </Link>
             </Button>
-            
+
             {/* Export button (only for admin or it_admin users) */}
-            {(session?.user?.role === 'admin' || session?.user?.role === 'it_admin') && (
+            {(session?.user?.role === "admin" ||
+              session?.user?.role === "it_admin") && (
               <Button
                 variant="outline"
                 size="sm"
@@ -642,7 +647,7 @@ export default function BookingsPage() {
             )}
           </div>
         </div>
-  
+
         {/* Tabs for meal type selection */}
         <Tabs
           defaultValue="lunch"
@@ -719,26 +724,29 @@ export default function BookingsPage() {
           </TabsContent>
         </Tabs>
       </header>
-  
+
       {error && (
         <Alert variant="destructive" className="mb-6">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-  
+
       {/* Booking Form Modal */}
       <BookingFormModal
         isOpen={showForm}
         onClose={() => setShowForm(false)}
         onSubmit={handleCreateBooking}
-        initialData={{ 
-          date: selectedDate, 
-          mealType: selectedMealType, 
-          apartmentNumber: session?.user?.role === 'user' ? session.user.apartmentNumber : undefined
+        initialData={{
+          date: selectedDate,
+          mealType: selectedMealType,
+          apartmentNumber:
+            session?.user?.role === "user"
+              ? session.user.apartmentNumber
+              : undefined,
         }}
         isEditing={false}
       />
-  
+
       {/* Booking Edit Modal */}
       {editingBooking && (
         <BookingFormModal
@@ -749,7 +757,7 @@ export default function BookingsPage() {
           isEditing={true}
         />
       )}
-  
+
       {/* Booking Confirmation Modal */}
       {confirmingBooking && (
         <BookingConfirmationDialog
@@ -759,13 +767,13 @@ export default function BookingsPage() {
           onConfirm={handleConfirmBooking}
         />
       )}
-  
+
       {/* Export Dialog */}
       <ExportDialog
         isOpen={showExportDialog}
         onClose={() => setShowExportDialog(false)}
       />
-  
+
       <br />
       {/* List view title with filter info - MOVED VIEW TOGGLE AND DATE FILTER BUTTONS HERE */}
       <div className="flex flex-col gap-3 mb-4">
@@ -781,7 +789,7 @@ export default function BookingsPage() {
                 `Reservas para ${formatDateEs(selectedDate, "d MMMM, yyyy")}`}
               {dateFilter === "all" && "Todas las Reservas"}
             </h2>
-            
+
             {/* VIEW TOGGLE BUTTON */}
             <Button
               onClick={toggleViewMode}
@@ -804,7 +812,7 @@ export default function BookingsPage() {
               )}
             </Button>
           </div>
-          
+
           {filteredBookings.length === 0 &&
             dateFilter !== "pending-confirmation" && (
               <Button
@@ -824,7 +832,7 @@ export default function BookingsPage() {
               </div>
             )}
         </div>
-        
+
         {/* DATE FILTER BUTTONS MOVED HERE */}
         <div className="flex gap-2 flex-wrap">
           <Button
@@ -854,7 +862,7 @@ export default function BookingsPage() {
         </div>
       </div>
       <Separator className="mb-4" />
-  
+
       {/* Bookings display - Card or List view */}
       {loading ? (
         <div className="flex justify-center p-8">
@@ -868,7 +876,7 @@ export default function BookingsPage() {
             const isBookingToday = isToday(bookingDate);
             const isBookingFuture = isFuture(bookingDate);
             const isBookingPast = isPast(bookingDate) && !isToday(bookingDate);
-  
+
             // Determine the appropriate status badge
             let statusBadge = null;
             if (isBookingToday) {
@@ -890,12 +898,12 @@ export default function BookingsPage() {
                 </Badge>
               );
             }
-  
+
             // Check if there are any pending confirmations for this date
             const pendingForDate = bookingsForDate.some(
               (booking) => booking.status === "pending" && isBookingPast
             );
-  
+
             return (
               <div key={dateKey}>
                 <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
@@ -912,7 +920,7 @@ export default function BookingsPage() {
                   </h3>
                   {statusBadge}
                 </div>
-  
+
                 {viewMode === "card" ? (
                   // Card View
                   <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

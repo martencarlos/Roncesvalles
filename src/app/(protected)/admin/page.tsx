@@ -15,48 +15,54 @@ export const metadata: Metadata = {
 export default async function AdminPage() {
   // Check if user is authenticated and has it_admin role
   const session = await getServerSession(authOptions);
-  
+
   if (!session) {
     redirect("/auth/signin?callbackUrl=/admin");
   }
-  
+
   // Only IT admins can access the admin panel
   if (session.user.role !== "it_admin") {
     redirect("/unauthorized");
   }
-  
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">Panel de Administración</h1>
-          <UserMenu />
+        <div className="flex justify-between items-center gap-2 mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold truncate">
+            Panel de Administración
+          </h1>
+          <div className="flex-shrink-0">
+            <UserMenu />
+          </div>
         </div>
       </header>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* User Management Card */}
         <div className="bg-white rounded-lg border shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Gestión de Usuarios</h2>
           <p className="text-muted-foreground mb-4">
-            Administre los usuarios y sus permisos. Cree cuentas para administradores y conserjes.
+            Administre los usuarios y sus permisos. Cree cuentas para
+            administradores y conserjes.
           </p>
           <Button asChild className="w-full">
             <Link href="/admin/users">Gestionar Usuarios</Link>
           </Button>
         </div>
-        
+
         {/* Bookings Management Card */}
         <div className="bg-white rounded-lg border shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Gestión de Reservas</h2>
           <p className="text-muted-foreground mb-4">
-            Administre todas las reservas. Cree, edite o elimine reservas para cualquier apartamento.
+            Administre todas las reservas. Cree, edite o elimine reservas para
+            cualquier apartamento.
           </p>
           <Button asChild className="w-full">
             <Link href="/admin/bookings">Gestionar Reservas</Link>
           </Button>
         </div>
-        
+
         {/* Export Data Card */}
         <div className="bg-white rounded-lg border shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Exportar Datos</h2>

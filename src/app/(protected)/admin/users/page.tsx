@@ -17,36 +17,44 @@ export const metadata: Metadata = {
 export default async function AdminUsersPage() {
   // Check if user is authenticated and has it_admin role
   const session = await getServerSession(authOptions);
-  
+
   if (!session) {
     redirect("/auth/signin?callbackUrl=/admin/users");
   }
-  
+
   // Only IT admins can access the admin panel
   if (session.user.role !== "it_admin") {
     redirect("/unauthorized");
   }
-  
+
   const isITAdmin = session.user.role === "it_admin";
-  
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6">
         {/* Top row with back button and user menu */}
-        <div className="flex justify-between items-center mb-4">
-          <Button asChild variant="outline" size="sm">
+        <div className="flex justify-between items-center gap-2 mb-4">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-8 px-2 sm:h-9 sm:px-3"
+          >
             <Link href="/admin">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al Panel
+              <span className="hidden sm:inline">Volver al Panel</span>
+              <span className="sm:hidden">Volver</span>
             </Link>
           </Button>
-          <UserMenu />
+          <div className="flex-shrink-0">
+            <UserMenu />
+          </div>
         </div>
-        
+
         {/* Title row */}
         <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Usuarios</h1>
       </header>
-      
+
       <UserManagement isITAdmin={isITAdmin} />
     </div>
   );

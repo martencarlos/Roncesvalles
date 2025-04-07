@@ -3,7 +3,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { User, LogOut, Settings, ChevronDown, ChevronUp } from "lucide-react";
+import { 
+  User, 
+  LogOut, 
+  Settings,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -24,17 +28,32 @@ export default function UserMenu() {
       }
     }
     
+    // Close on escape key
+    function handleEscapeKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+    
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscapeKey);
+    
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscapeKey);
     };
   }, []);
   
   if (!session?.user) {
     return (
-      <Button variant="outline" onClick={() => router.push("/auth/signin")}>
+      <Button 
+        variant="outline" 
+        onClick={() => router.push("/auth/signin")}
+        className="h-8 px-2 sm:h-9 sm:px-3"
+      >
         <User className="h-4 w-4 mr-2" />
-        Iniciar Sesión
+        <span className="hidden sm:inline">Iniciar Sesión</span>
+        <span className="sm:hidden">Entrar</span>
       </Button>
     );
   }
@@ -53,73 +72,73 @@ export default function UserMenu() {
     await signOut({ redirect: true, callbackUrl: "/" });
   };
   
+  // Helper function to get role display name
+  const getRoleDisplay = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "Administrador (Lectura)";
+      case "it_admin":
+        return "Admin IT";
+      case "manager":
+        return "Conserje";
+      default:
+        return role;
+    }
+  };
+  
   return (
-    <div className="relative" ref={menuRef}>
+    <div ref={menuRef} className="relative z-10">
+      {/* User Button */}
       <Button 
         variant="outline" 
-        className="cursor-pointer flex items-center gap-2"
+        className="h-8 px-2 sm:h-9 sm:px-3"
         onClick={() => setIsOpen(!isOpen)}
       >
         <Avatar className="h-6 w-6">
-          <AvatarFallback className="text-xs">
+          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
             {getInitials(session.user.name)}
           </AvatarFallback>
         </Avatar>
-        <span className="hidden sm:inline text-sm font-normal">
-          {session.user.name}
+        <span className="hidden sm:inline ml-2 text-sm">
+          {session.user.name.split(' ')[0]}
         </span>
-        {isOpen ? (
-          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        )}
       </Button>
       
+      {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+        <div className="absolute right-0 mt-1 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          {/* User Info */}
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <p className="text-sm font-medium truncate">{session.user.name}</p>
+            {session.user.role === "user" ? (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Apartamento #{session.user.apartmentNumber}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-0.5 capitalize">
+                {getRoleDisplay(session.user.role)}
+              </p>
+            )}
+          </div>
+          
+          {/* Menu Items */}
           <div className="py-1">
-            <div className="px-4 py-2 text-sm font-medium border-b border-gray-100">
-              {session.user.role === "user" ? (
-                <div className="flex flex-col">
-                  <span>{session.user.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    Apartamento #{session.user.apartmentNumber}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex flex-col">
-                  <span>{session.user.name}</span>
-                  <span className="text-muted-foreground text-xs capitalize">
-                    {session.user.role === "admin" ? "Administrador (Lectura)" : 
-                    session.user.role === "manager" ? "Conserje" : 
-                    session.user.role === "it_admin" ? "Admin IT" : ""}
-                  </span>
-                </div>
-              )}
-            </div>
-            
             <Link
               href="/profile"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
               onClick={() => setIsOpen(false)}
             >
-              <div className="flex items-center">
-                <Settings className="h-4 w-4 mr-2" />
-                Perfil
-              </div>
+              <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span>Perfil</span>
             </Link>
             
-            <div className="border-t border-gray-100 my-1"></div>
-            
             <button
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 cursor-pointer disabled:opacity-50"
+              className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSigningOut}
               onClick={handleSignOut}
             >
-              <div className="flex items-center">
-                <LogOut className="h-4 w-4 mr-2" />
-                {isSigningOut ? "Cerrando sesión..." : "Cerrar Sesión"}
-              </div>
+              <LogOut className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span>{isSigningOut ? "Cerrando sesión..." : "Cerrar Sesión"}</span>
             </button>
           </div>
         </div>
