@@ -64,7 +64,14 @@ export default async function AdminPage() {
         </div>
 
         {/* Export Data Card */}
-        <div className="bg-white rounded-lg border shadow-sm p-6">
+        <div
+          className="bg-white rounded-lg border shadow-sm p-6"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
           <h2 className="text-xl font-semibold mb-4">Exportar Datos</h2>
           <p className="text-muted-foreground mb-4">
             Exporte datos de reservas para facturación y gestión administrativa.
