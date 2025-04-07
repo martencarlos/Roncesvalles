@@ -1,7 +1,7 @@
 // src/components/auth/SignInForm.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, Loader2 } from "lucide-react";
+import { InfoIcon, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 export default function SignInForm() {
@@ -17,11 +17,22 @@ export default function SignInForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const error = searchParams.get("error");
+  const passwordUpdated = searchParams.get("passwordUpdated");
+  const registered = searchParams.get("registered");
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  
+  useEffect(() => {
+    if (passwordUpdated === "true") {
+      setSuccessMessage("Su contraseña ha sido actualizada correctamente. Por favor, inicie sesión con su nueva contraseña.");
+    } else if (registered === "true") {
+      setSuccessMessage("Su cuenta ha sido creada correctamente. Por favor, inicie sesión.");
+    }
+  }, [passwordUpdated, registered]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,8 +79,17 @@ export default function SignInForm() {
             <AlertDescription>
               {error === "CredentialsSignin" 
                 ? "Credenciales inválidas" 
+                : error === "InvalidResetLink"
+                ? "El enlace de restablecimiento es inválido o ha expirado"
                 : errorMessage || "Error al iniciar sesión"}
             </AlertDescription>
+          </Alert>
+        )}
+        
+        {successMessage && (
+          <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
+            <CheckCircle2 className="h-4 w-4 mr-2 text-green-600" />
+            <AlertDescription>{successMessage}</AlertDescription>
           </Alert>
         )}
         
