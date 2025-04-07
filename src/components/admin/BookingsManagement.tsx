@@ -1,5 +1,5 @@
 // src/components/admin/BookingsManagement.tsx
-"use client";
+"use client"
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -458,35 +458,27 @@ export default function BookingsManagement({ isITAdmin }: BookingsManagementProp
                 className={`${isPastBooking && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}
               >
                 <CardContent className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
-                    <div className="md:col-span-1">
-                      <span className="text-muted-foreground text-sm">Apartamento</span>
-                      <p className="font-semibold text-lg">#{booking.apartmentNumber}</p>
+                  {/* Mobile layout */}
+                  <div className="block md:hidden">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg">Apto. #{booking.apartmentNumber}</h3>
+                        <p className="text-sm text-muted-foreground">{formatDate(booking.date)}</p>
+                      </div>
+                      <Badge 
+                        variant={booking.mealType === 'lunch' ? 'outline' : 'default'}
+                        className={booking.mealType === 'lunch' 
+                          ? "capitalize bg-orange-100 text-orange-800 border-orange-200" 
+                          : "capitalize bg-blue-100 text-blue-800 border-blue-200"
+                        }
+                      >
+                        {booking.mealType === 'lunch' ? 'Comida' : 'Cena'}
+                      </Badge>
                     </div>
                     
-                    <div className="md:col-span-1">
-                      <span className="text-muted-foreground text-sm">Fecha</span>
-                      <p className="font-medium">{formatDate(booking.date)}</p>
-                    </div>
-                    
-                    <div className="md:col-span-1">
-                      <span className="text-muted-foreground text-sm">Servicio</span>
-                      <p>
-                        <Badge 
-                          variant={booking.mealType === 'lunch' ? 'outline' : 'default'}
-                          className={booking.mealType === 'lunch' 
-                            ? "capitalize bg-orange-100 text-orange-800 border-orange-200" 
-                            : "capitalize bg-blue-100 text-blue-800 border-blue-200"
-                          }
-                        >
-                          {booking.mealType === 'lunch' ? 'Comida' : 'Cena'}
-                        </Badge>
-                      </p>
-                    </div>
-                    
-                    <div className="md:col-span-1">
-                      <span className="text-muted-foreground text-sm">Estado</span>
-                      <p>
+                    <div className="space-y-2 mb-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Estado:</span>
                         {isConfirmed && (
                           <Badge className="bg-green-100 text-green-700 border-green-200">
                             Confirmada
@@ -507,11 +499,139 @@ export default function BookingsManagement({ isITAdmin }: BookingsManagementProp
                             Cancelada
                           </Badge>
                         )}
-                      </p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Personas:</span>
+                        <span className="text-sm">
+                          {isConfirmed && booking.finalAttendees !== undefined ? (
+                            <>
+                              <span className="line-through text-muted-foreground mr-1">{booking.numberOfPeople}</span>
+                              {booking.finalAttendees}
+                            </>
+                          ) : (
+                            booking.numberOfPeople
+                          )}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Mesas:</span>
+                        <span className="text-sm">{booking.tables.join(', ')}</span>
+                      </div>
+                      
+                      {(booking.prepararFuego || booking.reservaHorno || booking.reservaBrasa) && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Servicios:</span>
+                          <div className="flex gap-1 flex-wrap">
+                            {booking.prepararFuego && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                                Fuego
+                              </Badge>
+                            )}
+                            {booking.reservaHorno && (
+                              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                                Horno
+                              </Badge>
+                            )}
+                            {booking.reservaBrasa && (
+                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                                Brasa
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2 pt-3 border-t">
+                      {isPending && isPastBooking && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setConfirmingBooking(booking)} 
+                          className="cursor-pointer flex-1 border-amber-500 text-amber-700 hover:bg-amber-50"
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                          Confirmar
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setEditingBooking(booking)} 
+                        className="cursor-pointer flex-1"
+                        disabled={isPastBooking && isConfirmed && !isITAdmin}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                      
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={() => handleDeleteBooking(booking)}
+                        className="cursor-pointer flex-1"
+                        disabled={isPastBooking && isConfirmed && !isITAdmin}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Eliminar
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Desktop layout */}
+                  <div className="hidden md:grid md:grid-cols-12 md:gap-4 md:items-center">
+                    <div className="md:col-span-1">
+                      <span className="text-muted-foreground text-sm block">Apartamento</span>
+                      <p className="font-semibold text-lg">#{booking.apartmentNumber}</p>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <span className="text-muted-foreground text-sm block">Fecha</span>
+                      <p className="font-medium">{formatDate(booking.date)}</p>
                     </div>
                     
                     <div className="md:col-span-1">
-                      <span className="text-muted-foreground text-sm">Detalles</span>
+                      <span className="text-muted-foreground text-sm block">Servicio</span>
+                      <Badge 
+                        variant={booking.mealType === 'lunch' ? 'outline' : 'default'}
+                        className={booking.mealType === 'lunch' 
+                          ? "capitalize bg-orange-100 text-orange-800 border-orange-200" 
+                          : "capitalize bg-blue-100 text-blue-800 border-blue-200"
+                        }
+                      >
+                        {booking.mealType === 'lunch' ? 'Comida' : 'Cena'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <span className="text-muted-foreground text-sm block">Estado</span>
+                      {isConfirmed && (
+                        <Badge className="bg-green-100 text-green-700 border-green-200">
+                          Confirmada
+                        </Badge>
+                      )}
+                      {isPending && !isPastBooking && (
+                        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                          Pendiente
+                        </Badge>
+                      )}
+                      {isPending && isPastBooking && (
+                        <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                          Por confirmar
+                        </Badge>
+                      )}
+                      {isCancelled && (
+                        <Badge className="bg-red-100 text-red-700 border-red-200">
+                          Cancelada
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="md:col-span-3">
+                      <span className="text-muted-foreground text-sm block">Detalles</span>
                       <p className="text-sm">
                         <span className="font-medium">
                           {isConfirmed && booking.finalAttendees !== undefined ? (
@@ -546,7 +666,7 @@ export default function BookingsManagement({ isITAdmin }: BookingsManagementProp
                       )}
                     </div>
                     
-                    <div className="md:col-span-1 flex justify-end gap-2">
+                    <div className="md:col-span-3 flex justify-end gap-2">
                       {isPending && isPastBooking && (
                         <Button 
                           variant="outline" 
