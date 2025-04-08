@@ -129,6 +129,14 @@ export default function SignInForm() {
               className="w-full"
             />
           </div>
+          
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full hidden"
+          >
+            Iniciar Sesión
+          </Button>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">

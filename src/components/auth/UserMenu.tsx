@@ -91,7 +91,7 @@ export default function UserMenu() {
       {/* User Button */}
       <Button 
         variant="outline" 
-        className="h-8 px-2 sm:h-9 sm:px-3"
+        className="cursor-pointer h-8 px-2 sm:h-9 sm:px-3"
         onClick={() => setIsOpen(!isOpen)}
       >
         <Avatar className="h-6 w-6">
