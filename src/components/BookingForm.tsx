@@ -1,6 +1,6 @@
 // src/components/BookingForm.tsx
-import React, { useState, useEffect } from 'react';
-import { IBooking, MealType } from '@/models/Booking';
+import React, { useState, useEffect } from "react";
+import { IBooking, MealType } from "@/models/Booking";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,18 +8,24 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
-import {es} from 'date-fns/locale/es';
-import { format } from 'date-fns';
+import { es } from "date-fns/locale/es";
+import { format } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
-import { CalendarIcon, LockIcon, InfoIcon, AlertCircle } from 'lucide-react';
+import { CalendarIcon, LockIcon, InfoIcon, AlertCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 // Registrar el locale español para el datepicker
-registerLocale('es', es);
+registerLocale("es", es);
 
 interface BookingForm {
   date: Date;
@@ -35,49 +41,52 @@ interface BookingsForDate {
 
 interface BookingFormProps {
   onSubmit: (data: Partial<IBooking>) => Promise<void>;
-  initialData?: Partial<IBooking> ;
+  initialData?: Partial<IBooking>;
   onCancel: () => void;
 }
 
 const APARTMENT_NUMBERS = Array.from({ length: 48 }, (_, i) => i + 1);
-const LAST_APARTMENT_KEY = 'lastSelectedApartment';
-const FIRST_BOOKING_KEY = 'hasCreatedFirstBooking';
+const LAST_APARTMENT_KEY = "lastSelectedApartment";
+const FIRST_BOOKING_KEY = "hasCreatedFirstBooking";
 const MAX_PEOPLE_PER_TABLE = 8;
 
-const BookingForm: React.FC<BookingFormProps> = ({ 
-  onSubmit, 
-  initialData, 
-  onCancel 
+const BookingForm: React.FC<BookingFormProps> = ({
+  onSubmit,
+  initialData,
+  onCancel,
 }) => {
   // Get current user session
   const { data: session } = useSession();
-  
+
   // Check if user is a regular user
-  const isRegularUser = session?.user?.role === 'user';
-  
+  const isRegularUser = session?.user?.role === "user";
+
   // For regular users, use their apartment number from session
   // For admin/IT admin users, use initialData or undefined
-  const initialApartment = isRegularUser 
-    ? session?.user.apartmentNumber?.toString() 
-    : initialData?.apartmentNumber?.toString() || '';
+  const initialApartment = isRegularUser
+    ? session?.user.apartmentNumber?.toString()
+    : initialData?.apartmentNumber?.toString() || "";
 
   // Check if this is a first-time booking
   const [hasCreatedFirstBooking, setHasCreatedFirstBooking] = useState<boolean>(
-    typeof window !== "undefined" ? 
-    localStorage.getItem(FIRST_BOOKING_KEY) === 'true' : 
-    false
+    typeof window !== "undefined"
+      ? localStorage.getItem(FIRST_BOOKING_KEY) === "true"
+      : false
   );
 
   const [apartmentNumber, setApartmentNumber] = useState<string>(
-    initialApartment || 
-    (hasCreatedFirstBooking && !isRegularUser ? getLastSelectedApartment()?.toString() : '') || ''
+    initialApartment ||
+      (hasCreatedFirstBooking && !isRegularUser
+        ? getLastSelectedApartment()?.toString()
+        : "") ||
+      ""
   );
-  
+
   const [date, setDate] = useState<Date>(
     initialData?.date ? new Date(initialData.date) : new Date()
   );
   const [mealType, setMealType] = useState<MealType>(
-    initialData?.mealType || 'lunch'
+    initialData?.mealType || "lunch"
   );
   const [numberOfPeople, setNumberOfPeople] = useState<number>(
     initialData?.numberOfPeople || 4
@@ -96,13 +105,13 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [reservaBrasa, setReservaBrasa] = useState<boolean>(
     initialData?.reservaBrasa || false
   );
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [bookingsForDates, setBookingsForDates] = useState<BookingsForDate>({});
 
   // Calculate max people allowed based on selected tables
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
-  
+
   // Helper function to get last selected apartment from localStorage
   function getLastSelectedApartment(): number | undefined {
     if (typeof window !== "undefined") {
@@ -118,7 +127,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       localStorage.setItem(LAST_APARTMENT_KEY, apartmentNum.toString());
       // Mark that user has created their first booking
       if (!hasCreatedFirstBooking) {
-        localStorage.setItem(FIRST_BOOKING_KEY, 'true');
+        localStorage.setItem(FIRST_BOOKING_KEY, "true");
         setHasCreatedFirstBooking(true);
       }
     }
@@ -128,36 +137,36 @@ const BookingForm: React.FC<BookingFormProps> = ({
   useEffect(() => {
     const fetchAllBookings = async () => {
       try {
-        const res = await fetch('/api/bookings');
+        const res = await fetch("/api/bookings");
         if (!res.ok) {
-          throw new Error('Error al obtener reservas');
+          throw new Error("Error al obtener reservas");
         }
-        
+
         const bookings: IBooking[] = await res.json();
-        
+
         // Organize bookings by date and meal type
         const bookingMap: BookingsForDate = {};
-        
-        bookings.forEach(booking => {
-          const dateKey = format(new Date(booking.date), 'yyyy-MM-dd');
-          
+
+        bookings.forEach((booking) => {
+          const dateKey = format(new Date(booking.date), "yyyy-MM-dd");
+
           if (!bookingMap[dateKey]) {
             bookingMap[dateKey] = { lunch: false, dinner: false };
           }
-          
-          if (booking.mealType === 'lunch') {
+
+          if (booking.mealType === "lunch") {
             bookingMap[dateKey].lunch = true;
           } else {
             bookingMap[dateKey].dinner = true;
           }
         });
-        
+
         setBookingsForDates(bookingMap);
       } catch (err) {
-        console.error('Error fetching all bookings:', err);
+        console.error("Error fetching all bookings:", err);
       }
     };
-    
+
     fetchAllBookings();
   }, []);
 
@@ -165,50 +174,55 @@ const BookingForm: React.FC<BookingFormProps> = ({
   useEffect(() => {
     const fetchBookedTables = async () => {
       if (!date || !mealType) return;
-      
+
       setLoading(true);
-      
+
       try {
         // Format date to ISO string
-        const dateString = date.toISOString().split('T')[0];
-        
+        const dateString = date.toISOString().split("T")[0];
+
         // Fetch bookings for selected date and meal type
-        const res = await fetch(`/api/bookings?date=${dateString}&mealType=${mealType}`);
-        
+        const res = await fetch(
+          `/api/bookings?date=${dateString}&mealType=${mealType}`
+        );
+
         if (!res.ok) {
-          throw new Error('Error al obtener reservas');
+          throw new Error("Error al obtener reservas");
         }
-        
+
         const bookings: IBooking[] = await res.json();
-        
+
         // Filter out the current booking being edited if applicable
-        const filteredBookings = initialData?._id 
-          ? bookings.filter(booking => booking._id !== initialData._id)
+        const filteredBookings = initialData?._id
+          ? bookings.filter((booking) => booking._id !== initialData._id)
           : bookings;
-        
+
         // Get all booked tables
-        const tables = filteredBookings.flatMap(booking => booking.tables);
-        
+        const tables = filteredBookings.flatMap((booking) => booking.tables);
+
         setBookedTables(tables);
-        
+
         // Reset selected tables when switching meal type if any selected table is now booked
-        const hasConflict = selectedTables.some(tableNum => tables.includes(tableNum));
+        const hasConflict = selectedTables.some((tableNum) =>
+          tables.includes(tableNum)
+        );
         if (hasConflict) {
           setSelectedTables([]);
           // Optionally notify user
           if (selectedTables.length > 0) {
             toast.info("Selección de mesas reiniciada", {
-              description: "Las mesas seleccionadas ya no están disponibles para este servicio."
+              description:
+                "Las mesas seleccionadas ya no están disponibles para este servicio.",
             });
           }
         }
       } catch (err) {
-        console.error('Error fetching booked tables:', err);
+        console.error("Error fetching booked tables:", err);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchBookedTables();
   }, [date, mealType, initialData?._id]);
 
@@ -223,7 +237,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     if (selectedTables.length > 0 && numberOfPeople > maxPeopleAllowed) {
       setNumberOfPeople(maxPeopleAllowed);
       toast.info("Número de personas ajustado", {
-        description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`
+        description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`,
       });
     }
   }, [selectedTables, maxPeopleAllowed, numberOfPeople]);
@@ -236,18 +250,20 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
   };
 
-  const handleNumberOfPeopleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNumberOfPeopleChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const value = parseInt(e.target.value);
-    
+
     if (isNaN(value) || value < 1) {
       setNumberOfPeople(1);
       return;
     }
-    
+
     if (selectedTables.length > 0 && value > maxPeopleAllowed) {
       setNumberOfPeople(maxPeopleAllowed);
       toast.info("Límite de capacidad", {
-        description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`
+        description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`,
       });
     } else {
       setNumberOfPeople(value);
@@ -258,57 +274,58 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const toggleTable = (tableNumber: number) => {
     // Don't allow toggling of booked tables
     if (bookedTables.includes(tableNumber)) return;
-    
-    setSelectedTables(prev => {
+
+    setSelectedTables((prev) => {
       const newTables = prev.includes(tableNumber)
-        ? prev.filter(t => t !== tableNumber)
+        ? prev.filter((t) => t !== tableNumber)
         : [...prev, tableNumber];
-      
+
       // Check if the new table selection would reduce capacity below current number of people
       const newMaxCapacity = newTables.length * MAX_PEOPLE_PER_TABLE;
       if (newTables.length > 0 && numberOfPeople > newMaxCapacity) {
         setNumberOfPeople(newMaxCapacity);
         toast.info("Número de personas ajustado", {
-          description: `El máximo de personas permitidas para ${newTables.length} mesa(s) es ${newMaxCapacity}.`
+          description: `El máximo de personas permitidas para ${newTables.length} mesa(s) es ${newMaxCapacity}.`,
         });
       }
-      
+
       return newTables;
     });
   };
 
   // Check if a table is selected
-  const isSelected = (tableNumber: number) => selectedTables.includes(tableNumber);
-  
+  const isSelected = (tableNumber: number) =>
+    selectedTables.includes(tableNumber);
+
   // Check if a table is booked by someone else
   const isBooked = (tableNumber: number) => bookedTables.includes(tableNumber);
 
   // Custom day rendering for the date picker to highlight dates with bookings
   const renderDayContents = (day: number, date: Date | undefined) => {
     if (!date) return <span>{day}</span>;
-    
-    const dateKey = format(date, 'yyyy-MM-dd');
+
+    const dateKey = format(date, "yyyy-MM-dd");
     const bookingInfo = bookingsForDates[dateKey];
-    
+
     return (
       <div className="relative">
         <span>{day}</span>
         {bookingInfo && (
           <>
             {bookingInfo.lunch && bookingInfo.dinner && (
-              <div 
+              <div
                 className="booking-indicator booking-dot-both"
                 title="Reservas para comida y cena"
               />
             )}
             {bookingInfo.lunch && !bookingInfo.dinner && (
-              <div 
+              <div
                 className="booking-indicator booking-indicator-lunch booking-dot-lunch"
                 title="Reservas para comida"
               />
             )}
             {!bookingInfo.lunch && bookingInfo.dinner && (
-              <div 
+              <div
                 className="booking-indicator booking-indicator-dinner booking-dot-dinner"
                 title="Reservas para cena"
               />
@@ -321,33 +338,37 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     // For regular users, always use their apartment number from session
-    const effectiveApartmentNumber = isRegularUser 
-      ? session?.user.apartmentNumber 
-      : apartmentNumber ? parseInt(apartmentNumber) : undefined;
+    const effectiveApartmentNumber = isRegularUser
+      ? session?.user.apartmentNumber
+      : apartmentNumber
+      ? parseInt(apartmentNumber)
+      : undefined;
 
     if (!effectiveApartmentNumber) {
-      setError('Por favor, seleccione un número de apartamento');
+      setError("Por favor, seleccione un número de apartamento");
       toast.error("Error de Validación", {
-        description: "Por favor, seleccione un número de apartamento"
+        description: "Por favor, seleccione un número de apartamento",
       });
       return;
     }
 
     if (selectedTables.length === 0) {
-      setError('Por favor, seleccione al menos una mesa');
+      setError("Por favor, seleccione al menos una mesa");
       toast.error("Error de Validación", {
-        description: "Por favor, seleccione al menos una mesa"
+        description: "Por favor, seleccione al menos una mesa",
       });
       return;
     }
 
     if (numberOfPeople > maxPeopleAllowed) {
-      setError(`El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`);
+      setError(
+        `El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`
+      );
       toast.error("Error de Validación", {
-        description: `El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`
+        description: `El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`,
       });
       return;
     }
@@ -366,15 +387,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
         reservaBrasa,
         userId: session?.user?.id, // Add the user ID from the session
       });
-      
+
       // Save the apartment number for future bookings (only for non-regular users)
       if (!initialData?._id && !isRegularUser) {
         saveLastSelectedApartment(effectiveApartmentNumber);
       }
     } catch (error: any) {
-      setError(error.message || 'Error al enviar la reserva');
+      setError(error.message || "Error al enviar la reserva");
       toast.error("Error", {
-        description: error.message || 'Error al enviar la reserva'
+        description: error.message || "Error al enviar la reserva",
       });
     } finally {
       setIsSubmitting(false);
@@ -382,16 +403,17 @@ const BookingForm: React.FC<BookingFormProps> = ({
   };
 
   // Helper function to get table style classes based on status
+  // Helper function to get table style classes based on status
   const getTableClasses = (tableNumber: number) => {
     if (isBooked(tableNumber)) {
-      return 'bg-gray-300 text-gray-500 cursor-not-allowed relative';
+      return "bg-gray-300 text-gray-500 cursor-not-allowed relative border border-gray-400";
     }
-    
+
     if (isSelected(tableNumber)) {
-      return 'bg-primary text-primary-foreground cursor-pointer';
+      return "bg-primary text-primary-foreground cursor-pointer border-2 border-primary-dark ";
     }
-    
-    return 'bg-orange-300 hover:bg-orange-400 cursor-pointer';
+
+    return "bg-orange-300 hover:bg-orange-400 cursor-pointer border border-orange-400 hover:scale-105";
   };
 
   return (
@@ -421,7 +443,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               renderDayContents={renderDayContents}
             />
           </div>
-          
+
           <div className="datepicker-legend">
             <div className="datepicker-legend-item">
               <div className="datepicker-legend-dot booking-dot-lunch"></div>
@@ -446,9 +468,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
       {/* Meal Type - MOVED TO SECOND POSITION */}
       <div className="space-y-2">
         <Label htmlFor="mealType">Tipo de Comida</Label>
-        <RadioGroup 
-          value={mealType} 
-          onValueChange={(value) => handleMealTypeChange(value as MealType)} 
+        <RadioGroup
+          value={mealType}
+          onValueChange={(value) => handleMealTypeChange(value as MealType)}
           className="flex space-x-4"
         >
           <div className="flex items-center space-x-2">
@@ -465,10 +487,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
       {/* Tables Selection - MOVED TO THIRD POSITION */}
       <div className="space-y-2">
         <Label>Seleccionar Mesas</Label>
-        <Card className="w-full">
+        <Card className="w-full overflow-hidden border-2">
           <CardContent className="p-2 sm:p-4">
             {/* Fixed height container to prevent layout shift */}
-            <div className="min-h-[200px]">
+            <div className="min-h-[240px]">
               {loading ? (
                 <div className="flex justify-center items-center min-h-[200px]">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -476,91 +498,184 @@ const BookingForm: React.FC<BookingFormProps> = ({
               ) : (
                 <>
                   {/* Leyenda para mesas */}
-                  <div className="flex justify-end mb-2 gap-3 text-xs">
+                  <div className="flex justify-end mb-3 gap-3 text-xs bg-gray-50 p-2 rounded-md">
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-orange-300 rounded-sm"></div>
+                      <div className="w-3 h-3 bg-orange-300 rounded-md shadow-sm"></div>
                       <span>Disponible</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-primary rounded-sm"></div>
+                      <div className="w-3 h-3 bg-primary rounded-md shadow-sm"></div>
                       <span>Seleccionada</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-gray-300 rounded-sm"></div>
+                      <div className="w-3 h-3 bg-gray-300 rounded-md shadow-sm"></div>
                       <span>Reservada</span>
                     </div>
                   </div>
-                  
+
                   {/* Disposición de mesa en forma de U - Optimizado para móvil */}
-                  <div className="relative w-full aspect-video bg-gray-100 rounded-md mb-4">
+                  <div className="relative w-full aspect-video bg-[#f5f8fa] rounded-lg mb-4 border border-gray-200 shadow-inner overflow-hidden">
+                    
+
                     {/* Mesas del lado izquierdo (1 y 2) */}
                     <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
-                      <div 
-                        className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(2)}`}
-                        onClick={() => toggleTable(2)}
-                      >
-                        <span className="font-bold">2</span>
-                        {isBooked(2) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
-                      </div>
-                      <div 
-                        className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(1)}`}
-                        onClick={() => toggleTable(1)}
-                      >
-                        <span className="font-bold">1</span>
-                        {isBooked(1) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
-                      </div>
+                      {/* Table 2 */}
+                      <div className="relative m-1 sm:m-2">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            2
+                          )}`}
+                          onClick={() => toggleTable(2)}
+                        >
+                          <span className="font-bold">2</span>
+                          {isBooked(2) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(2) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                        </div>
+
+                      {/* Table 1 */}
+                      <div className="relative m-1 sm:m-2">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            1
+                          )}`}
+                          onClick={() => toggleTable(1)}
+                        >
+                          <span className="font-bold">1</span>
+                          {isBooked(1) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(1) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                       
+                        </div>
                     </div>
-                    
+
                     {/* Mesas centrales superiores (3 y 4) */}
                     <div className="absolute flex justify-center space-x-2 sm:space-x-4 w-full top-2 sm:top-4">
-                      <div 
-                        className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(3)}`}
-                        onClick={() => toggleTable(3)}
-                      >
-                        <span className="font-bold">3</span>
-                        {isBooked(3) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
-                      </div>
-                      <div 
-                        className={`w-16 h-12 sm:w-24 sm:h-16 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(4)}`}
-                        onClick={() => toggleTable(4)}
-                      >
-                        <span className="font-bold">4</span>
-                        {isBooked(4) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
-                      </div>
+                      {/* Table 3 */}
+                      <div className="relative">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            3
+                          )}`}
+                          onClick={() => toggleTable(3)}
+                        >
+                          <span className="font-bold">3</span>
+                          {isBooked(3) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(3) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                       </div>
+
+                      {/* Table 4 */}
+                      <div className="relative">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            4
+                          )}`}
+                          onClick={() => toggleTable(4)}
+                        >
+                          <span className="font-bold">4</span>
+                          {isBooked(4) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(4) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                       </div>
                     </div>
-                    
+
                     {/* Mesas del lado derecho (5 y 6) */}
                     <div className="absolute flex flex-col items-end justify-end h-full right-0 py-2 sm:py-4">
-                      <div 
-                        className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(5)}`}
-                        onClick={() => toggleTable(5)}
-                      >
-                        <span className="font-bold">5</span>
-                        {isBooked(5) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
-                      </div>
-                      <div 
-                        className={`w-16 h-12 sm:w-24 sm:h-16 m-1 sm:m-2 rounded-md flex items-center justify-center text-sm sm:text-base ${getTableClasses(6)}`}
-                        onClick={() => toggleTable(6)}
-                      >
-                        <span className="font-bold">6</span>
-                        {isBooked(6) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}
-                      </div>
+                      {/* Table 5 */}
+                      <div className="relative m-1 sm:m-2">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            5
+                          )}`}
+                          onClick={() => toggleTable(5)}
+                        >
+                          <span className="font-bold">5</span>
+                          {isBooked(5) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(5) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                        </div>
+
+                      {/* Table 6 */}
+                      <div className="relative m-1 sm:m-2">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            6
+                          )}`}
+                          onClick={() => toggleTable(6)}
+                        >
+                          <span className="font-bold">6</span>
+                          {isBooked(6) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(6) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                       </div>
+                    </div>
+
+                    </div>
+
+                  {/* Table information and selection summary */}
+                  <div className="mb-3 grid grid-cols-1 gap-y-2">
+                    <div className="bg-gray-50 p-2 rounded-md border border-gray-200">
+                      <p className="font-medium text-sm sm:text-base">
+                        Mesas seleccionadas:
+                        {selectedTables.length > 0 ? (
+                          <span className="ml-1 text-primary">
+                            {selectedTables.sort((a, b) => a - b).join(", ")}
+                          </span>
+                        ) : (
+                          <span className="ml-1 text-gray-500">Ninguna</span>
+                        )}
+                      </p>
+                      {selectedTables.length > 0 && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Capacidad total:{" "}
+                          <span className="font-medium">
+                            {maxPeopleAllowed} personas
+                          </span>
+                        </p>
+                      )}
                     </div>
                   </div>
-                  
-                  {/* Mostrar mesas seleccionadas y capacidad */}
-                  <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-2">
-                    <p className="font-medium text-sm sm:text-base">Mesas seleccionadas: {selectedTables.length > 0 ? selectedTables.sort((a, b) => a - b).join(', ') : 'Ninguna'}</p>
-                    {selectedTables.length > 0 && (
-                      <p className="text-sm sm:text-base text-left sm:text-right">
-                        Capacidad total: <span className="font-medium">{maxPeopleAllowed} personas</span>
-                      </p>
-                    )}
-                  </div>
-                  
+
                   {/* Botón para limpiar selección */}
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     type="button"
                     onClick={() => setSelectedTables([])}
                     className="w-full"
@@ -627,7 +742,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
             {selectedTables.length > 0 && (
               <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                 <InfoIcon className="h-3 w-3" />
-                <span>Máximo: {maxPeopleAllowed} personas ({MAX_PEOPLE_PER_TABLE} por mesa)</span>
+                <span>
+                  Máximo: {maxPeopleAllowed} personas ({MAX_PEOPLE_PER_TABLE}{" "}
+                  por mesa)
+                </span>
               </div>
             )}
           </div>
@@ -639,32 +757,41 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Label>Opciones Adicionales</Label>
         <div className="flex flex-col gap-4">
           <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="prepararFuego" 
-              checked={prepararFuego} 
-              onCheckedChange={() => setPrepararFuego(!prepararFuego)} 
+            <Checkbox
+              id="prepararFuego"
+              checked={prepararFuego}
+              onCheckedChange={() => setPrepararFuego(!prepararFuego)}
             />
-            <Label htmlFor="prepararFuego" className="font-normal cursor-pointer">
+            <Label
+              htmlFor="prepararFuego"
+              className="font-normal cursor-pointer"
+            >
               Preparar fuego para la reserva
             </Label>
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="reservaHorno" 
-              checked={reservaHorno} 
-              onCheckedChange={() => setReservaHorno(!reservaHorno)} 
+            <Checkbox
+              id="reservaHorno"
+              checked={reservaHorno}
+              onCheckedChange={() => setReservaHorno(!reservaHorno)}
             />
-            <Label htmlFor="reservaHorno" className="font-normal cursor-pointer">
+            <Label
+              htmlFor="reservaHorno"
+              className="font-normal cursor-pointer"
+            >
               Reserva de horno
             </Label>
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="reservaBrasa" 
-              checked={reservaBrasa} 
-              onCheckedChange={() => setReservaBrasa(!reservaBrasa)} 
+            <Checkbox
+              id="reservaBrasa"
+              checked={reservaBrasa}
+              onCheckedChange={() => setReservaBrasa(!reservaBrasa)}
             />
-            <Label htmlFor="reservaBrasa" className="font-normal cursor-pointer">
+            <Label
+              htmlFor="reservaBrasa"
+              className="font-normal cursor-pointer"
+            >
               Reserva de brasa
             </Label>
           </div>
@@ -672,11 +799,24 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">
-        <Button variant="outline" type="button" onClick={onCancel} className="cursor-pointer w-full sm:w-auto">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={onCancel}
+          className="cursor-pointer w-full sm:w-auto"
+        >
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="cursor-pointer w-full sm:w-auto">
-          {isSubmitting ? 'Guardando...' : initialData?._id ? 'Actualizar Reserva' : 'Crear Reserva'}
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="cursor-pointer w-full sm:w-auto"
+        >
+          {isSubmitting
+            ? "Guardando..."
+            : initialData?._id
+            ? "Actualizar Reserva"
+            : "Crear Reserva"}
         </Button>
       </div>
     </form>
