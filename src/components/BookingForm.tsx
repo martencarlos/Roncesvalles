@@ -346,6 +346,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         prepararFuego,
         reservaHorno,
         reservaBrasa,
+        userId: session?.user?.id, // Add the user ID from the session
       });
       
       // Save the apartment number for future bookings (only for non-regular users)

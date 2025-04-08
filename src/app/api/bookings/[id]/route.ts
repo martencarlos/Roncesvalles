@@ -153,13 +153,17 @@ export async function PUT(
       body.apartmentNumber = currentUser.apartmentNumber;
     }
     
+    // Always ensure userId is set to the authenticated user's ID
+    // for better tracking who made the latest change
+    const updateData = {
+      ...body,
+      userId: currentUser.id
+    };
+    
     // Update booking
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
-      {
-        ...body,
-        userId: currentUser.id // Update with current user ID
-      },
+      updateData,
       { new: true, runValidators: true }
     );
     

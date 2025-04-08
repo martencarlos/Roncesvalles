@@ -240,13 +240,13 @@ export default function BookingsPage() {
 
   const handleCreateBooking = async (data: Partial<IBooking>) => {
     // Prevent admin (read-only) from creating bookings
-    if (session?.user.role === "admin") {
+    if (session?.user?.role === "admin") {
       toast.error("Acceso Denegado", {
         description: "No tiene permisos para crear reservas.",
       });
       return;
     }
-
+  
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -256,14 +256,15 @@ export default function BookingsPage() {
         body: JSON.stringify({
           ...data,
           status: "pending", // Ensure new bookings are created with pending status
+          userId: session?.user?.id, // Add user ID from session
         }),
       });
-
+  
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al crear la reserva");
       }
-
+  
       // Close form and update bookings
       setShowForm(false);
       fetchBookings();
@@ -279,41 +280,46 @@ export default function BookingsPage() {
     }
   };
 
-  const handleUpdateBooking = async (data: Partial<IBooking>) => {
-    if (!editingBooking?._id) return;
+  // Continuing the handleUpdateBooking function in BookingsPage
 
-    // Prevent admin (read-only) from updating bookings
-    if (session?.user.role === "admin") {
-      toast.error("Acceso Denegado", {
-        description: "No tiene permisos para actualizar reservas.",
-      });
-      return;
+const handleUpdateBooking = async (data: Partial<IBooking>) => {
+  if (!editingBooking?._id) return;
+
+  // Prevent admin (read-only) from updating bookings
+  if (session?.user?.role === "admin") {
+    toast.error("Acceso Denegado", {
+      description: "No tiene permisos para actualizar reservas.",
+    });
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/bookings/${editingBooking._id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...data,
+        userId: session?.user?.id, // Make sure userId is included in updates
+      }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Error al actualizar la reserva");
     }
 
-    try {
-      const res = await fetch(`/api/bookings/${editingBooking._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al actualizar la reserva");
-      }
-
-      // Close form and update bookings
-      setEditingBooking(null);
-      fetchBookings();
-      toast.success("Reserva Actualizada", {
-        description: `Actualizada reserva para Apt #${data.apartmentNumber}`,
-      });
-    } catch (err: any) {
-      throw err;
-    }
-  };
+    // Close form and update bookings
+    setEditingBooking(null);
+    fetchBookings();
+    toast.success("Reserva Actualizada", {
+      description: `Actualizada reserva para Apt #${data.apartmentNumber}`,
+    });
+  } catch (err: any) {
+    throw err;
+  }
+};
 
   const handleDeleteBooking = async (booking: IBooking) => {
     setDeletingBooking(booking);

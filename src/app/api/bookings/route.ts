@@ -1,4 +1,5 @@
-// src/app/api/bookings/route.ts
+// src/app/api/bookings/route.ts - updated version to ensure userId is always handled correctly
+
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
@@ -133,11 +134,15 @@ export async function POST(req: NextRequest) {
     // Get username for better activity logging
     const user = await User.findById(currentUser.id).select('name');
     
-    // Create booking
-    const newBooking = await Booking.create({
+    // Always ensure the userId is set to the current authenticated user's ID
+    // This ensures the booking is always associated with a valid user
+    const bookingData = {
       ...body,
-      userId: currentUser.id // Add the user ID to the booking
-    });
+      userId: currentUser.id // Explicitly set the user ID from the authenticated user
+    };
+    
+    // Create booking
+    const newBooking = await Booking.create(bookingData);
     
     // Prepare additional details for activity log
     let additionalDetails = '';
