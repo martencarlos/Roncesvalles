@@ -208,7 +208,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`
       });
     }
-  }, [selectedTables, maxPeopleAllowed]);
+  }, [selectedTables, maxPeopleAllowed, numberOfPeople]);
 
   const handleApartmentChange = (value: string) => {
     if (!isRegularUser) {
@@ -383,65 +383,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </Alert>
       )}
 
-      {/* Apartment and People fields side by side on desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
-          {isRegularUser ? (
-            // For regular users, show a disabled input with their apartment number
-            <div className="flex items-center">
-              <Input
-                id="apartmentNumber"
-                value={`Apartamento #${session?.user.apartmentNumber}`}
-                disabled
-                className="bg-muted"
-              />
-              <div className="ml-2 text-muted-foreground">
-                <LockIcon className="h-4 w-4" />
-              </div>
-            </div>
-          ) : (
-            // For admins and IT admins, show the dropdown
-            <Select
-              value={apartmentNumber}
-              onValueChange={handleApartmentChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Seleccionar apartamento" />
-              </SelectTrigger>
-              <SelectContent>
-                {APARTMENT_NUMBERS.map((num) => (
-                  <SelectItem key={num} value={num.toString()}>
-                    Apartamento #{num}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="numberOfPeople">Número de Personas</Label>
-          <div className="relative">
-            <Input
-              id="numberOfPeople"
-              type="number"
-              min="1"
-              max={selectedTables.length > 0 ? maxPeopleAllowed : undefined}
-              required
-              value={numberOfPeople}
-              onChange={handleNumberOfPeopleChange}
-            />
-            {selectedTables.length > 0 && (
-              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                <InfoIcon className="h-3 w-3" />
-                <span>Máximo: {maxPeopleAllowed} personas ({MAX_PEOPLE_PER_TABLE} por mesa)</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
+      {/* Date selection - MOVED TO FIRST POSITION */}
       <div className="space-y-2">
         <Label htmlFor="date">Fecha</Label>
         <div className="custom-datepicker-container">
@@ -482,6 +424,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </div>
       </div>
 
+      {/* Meal Type - MOVED TO SECOND POSITION */}
       <div className="space-y-2">
         <Label htmlFor="mealType">Tipo de Comida</Label>
         <RadioGroup 
@@ -500,6 +443,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </RadioGroup>
       </div>
 
+      {/* Tables Selection - MOVED TO THIRD POSITION */}
       <div className="space-y-2">
         <Label>Seleccionar Mesas</Label>
         <Card className="w-full">
@@ -609,6 +553,66 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </Card>
       </div>
 
+      {/* Apartment and People fields side by side on desktop - MOVED TO FOURTH POSITION */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
+          {isRegularUser ? (
+            // For regular users, show a disabled input with their apartment number
+            <div className="flex items-center">
+              <Input
+                id="apartmentNumber"
+                value={`Apartamento #${session?.user.apartmentNumber}`}
+                disabled
+                className="bg-muted"
+              />
+              <div className="ml-2 text-muted-foreground">
+                <LockIcon className="h-4 w-4" />
+              </div>
+            </div>
+          ) : (
+            // For admins and IT admins, show the dropdown
+            <Select
+              value={apartmentNumber}
+              onValueChange={handleApartmentChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar apartamento" />
+              </SelectTrigger>
+              <SelectContent>
+                {APARTMENT_NUMBERS.map((num) => (
+                  <SelectItem key={num} value={num.toString()}>
+                    Apartamento #{num}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="numberOfPeople">Número de Personas</Label>
+          <div className="relative">
+            <Input
+              id="numberOfPeople"
+              type="number"
+              min="1"
+              max={selectedTables.length > 0 ? maxPeopleAllowed : undefined}
+              required
+              value={numberOfPeople}
+              onChange={handleNumberOfPeopleChange}
+            />
+            {selectedTables.length > 0 && (
+              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <InfoIcon className="h-3 w-3" />
+                <span>Máximo: {maxPeopleAllowed} personas ({MAX_PEOPLE_PER_TABLE} por mesa)</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Options - KEPT AT LAST POSITION */}
       <div className="space-y-2">
         <Label>Opciones Adicionales</Label>
         <div className="flex flex-col gap-4">
