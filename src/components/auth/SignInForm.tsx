@@ -23,6 +23,7 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   
@@ -54,16 +55,31 @@ export default function SignInForm() {
       
       if (result?.error) {
         setErrorMessage("Credenciales inválidas");
+        setIsSubmitting(false);
       } else {
-        router.push(callbackUrl);
-        router.refresh();
+        setIsRedirecting(true);
+        // Show loading state for at least 500ms to ensure user sees feedback
+        setTimeout(() => {
+          router.push(callbackUrl);
+          router.refresh();
+        }, 500);
       }
     } catch (error) {
       setErrorMessage("Error al iniciar sesión. Inténtelo de nuevo.");
-    } finally {
       setIsSubmitting(false);
     }
   };
+  
+  // If we're redirecting, show a full-page loader
+  if (isRedirecting) {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-50">
+        <div className="h-16 w-16 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
+        <p className="text-lg font-medium text-foreground">Iniciando sesión...</p>
+        <p className="text-sm text-muted-foreground mt-2">Redirigiendo a su cuenta</p>
+      </div>
+    );
+  }
   
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -114,6 +130,7 @@ export default function SignInForm() {
               <Link 
                 href="/auth/reset-password" 
                 className="text-xs text-blue-600 hover:underline"
+                tabIndex={-1}
               >
                 ¿Olvidó su contraseña?
               </Link>
@@ -129,27 +146,19 @@ export default function SignInForm() {
               className="w-full"
             />
           </div>
-          
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full hidden"
-          >
-            Iniciar Sesión
-          </Button>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="w-full"
+          className="w-full relative"
         >
           {isSubmitting ? (
-            <>
+            <span className="flex items-center justify-center">
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               Iniciando sesión...
-            </>
+            </span>
           ) : (
             "Iniciar Sesión"
           )}
