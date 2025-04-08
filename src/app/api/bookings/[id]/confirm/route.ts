@@ -1,5 +1,7 @@
-// src/app/api/bookings/[id]/confirm/route.ts
+// src/app/api/bookings/[id]/confirm/route.ts - updated to use direct session
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
@@ -11,15 +13,19 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Authenticate user
-    const currentUser = await authenticate(req);
+    // Get session directly
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session || !session.user) {
+      console.error("No valid session found in booking confirm route");
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - No valid session" },
         { status: 401 }
       );
     }
+    
+    const currentUser = session.user;
+    console.log("Current user from session:", currentUser.email, "ID:", currentUser.id);
 
     // Prevent regular admins (read-only) from confirming bookings
     if (currentUser.role === 'admin') {
@@ -74,14 +80,20 @@ export async function POST(
       );
     }
     
+    // Create update data with userId explicitly set
+    const updateData = {
+      status: 'confirmed',
+      finalAttendees: body.finalAttendees || booking.numberOfPeople,
+      notes: body.notes,
+      userId: currentUser.id // Always update with current user ID
+    };
+    
+    console.log("Confirmation update data:", JSON.stringify(updateData));
+    
     // Update the booking with confirmation details
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
-      {
-        status: 'confirmed',
-        finalAttendees: body.finalAttendees || booking.numberOfPeople,
-        notes: body.notes
-      },
+      updateData,
       { new: true, runValidators: true }
     );
     
@@ -114,6 +126,7 @@ export async function POST(
     console.error(`POST /api/bookings/${params.id}/confirm error:`, error);
     
     if (error.name === 'ValidationError') {
+      console.error('Validation error details:', JSON.stringify(error.errors));
       return NextResponse.json(
         { error: 'Error de Validación', details: error.message },
         { status: 400 }

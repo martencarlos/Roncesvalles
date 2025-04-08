@@ -1,5 +1,7 @@
-// src/app/api/bookings/[id]/route.ts
+// src/app/api/bookings/[id]/route.ts - update PUT method to use direct session
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
@@ -11,15 +13,18 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Authenticate user
-    const currentUser = await authenticate(req);
+    // Get session directly
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session || !session.user) {
+      console.error("No valid session found in booking ID GET route");
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - No valid session" },
         { status: 401 }
       );
     }
+    
+    const currentUser = session.user;
     
     await connectDB();
     
@@ -58,15 +63,19 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Authenticate user
-    const currentUser = await authenticate(req);
+    // Get session directly
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session || !session.user) {
+      console.error("No valid session found in booking ID PUT route");
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - No valid session" },
         { status: 401 }
       );
     }
+    
+    const currentUser = session.user;
+    console.log("Current user from session:", currentUser.email, "ID:", currentUser.id);
 
     // Prevent regular admins (read-only) from updating bookings
     if (currentUser.role === 'admin') {
@@ -118,8 +127,10 @@ export async function PUT(
     
     // Check for conflicting tables on the same date and meal type (excluding this booking)
     const bookingDate = new Date(body.date);
-    const startOfDay = new Date(bookingDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(bookingDate.setHours(23, 59, 59, 999));
+    const startOfDay = new Date(bookingDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(bookingDate);
+    endOfDay.setHours(23, 59, 59, 999);
     
     const existingBookings = await Booking.find({
       _id: { $ne: bookingId },
@@ -154,11 +165,21 @@ export async function PUT(
     }
     
     // Always ensure userId is set to the authenticated user's ID
-    // for better tracking who made the latest change
+    // Create a clean update object with only the fields we want to update
     const updateData = {
-      ...body,
-      userId: currentUser.id
+      apartmentNumber: body.apartmentNumber,
+      date: new Date(body.date),
+      mealType: body.mealType,
+      numberOfPeople: body.numberOfPeople || originalBooking.numberOfPeople,
+      tables: body.tables || originalBooking.tables,
+      prepararFuego: body.prepararFuego !== undefined ? Boolean(body.prepararFuego) : originalBooking.prepararFuego,
+      reservaHorno: body.reservaHorno !== undefined ? Boolean(body.reservaHorno) : originalBooking.reservaHorno,
+      reservaBrasa: body.reservaBrasa !== undefined ? Boolean(body.reservaBrasa) : originalBooking.reservaBrasa,
+      status: body.status || originalBooking.status,
+      userId: currentUser.id // Always set to current user
     };
+    
+    console.log("Update data:", JSON.stringify(updateData));
     
     // Update booking
     const updatedBooking = await Booking.findByIdAndUpdate(
@@ -203,6 +224,7 @@ export async function PUT(
     console.error(`PUT /api/bookings/${params.id} error:`, error);
     
     if (error.name === 'ValidationError') {
+      console.error('Validation error details:', JSON.stringify(error.errors));
       return NextResponse.json(
         { error: 'Validation Error', details: error.message },
         { status: 400 }
@@ -221,15 +243,18 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Authenticate user
-    const currentUser = await authenticate(req);
+    // Get session directly
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session || !session.user) {
+      console.error("No valid session found in booking ID DELETE route");
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - No valid session" },
         { status: 401 }
       );
     }
+    
+    const currentUser = session.user;
 
     // Prevent regular admins (read-only) from deleting bookings
     if (currentUser.role === 'admin') {

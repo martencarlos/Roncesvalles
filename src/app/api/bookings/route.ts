@@ -1,5 +1,7 @@
 // src/app/api/bookings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
@@ -8,15 +10,18 @@ import { authenticate } from '@/lib/auth-utils';
 
 export async function GET(req: NextRequest) {
   try {
-    // Authenticate user
-    const currentUser = await authenticate(req);
+    // Get session directly
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session || !session.user) {
+      console.error("No valid session found in bookings GET route");
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - No valid session" },
         { status: 401 }
       );
     }
+    
+    const currentUser = session.user;
     
     await connectDB();
     
@@ -31,8 +36,10 @@ export async function GET(req: NextRequest) {
     
     if (dateParam) {
       const date = new Date(dateParam);
-      const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
       
       query.date = {
         $gte: startOfDay,
@@ -67,19 +74,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Authenticate user
-    const currentUser = await authenticate(req);
+    // Get session directly
+    const session = await getServerSession(authOptions);
     
-    console.log("Authentication result:", JSON.stringify(currentUser));
-    
-    if (!currentUser) {
+    if (!session || !session.user) {
+      console.error("No valid session found in bookings POST route");
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized - No valid session" },
         { status: 401 }
       );
     }
     
-    console.log("Current user ID:", currentUser.id);
+    const currentUser = session.user;
+    console.log("Current user from session:", currentUser.email, "ID:", currentUser.id);
     
     if (currentUser.role === 'admin') {
       return NextResponse.json(
@@ -137,12 +144,8 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Ensure userId is a string - the schema might expect a specific format
-    const userId = String(currentUser.id);
-    console.log("User ID after conversion:", userId);
-    
-    // Create a new booking document directly with all required fields explicitly set
-    const booking = new Booking({
+    // Create booking with explicit userId from session
+    const bookingData = {
       apartmentNumber: body.apartmentNumber,
       date: new Date(body.date),
       mealType: body.mealType,
@@ -152,14 +155,14 @@ export async function POST(req: NextRequest) {
       reservaHorno: Boolean(body.reservaHorno),
       reservaBrasa: Boolean(body.reservaBrasa),
       status: body.status || 'pending',
-      userId: userId  // Explicitly setting as string
-    });
+      userId: currentUser.id  // Explicitly use ID from session
+    };
     
-    console.log("Booking before save:", JSON.stringify(booking));
+    console.log("Booking data:", JSON.stringify(bookingData));
     
-    // Save the booking document
-    const savedBooking = await booking.save();
-    console.log("Booking saved successfully");
+    // Create booking
+    const newBooking = await Booking.create(bookingData);
+    console.log("Booking created successfully");
     
     // Get username for better activity logging
     const user = await User.findById(currentUser.id).select('name');
@@ -193,7 +196,7 @@ export async function POST(req: NextRequest) {
       details: `${user ? user.name : 'Usuario'}${userRole} ha reservado para Apto. #${body.apartmentNumber} las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
     });
     
-    return NextResponse.json(savedBooking, { status: 201 });
+    return NextResponse.json(newBooking, { status: 201 });
   } catch (error: any) {
     console.error('POST /api/bookings detailed error:', error);
     
