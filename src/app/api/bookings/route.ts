@@ -66,6 +66,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// src/app/api/bookings/route.ts - Updated POST method
+
 export async function POST(req: NextRequest) {
   try {
     // Authenticate user
@@ -102,8 +104,10 @@ export async function POST(req: NextRequest) {
     
     // Check for conflicting tables on the same date and meal type
     const bookingDate = new Date(body.date);
-    const startOfDay = new Date(bookingDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(bookingDate.setHours(23, 59, 59, 999));
+    const startOfDay = new Date(bookingDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(bookingDate);
+    endOfDay.setHours(23, 59, 59, 999);
     
     const existingBookings = await Booking.find({
       date: {
@@ -134,14 +138,23 @@ export async function POST(req: NextRequest) {
     // Get username for better activity logging
     const user = await User.findById(currentUser.id).select('name');
     
-    // Always ensure the userId is set to the current authenticated user's ID
-    // This ensures the booking is always associated with a valid user
+    // Create a new bookingData object with all properties from body and explicitly set userId
     const bookingData = {
-      ...body,
-      userId: currentUser.id // Explicitly set the user ID from the authenticated user
+      apartmentNumber: body.apartmentNumber,
+      date: body.date,
+      mealType: body.mealType,
+      numberOfPeople: body.numberOfPeople,
+      tables: body.tables,
+      prepararFuego: body.prepararFuego || false,
+      reservaHorno: body.reservaHorno || false,
+      reservaBrasa: body.reservaBrasa || false,
+      status: body.status || 'pending',
+      finalAttendees: body.finalAttendees,
+      notes: body.notes,
+      userId: currentUser.id // Explicitly set the user ID
     };
     
-    // Create booking
+    // Create booking with the carefully constructed object
     const newBooking = await Booking.create(bookingData);
     
     // Prepare additional details for activity log
