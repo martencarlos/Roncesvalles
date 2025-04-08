@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 interface DeleteConfirmationDialogProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface DeleteConfirmationDialogProps {
   apartmentNumber: number;
   date: Date;
   mealType: 'lunch' | 'dinner';
+  isDeleting?: boolean; // New prop to track deletion state
 }
 
 const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
@@ -19,7 +20,8 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
   onConfirm,
   apartmentNumber,
   date,
-  mealType
+  mealType,
+  isDeleting = false // Default to false
 }) => {
   // Format date in a more readable way
   const formatDate = (date: Date) => {
@@ -62,11 +64,28 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
         </div>
         
         <DialogFooter className="gap-3 sm:gap-3">
-          <Button variant="outline" className='cursor-pointer' onClick={onClose}>
+          <Button 
+            variant="outline" 
+            className='cursor-pointer' 
+            onClick={onClose}
+            disabled={isDeleting}
+          >
             Cancelar
           </Button>
-          <Button variant="destructive" className='cursor-pointer' onClick={onConfirm}>
-            Eliminar Reserva
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className='cursor-pointer'
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Eliminando...
+              </>
+            ) : (
+              "Eliminar Reserva"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

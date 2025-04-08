@@ -79,6 +79,7 @@ export default function BookingsPage() {
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Add view mode state
   const [viewMode, setViewMode] = useState<ViewMode>(undefined);
@@ -89,84 +90,85 @@ export default function BookingsPage() {
   }>({});
 
   // Fetch all bookings
-const fetchBookings = async () => {
-  setLoading(true);
-  setError("");
+  const fetchBookings = async () => {
+    setLoading(true);
+    setError("");
 
-  try {
-    const res = await fetch("/api/bookings");
+    try {
+      const res = await fetch("/api/bookings");
 
-    if (!res.ok) {
-      if (res.status === 401) {
-        // Authentication error - handle session expiration
-        toast.error("Sesión expirada", {
-          description: "Su sesión ha expirado. Por favor, inicie sesión nuevamente."
-        });
-        
-        // Use a timeout to allow the toast to be seen
-        setTimeout(() => {
-          const router = useRouter();
-          router.push("/auth/signin?callbackUrl=/bookings");
-        }, 2000);
-        return;
+      if (!res.ok) {
+        if (res.status === 401) {
+          // Authentication error - handle session expiration
+          toast.error("Sesión expirada", {
+            description:
+              "Su sesión ha expirado. Por favor, inicie sesión nuevamente.",
+          });
+
+          // Use a timeout to allow the toast to be seen
+          setTimeout(() => {
+            const router = useRouter();
+            router.push("/auth/signin?callbackUrl=/bookings");
+          }, 2000);
+          return;
+        }
+
+        throw new Error("Error al obtener las reservas");
       }
-      
-      throw new Error("Error al obtener las reservas");
+
+      const data = await res.json();
+
+      // Sort bookings by date (ascending)
+      const sortedData = [...data].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      setBookings(sortedData);
+      applyFilters(sortedData, dateFilter, selectedDate);
+
+      // Create a map of dates with booking info for lunch and dinner
+      const bookingsByDateMap: {
+        [key: string]: { lunch: boolean; dinner: boolean };
+      } = {};
+
+      sortedData.forEach((booking) => {
+        const dateKey = format(new Date(booking.date), "yyyy-MM-dd");
+
+        if (!bookingsByDateMap[dateKey]) {
+          bookingsByDateMap[dateKey] = { lunch: false, dinner: false };
+        }
+
+        if (booking.mealType === "lunch") {
+          bookingsByDateMap[dateKey].lunch = true;
+        } else {
+          bookingsByDateMap[dateKey].dinner = true;
+        }
+      });
+
+      // Extract unique dates with bookings
+      const uniqueDates = Object.keys(bookingsByDateMap).map(
+        (dateStr) => new Date(dateStr)
+      );
+
+      setDatesWithBookings(uniqueDates);
+      setBookingsByDate(bookingsByDateMap);
+
+      // Count pending confirmations
+      const pendingCount = sortedData.filter(
+        (booking) =>
+          booking.status === "pending" &&
+          isPast(new Date(booking.date)) &&
+          !isToday(new Date(booking.date))
+      ).length;
+
+      setPendingConfirmations(pendingCount);
+    } catch (err: any) {
+      setError(err.message);
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    const data = await res.json();
-
-    // Sort bookings by date (ascending)
-    const sortedData = [...data].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-    setBookings(sortedData);
-    applyFilters(sortedData, dateFilter, selectedDate);
-
-    // Create a map of dates with booking info for lunch and dinner
-    const bookingsByDateMap: {
-      [key: string]: { lunch: boolean; dinner: boolean };
-    } = {};
-
-    sortedData.forEach((booking) => {
-      const dateKey = format(new Date(booking.date), "yyyy-MM-dd");
-
-      if (!bookingsByDateMap[dateKey]) {
-        bookingsByDateMap[dateKey] = { lunch: false, dinner: false };
-      }
-
-      if (booking.mealType === "lunch") {
-        bookingsByDateMap[dateKey].lunch = true;
-      } else {
-        bookingsByDateMap[dateKey].dinner = true;
-      }
-    });
-
-    // Extract unique dates with bookings
-    const uniqueDates = Object.keys(bookingsByDateMap).map(
-      (dateStr) => new Date(dateStr)
-    );
-
-    setDatesWithBookings(uniqueDates);
-    setBookingsByDate(bookingsByDateMap);
-
-    // Count pending confirmations
-    const pendingCount = sortedData.filter(
-      (booking) =>
-        booking.status === "pending" &&
-        isPast(new Date(booking.date)) &&
-        !isToday(new Date(booking.date))
-    ).length;
-
-    setPendingConfirmations(pendingCount);
-  } catch (err: any) {
-    setError(err.message);
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     // Check if we're in the browser environment (not during SSR)
@@ -262,7 +264,7 @@ const fetchBookings = async () => {
       });
       return;
     }
-  
+
     try {
       // Ensure userId is included explicitly
       const bookingData = {
@@ -270,9 +272,9 @@ const fetchBookings = async () => {
         status: "pending", // Ensure new bookings are created with pending status
         userId: session?.user?.id, // Add user ID from session
       };
-  
+
       console.log("Sending booking data:", JSON.stringify(bookingData));
-  
+
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: {
@@ -280,24 +282,25 @@ const fetchBookings = async () => {
         },
         body: JSON.stringify(bookingData),
       });
-  
+
       if (!res.ok) {
         // Handle authentication errors
         if (res.status === 401) {
           toast.error("Sesión expirada", {
-            description: "Su sesión ha expirado. Por favor, inicie sesión nuevamente."
+            description:
+              "Su sesión ha expirado. Por favor, inicie sesión nuevamente.",
           });
-          
+
           setTimeout(() => {
             router.push("/auth/signin?callbackUrl=/bookings");
           }, 2000);
           return;
         }
-  
+
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al crear la reserva");
       }
-  
+
       // Close form and update bookings
       setShowForm(false);
       fetchBookings();
@@ -311,16 +314,15 @@ const fetchBookings = async () => {
     } catch (err: any) {
       console.error("Create booking error:", err);
       toast.error("Error", {
-        description: err.message || "Error al crear la reserva"
+        description: err.message || "Error al crear la reserva",
       });
       throw err;
     }
   };
 
-  
   const handleUpdateBooking = async (data: Partial<IBooking>) => {
     if (!editingBooking?._id) return;
-  
+
     // Prevent admin (read-only) from updating bookings
     if (session?.user?.role === "admin") {
       toast.error("Acceso Denegado", {
@@ -328,16 +330,16 @@ const fetchBookings = async () => {
       });
       return;
     }
-  
+
     try {
       // Ensure userId is included explicitly
       const bookingData = {
         ...data,
         userId: session?.user?.id, // Make sure userId is included in updates
       };
-  
+
       console.log("Sending update data:", JSON.stringify(bookingData));
-  
+
       const res = await fetch(`/api/bookings/${editingBooking._id}`, {
         method: "PUT",
         headers: {
@@ -345,24 +347,25 @@ const fetchBookings = async () => {
         },
         body: JSON.stringify(bookingData),
       });
-  
+
       if (!res.ok) {
         // Handle authentication errors
         if (res.status === 401) {
           toast.error("Sesión expirada", {
-            description: "Su sesión ha expirado. Por favor, inicie sesión nuevamente."
+            description:
+              "Su sesión ha expirado. Por favor, inicie sesión nuevamente.",
           });
-          
+
           setTimeout(() => {
             router.push("/auth/signin?callbackUrl=/bookings");
           }, 2000);
           return;
         }
-  
+
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al actualizar la reserva");
       }
-  
+
       // Close form and update bookings
       setEditingBooking(null);
       fetchBookings();
@@ -372,7 +375,7 @@ const fetchBookings = async () => {
     } catch (err: any) {
       console.error("Update booking error:", err);
       toast.error("Error", {
-        description: err.message || "Error al actualizar la reserva"
+        description: err.message || "Error al actualizar la reserva",
       });
       throw err;
     }
@@ -396,6 +399,8 @@ const fetchBookings = async () => {
       return;
     }
 
+    setIsSubmitting(true); // Add this line to track deletion state
+
     try {
       const res = await fetch(`/api/bookings/${deletingBooking._id}`, {
         method: "DELETE",
@@ -414,10 +419,12 @@ const fetchBookings = async () => {
       setError(err.message);
       console.error(err);
     } finally {
+      setIsSubmitting(false); // Reset state when done
       setShowDeleteDialog(false);
       setDeletingBooking(null);
     }
   };
+
   // Handle booking confirmation
   const handleConfirmBooking = async (
     id: string,
@@ -1062,6 +1069,7 @@ const fetchBookings = async () => {
           apartmentNumber={deletingBooking.apartmentNumber}
           date={new Date(deletingBooking.date)}
           mealType={deletingBooking.mealType}
+          isDeleting={isSubmitting} // Pass the isSubmitting state here
         />
       )}
     </div>
