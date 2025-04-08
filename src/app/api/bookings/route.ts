@@ -1,5 +1,4 @@
-// src/app/api/bookings/route.ts - updated version to ensure userId is always handled correctly
-
+// src/app/api/bookings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
@@ -66,12 +65,12 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// src/app/api/bookings/route.ts - Updated POST method
-
 export async function POST(req: NextRequest) {
   try {
     // Authenticate user
     const currentUser = await authenticate(req);
+    
+    console.log("Authentication result:", JSON.stringify(currentUser));
     
     if (!currentUser) {
       return NextResponse.json(
@@ -79,7 +78,9 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-
+    
+    console.log("Current user ID:", currentUser.id);
+    
     if (currentUser.role === 'admin') {
       return NextResponse.json(
         { error: "You don't have permission to create bookings" },
@@ -90,6 +91,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
     
     const body = await req.json();
+    console.log("Request body:", JSON.stringify(body));
     
     // Regular users can only create bookings for their own apartment
     if (
@@ -135,27 +137,32 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Ensure userId is a string - the schema might expect a specific format
+    const userId = String(currentUser.id);
+    console.log("User ID after conversion:", userId);
+    
+    // Create a new booking document directly with all required fields explicitly set
+    const booking = new Booking({
+      apartmentNumber: body.apartmentNumber,
+      date: new Date(body.date),
+      mealType: body.mealType,
+      numberOfPeople: body.numberOfPeople || 1,
+      tables: body.tables || [],
+      prepararFuego: Boolean(body.prepararFuego),
+      reservaHorno: Boolean(body.reservaHorno),
+      reservaBrasa: Boolean(body.reservaBrasa),
+      status: body.status || 'pending',
+      userId: userId  // Explicitly setting as string
+    });
+    
+    console.log("Booking before save:", JSON.stringify(booking));
+    
+    // Save the booking document
+    const savedBooking = await booking.save();
+    console.log("Booking saved successfully");
+    
     // Get username for better activity logging
     const user = await User.findById(currentUser.id).select('name');
-    
-    // Create a new bookingData object with all properties from body and explicitly set userId
-    const bookingData = {
-      apartmentNumber: body.apartmentNumber,
-      date: body.date,
-      mealType: body.mealType,
-      numberOfPeople: body.numberOfPeople,
-      tables: body.tables,
-      prepararFuego: body.prepararFuego || false,
-      reservaHorno: body.reservaHorno || false,
-      reservaBrasa: body.reservaBrasa || false,
-      status: body.status || 'pending',
-      finalAttendees: body.finalAttendees,
-      notes: body.notes,
-      userId: currentUser.id // Explicitly set the user ID
-    };
-    
-    // Create booking with the carefully constructed object
-    const newBooking = await Booking.create(bookingData);
     
     // Prepare additional details for activity log
     let additionalDetails = '';
@@ -186,11 +193,12 @@ export async function POST(req: NextRequest) {
       details: `${user ? user.name : 'Usuario'}${userRole} ha reservado para Apto. #${body.apartmentNumber} las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
     });
     
-    return NextResponse.json(newBooking, { status: 201 });
+    return NextResponse.json(savedBooking, { status: 201 });
   } catch (error: any) {
-    console.error('POST /api/bookings error:', error);
+    console.error('POST /api/bookings detailed error:', error);
     
     if (error.name === 'ValidationError') {
+      console.error('Validation error details:', JSON.stringify(error.errors));
       return NextResponse.json(
         { error: 'Error de Validación', details: error.message },
         { status: 400 }

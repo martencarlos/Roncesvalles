@@ -39,6 +39,7 @@ export async function getCurrentUser() {
 }
 
 // For protecting API routes
+// In src/lib/auth-utils.ts
 export async function authenticate(
   req: NextRequest,
   requiredRoles?: string[]
@@ -54,21 +55,24 @@ export async function authenticate(
   });
   
   const session = await res.json();
+  console.log("Session from auth check:", JSON.stringify(session));
   
   if (!session || !session.user) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return null;
   }
+  
+  // Ensure ID is correctly passed as string
+  const user = {
+    ...session.user,
+    id: String(session.user.id) // Ensure it's a string
+  };
+  
+  console.log("User from auth check:", JSON.stringify(user));
   
   // If specific roles are required, check them
-  if (requiredRoles && !requiredRoles.includes(session.user.role)) {
-    return NextResponse.json(
-      { error: "Forbidden" },
-      { status: 403 }
-    );
+  if (requiredRoles && !requiredRoles.includes(user.role)) {
+    return null;
   }
   
-  return session.user;
+  return user;
 }
