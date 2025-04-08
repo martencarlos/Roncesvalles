@@ -1,8 +1,9 @@
-// src/app/api/bookings/route.ts (updated)
+// src/app/api/bookings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
+import User from '@/models/User'; // Import User model
 import { authenticate } from '@/lib/auth-utils';
 
 export async function GET(req: NextRequest) {
@@ -129,6 +130,9 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Get username for better activity logging
+    const user = await User.findById(currentUser.id).select('name');
+    
     // Create booking
     const newBooking = await Booking.create({
       ...body,
@@ -153,12 +157,15 @@ export async function POST(req: NextRequest) {
       additionalDetails += ' reserva de brasa';
     }
     
+    // Get the user's role to include in the activity log
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : 'Conserje'})` : '';
+    
     // Log activity
     await ActivityLog.create({
       action: 'create',
       apartmentNumber: body.apartmentNumber,
       userId: currentUser.id,
-      details: `Apto. #${body.apartmentNumber} ha reservado las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
+      details: `${user ? user.name : 'Usuario'}${userRole} ha reservado para Apto. #${body.apartmentNumber} las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
     });
     
     return NextResponse.json(newBooking, { status: 201 });

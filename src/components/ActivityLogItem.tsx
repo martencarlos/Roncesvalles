@@ -3,7 +3,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { IActivityLog } from '@/models/ActivityLog';
-import { Check, RefreshCw, Trash2, CheckCircle } from "lucide-react";
+import { Check, RefreshCw, Trash2, CheckCircle, UserPlus, UserCog, UserX } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface ActivityLogItemProps {
@@ -21,6 +21,12 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
         return <Trash2 className="h-4 w-4 text-red-600 shrink-0" />;
       case 'confirm':
         return <CheckCircle className="h-4 w-4 text-purple-600 shrink-0" />;
+      case 'user_create':
+        return <UserPlus className="h-4 w-4 text-emerald-600 shrink-0" />;
+      case 'user_update':
+        return <UserCog className="h-4 w-4 text-indigo-600 shrink-0" />;
+      case 'user_delete':
+        return <UserX className="h-4 w-4 text-amber-600 shrink-0" />;
       default:
         return null;
     }
@@ -36,6 +42,12 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
         return 'text-red-600';
       case 'confirm':
         return 'text-purple-600';
+      case 'user_create':
+        return 'text-emerald-600';
+      case 'user_update':
+        return 'text-indigo-600';
+      case 'user_delete':
+        return 'text-amber-600';
       default:
         return 'text-muted-foreground';
     }
@@ -51,47 +63,24 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
         return 'CANCELACIÓN';
       case 'confirm':
         return 'CONFIRMACIÓN';
+      case 'user_create':
+        return 'NUEVO USUARIO';
+      case 'user_update':
+        return 'MODIF. USUARIO';
+      case 'user_delete':
+        return 'ELIM. USUARIO';
       default:
         return action.toUpperCase();
     }
   };
 
-  // Complete Spanish translation of all text in details
-  const translateDetails = (details: string) => {
-    return details
-      // Base translations
-      .replace(/booked tables/g, 'ha reservado las mesas')
-      .replace(/for lunch on/g, 'para comida el')
-      .replace(/for dinner on/g, 'para cena el')
-      // Fix "modified booking" translation
-      .replace(/modified booking/g, 'ha modificado la reserva')
-      .replace(/modified booking for lunch on/g, 'ha modificado la reserva para comida el')
-      .replace(/modified booking for dinner on/g, 'ha modificado la reserva para cena el')
-      .replace(/cancelled booking for lunch on/g, 'ha cancelado la reserva para comida el')
-      .replace(/cancelled booking for dinner on/g, 'ha cancelado la reserva para cena el')
-      .replace(/confirmed booking for lunch on/g, 'ha confirmado la reserva para comida el')
-      .replace(/confirmed booking for dinner on/g, 'ha confirmado la reserva para cena el')
-      // Table references
-      .replace(/tables/g, 'mesas')
-      .replace(/table/g, 'mesa')
-      // Apartment references
-      // .replace(/Apt #/g, 'Apto. #')
-      .replace(/Apto/g, 'Apt')
-      // Services
-      .replace(/with fire preparation/g, 'con preparación de fuego')
-      .replace(/with oven reservation/g, 'con reserva de horno')
-      .replace(/with grill reservation/g, 'con reserva de brasa')
-      .replace(/with oven and grill reservation/g, 'con reserva de horno y brasa')
-      .replace(/with final attendees/g, 'con asistentes finales')
-      // Additional translations to catch English terms
-      .replace(/lunch/g, 'comida')
-      .replace(/dinner/g, 'cena');
-  };
+  // The details are already in Spanish in the updated API responses
+  // So we don't need to translate them here
 
   return (
     <div className="w-full">
       {/* Desktop layout - hidden on mobile */}
-      <div className="hidden sm:grid py-4 w-full grid-cols-[auto_100px_1fr_auto] gap-3 items-start">
+      <div className="hidden sm:grid py-4 w-full grid-cols-[auto_120px_1fr_auto] gap-3 items-start">
         {/* Icon column */}
         <div className={`p-2 rounded-full self-center bg-opacity-10 ${getActionColor(log.action).replace('text-', 'bg-')}`}>
           {getActionIcon(log.action)}
@@ -107,7 +96,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
         {/* Details column */}
         <div className="min-w-0 self-center">
           <p className="text-sm line-clamp-2 break-words">
-            {translateDetails(log.details)}
+            {log.details}
           </p>
         </div>
         
@@ -133,7 +122,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
           </div>
         </div>
         <p className="text-sm ml-10 mb-1">
-          {translateDetails(log.details)}
+          {log.details}
         </p>
       </div>
       

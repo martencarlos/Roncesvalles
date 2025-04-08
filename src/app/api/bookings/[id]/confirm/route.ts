@@ -1,8 +1,9 @@
-// src/app/api/bookings/[id]/confirm/route.ts (updated)
+// src/app/api/bookings/[id]/confirm/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
+import User from '@/models/User'; // Import User model
 import { authenticate } from '@/lib/auth-utils';
 
 export async function POST(
@@ -21,12 +22,12 @@ export async function POST(
     }
 
     // Prevent regular admins (read-only) from confirming bookings
-if (currentUser.role === 'admin') {
-  return NextResponse.json(
-    { error: "You don't have permission to confirm bookings" },
-    { status: 403 }
-  );
-}
+    if (currentUser.role === 'admin') {
+      return NextResponse.json(
+        { error: "You don't have permission to confirm bookings" },
+        { status: 403 }
+      );
+    }
     
     await connectDB();
     
@@ -84,6 +85,9 @@ if (currentUser.role === 'admin') {
       { new: true, runValidators: true }
     );
     
+    // Get username for better activity logging
+    const user = await User.findById(currentUser.id).select('name');
+    
     // Additional details for activity log
     const serviceDetails = [];
     if (booking.prepararFuego) serviceDetails.push('preparación de fuego');
@@ -94,12 +98,15 @@ if (currentUser.role === 'admin') {
       ? ` con ${serviceDetails.join(' y ')}` 
       : '';
     
+    // Get the user's role to include in the activity log
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : 'Conserje'})` : '';
+    
     // Create activity log entry
     await ActivityLog.create({
       action: 'confirm',
       apartmentNumber: booking.apartmentNumber,
       userId: currentUser.id,
-      details: `Apto. #${booking.apartmentNumber} ha confirmado la reserva para ${booking.mealType === 'lunch' ? 'comida' : 'cena'} del ${new Date(booking.date).toLocaleDateString('es-ES')}, mesas ${booking.tables.join(', ')}${serviceText} con ${body.finalAttendees || booking.numberOfPeople} asistentes finales`,
+      details: `${user ? user.name : 'Usuario'}${userRole} ha confirmado la reserva de Apto. #${booking.apartmentNumber} para ${booking.mealType === 'lunch' ? 'comida' : 'cena'} del ${new Date(booking.date).toLocaleDateString('es-ES')}, mesas ${booking.tables.join(', ')}${serviceText} con ${body.finalAttendees || booking.numberOfPeople} asistentes finales`,
     });
     
     return NextResponse.json(updatedBooking);

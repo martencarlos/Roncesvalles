@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
+import ActivityLog from "@/models/ActivityLog";
+import { authenticate } from "@/lib/auth-utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +12,9 @@ export async function POST(req: NextRequest) {
     
     const body = await req.json();
     const { name, email, password, apartmentNumber, role = 'user' } = body;
+    
+    // Get the current user if authenticated (for IT admin creating users)
+    const currentUser = await authenticate(req);
     
     // Validate required fields
     if (!name || !email || !password) {
@@ -72,6 +77,26 @@ export async function POST(req: NextRequest) {
     };
     
     const user = await User.create(userData);
+    
+    // Log activity if it's an admin creating a user, otherwise it's self-registration
+    if (currentUser && currentUser.role === 'it_admin') {
+      await ActivityLog.create({
+        action: 'user_create',
+        userId: currentUser.id,
+        targetUserId: user._id,
+        apartmentNumber: role === 'user' ? apartmentNumber : undefined,
+        details: `Usuario ${currentUser.name} (Admin IT) ha creado una cuenta para ${name} con rol ${role}${role === 'user' ? ` - Apto. #${apartmentNumber}` : ''}`
+      });
+    } else {
+      // Self-registration
+      await ActivityLog.create({
+        action: 'user_create',
+        userId: user._id, // The user created themselves
+        targetUserId: user._id,
+        apartmentNumber: role === 'user' ? apartmentNumber : undefined,
+        details: `Registro de nuevo usuario: ${name}${role === 'user' ? ` - Apto. #${apartmentNumber}` : ''}`
+      });
+    }
     
     // Return success without sensitive data
     return NextResponse.json(

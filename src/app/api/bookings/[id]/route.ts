@@ -1,9 +1,9 @@
-// Now update the [id]/route.ts file for booking actions
-// src/app/api/bookings/[id]/route.ts (updated)
+// src/app/api/bookings/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
+import User from '@/models/User'; // Import User model
 import { authenticate } from '@/lib/auth-utils';
 
 export async function GET(
@@ -69,12 +69,12 @@ export async function PUT(
     }
 
     // Prevent regular admins (read-only) from updating bookings
-if (currentUser.role === 'admin') {
-  return NextResponse.json(
-    { error: "You don't have permission to update bookings" },
-    { status: 403 }
-  );
-}
+    if (currentUser.role === 'admin') {
+      return NextResponse.json(
+        { error: "You don't have permission to update bookings" },
+        { status: 403 }
+      );
+    }
     
     await connectDB();
     
@@ -163,6 +163,9 @@ if (currentUser.role === 'admin') {
       { new: true, runValidators: true }
     );
     
+    // Get username for better activity logging
+    const user = await User.findById(currentUser.id).select('name');
+    
     // Prepare additional details for activity log
     let additionalDetails = '';
     
@@ -180,12 +183,15 @@ if (currentUser.role === 'admin') {
       additionalDetails += ' grill reservation';
     }
     
+    // Get the user's role to include in the activity log
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : 'Conserje'})` : '';
+    
     // Log activity
     await ActivityLog.create({
       action: 'update',
       apartmentNumber: body.apartmentNumber,
       userId: currentUser.id,
-      details: `Apt #${body.apartmentNumber} modified booking for ${body.mealType} on ${new Date(body.date).toLocaleDateString()}, tables ${body.tables.join(', ')}${additionalDetails}`,
+      details: `${user ? user.name : 'Usuario'}${userRole} ha modificado la reserva de Apto #${body.apartmentNumber} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}, mesas ${body.tables.join(', ')}${additionalDetails}`,
     });
     
     return NextResponse.json(updatedBooking);
@@ -222,12 +228,12 @@ export async function DELETE(
     }
 
     // Prevent regular admins (read-only) from deleting bookings
-if (currentUser.role === 'admin') {
-  return NextResponse.json(
-    { error: "You don't have permission to delete bookings" },
-    { status: 403 }
-  );
-}
+    if (currentUser.role === 'admin') {
+      return NextResponse.json(
+        { error: "You don't have permission to delete bookings" },
+        { status: 403 }
+      );
+    }
     
     await connectDB();
     
@@ -268,21 +274,27 @@ if (currentUser.role === 'admin') {
       );
     }
     
+    // Get username for better activity logging
+    const user = await User.findById(currentUser.id).select('name');
+    
     // Prepare additional details for activity log
     let additionalDetails = '';
     if (booking.prepararFuego) {
-      additionalDetails += ' with fire preparation';
+      additionalDetails += ' con preparación de fuego';
     }
     if (booking.reservaHorno && booking.reservaBrasa) {
-      additionalDetails += additionalDetails ? ' and' : ' with';
-      additionalDetails += ' oven and grill reservation';
+      additionalDetails += additionalDetails ? ' y' : ' con';
+      additionalDetails += ' reserva de horno y brasa';
     } else if (booking.reservaHorno) {
-      additionalDetails += additionalDetails ? ' and' : ' with';
-      additionalDetails += ' oven reservation';
+      additionalDetails += additionalDetails ? ' y' : ' con';
+      additionalDetails += ' reserva de horno';
     } else if (booking.reservaBrasa) {
-      additionalDetails += additionalDetails ? ' and' : ' with';
-      additionalDetails += ' grill reservation';
+      additionalDetails += additionalDetails ? ' y' : ' con';
+      additionalDetails += ' reserva de brasa';
     }
+    
+    // Get the user's role to include in the activity log
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : 'Conserje'})` : '';
     
     // Delete the booking
     await Booking.findByIdAndDelete(bookingId);
@@ -292,7 +304,7 @@ if (currentUser.role === 'admin') {
       action: 'delete',
       apartmentNumber: booking.apartmentNumber,
       userId: currentUser.id,
-      details: `Apt #${booking.apartmentNumber} cancelled booking for ${booking.mealType} on ${new Date(booking.date).toLocaleDateString()}, tables ${booking.tables.join(', ')}${additionalDetails}`,
+      details: `${user ? user.name : 'Usuario'}${userRole} ha cancelado la reserva de Apto #${booking.apartmentNumber} para ${booking.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(booking.date).toLocaleDateString('es-ES')}, mesas ${booking.tables.join(', ')}${additionalDetails}`,
     });
     
     return NextResponse.json({ message: 'Booking deleted successfully' });
