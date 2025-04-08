@@ -468,9 +468,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Card className="w-full">
           <CardContent className="p-2 sm:p-4">
             {/* Fixed height container to prevent layout shift */}
-            <div className="min-h-[300px]">
+            <div className="min-h-[200px]">
               {loading ? (
-                <div className="flex justify-center items-center h-[300px]">
+                <div className="flex justify-center items-center min-h-[200px]">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                 </div>
               ) : (
