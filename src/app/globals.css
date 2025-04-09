@@ -119,6 +119,18 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  button, 
+  a[role="button"],
+  .button,
+  [data-slot="button"],
+  [type="button"],
+  [type="reset"],
+  [type="submit"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
 }
 
 @layer utilities {
@@ -136,6 +148,22 @@
 ::-webkit-scrollbar-thumb {
   background: rgb(126, 126, 126);
   border-radius: 5px;
+}
+
+.touch-action-manipulation {
+  touch-action: manipulation;
+}
+
+.tap-highlight-none {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.active-scale {
+  @apply active:scale-95 transition-transform duration-100;
+}
+
+.active-opacity {
+  @apply active:opacity-80 transition-opacity duration-100;
 }
 }
 
