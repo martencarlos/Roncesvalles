@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description: "Panel de administración del sistema de reservas",
 };
 
+// Updated section for src/app/(protected)/admin/page.tsx
 export default async function AdminPage() {
   // Check if user is authenticated and has it_admin role
   const session = await getServerSession(authOptions);
@@ -39,11 +40,12 @@ export default async function AdminPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Dashboard Card - NEW */}
+        {/* Dashboard Card */}
         <div className="bg-white rounded-lg border shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Panel de Estadísticas</h2>
           <p className="text-muted-foreground mb-4">
-            Visualice estadísticas detalladas sobre usuarios, reservas y actividad del sistema con gráficos interactivos.
+            Visualice estadísticas detalladas sobre usuarios, reservas y
+            actividad del sistema con gráficos interactivos.
           </p>
           <Button asChild className="w-full">
             <Link href="/admin/dashboard">Ver Estadísticas</Link>
@@ -71,6 +73,25 @@ export default async function AdminPage() {
           </p>
           <Button asChild className="w-full">
             <Link href="/admin/bookings">Gestionar Reservas</Link>
+          </Button>
+        </div>
+
+        {/* Feedback Management Card - NEW */}
+        <div
+          className="bg-white rounded-lg border shadow-sm p-6"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
+          <h2 className="text-xl font-semibold mb-4">Gestión de Feedback</h2>
+          <p className="text-muted-foreground mb-4">
+            Revise y gestione el feedback, reportes de errores y sugerencias
+            enviadas por los usuarios.
+          </p>
+          <Button asChild className="w-full">
+            <Link href="/admin/feedback">Gestionar Feedback</Link>
           </Button>
         </div>
 

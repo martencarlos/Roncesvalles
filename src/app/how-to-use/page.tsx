@@ -1,6 +1,7 @@
+// src/app/how-to-use/page.tsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,25 +31,40 @@ import {
   Filter,
   Eye,
   Download,
+  MessageSquare,
 } from "lucide-react";
+import FeedbackForm from "@/components/FeedbackForm";
 
 export default function HowToUsePage() {
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold">Guía de Uso</h1>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="w-full sm:w-auto"
-          >
-            <Link href="/">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver a Reservas
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              <Link href="/">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver a Reservas
+              </Link>
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+              onClick={() => setShowFeedbackForm(true)}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Enviar Feedback
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -166,6 +182,14 @@ export default function HowToUsePage() {
                   className="text-blue-600 hover:underline"
                 >
                   6. Registro de Actividad
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#feedback"
+                  className="text-blue-600 hover:underline"
+                >
+                  7. Enviar Feedback
                 </Link>
               </li>
             </ul>
@@ -782,7 +806,61 @@ export default function HowToUsePage() {
             </div>
           </CardContent>
         </Card>
+        {/* Add a new feedback section at the end */}
+        <Card id="feedback">
+          <CardHeader className="px-4 pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-blue-500" />
+              7. Enviar Feedback
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4">
+            <p className="text-muted-foreground mb-4">
+              Nos importa su opinión y queremos seguir mejorando la aplicación. Puede enviarnos sus comentarios, sugerencias, reportes de errores o preguntas a través del sistema de feedback:
+            </p>
+            
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-md">
+                <h3 className="font-medium mb-2 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-blue-600" />
+                  ¿Cómo enviar feedback?
+                </h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>
+                    Haga clic en el botón <span className="font-medium">Enviar Feedback</span> en la parte superior de esta página.
+                  </li>
+                  <li>
+                    Seleccione el tipo de feedback que desea enviar (error, sugerencia, pregunta u otro).
+                  </li>
+                  <li>
+                    Describa en detalle su comentario, problema encontrado o sugerencia.
+                  </li>
+                  <li>
+                    Envíe el formulario y nuestro equipo revisará su feedback lo antes posible.
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="flex justify-center mt-2">
+                <Button 
+                  onClick={() => setShowFeedbackForm(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Enviar Feedback
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Feedback Form Dialog */}
+      <FeedbackForm 
+        isOpen={showFeedbackForm} 
+        onClose={() => setShowFeedbackForm(false)} 
+      />
     </div>
   );
 }
+     
