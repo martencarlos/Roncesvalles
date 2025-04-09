@@ -713,56 +713,56 @@ export default function BookingsPage() {
         <br />
 
         {/* New Booking Section - Clearly marked and separated */}
-<div className="mb-6 p-4 border rounded-lg bg-slate-50 shadow-sm">
-  {/* Title and action buttons in a column on mobile, row on desktop */}
-  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-    <h2 className="text-xl font-semibold flex items-center">
-      <CalendarIcon className="h-5 w-5 mr-2 text-green-600" />
-      Disponibilidad
-    </h2>
-    
-    <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
-      {session?.user?.role !== "admin" && (
-        <Button
-          onClick={handleNewBooking}
-          size="sm"
-          className="cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 px-4 w-full sm:w-auto"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">Nueva Reserva</span>
-          <span className="sm:hidden">Reservar</span>
-        </Button>
-      )}
-      
-      <Button
-        asChild
-        variant="outline"
-        size="sm"
-        className="cursor-pointer w-full sm:w-auto"
-      >
-        <Link href="/activity">
-          <History className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">Ver Actividad</span>
-          <span className="sm:hidden">Actividad</span>
-        </Link>
-      </Button>
-      
-      {/* Export button (only for admin or it_admin users) */}
-      {(session?.user?.role === "admin" ||
-        session?.user?.role === "it_admin") && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowExportDialog(true)}
-          className="cursor-pointer w-full sm:w-auto col-span-2 sm:col-span-1"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">Exportar</span>
-          <span className="sm:hidden">Exportar</span>
-        </Button>
-      )}
-    </div>
-  </div>
+        <div className="mb-6 p-4 border rounded-lg bg-slate-50 shadow-sm">
+          {/* Title and action buttons in a column on mobile, row on desktop */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+            <h2 className="text-xl font-semibold flex items-center">
+              <CalendarIcon className="h-5 w-5 mr-2 text-green-600" />
+              Disponibilidad
+            </h2>
+
+            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
+              {session?.user?.role !== "admin" && (
+                <Button
+                  onClick={handleNewBooking}
+                  size="sm"
+                  className="cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 px-4 w-full sm:w-auto"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Nueva Reserva</span>
+                  <span className="sm:hidden">Reservar</span>
+                </Button>
+              )}
+
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="cursor-pointer w-full sm:w-auto"
+              >
+                <Link href="/activity">
+                  <History className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Ver Actividad</span>
+                  <span className="sm:hidden">Actividad</span>
+                </Link>
+              </Button>
+
+              {/* Export button (only for admin or it_admin users) */}
+              {(session?.user?.role === "admin" ||
+                session?.user?.role === "it_admin") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExportDialog(true)}
+                  className="cursor-pointer w-full sm:w-auto col-span-2 sm:col-span-1"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Exportar</span>
+                  <span className="sm:hidden">Exportar</span>
+                </Button>
+              )}
+            </div>
+          </div>
 
           {/* Date picker */}
           <div className="flex flex-col gap-3 mb-4 sm:mb-6">
