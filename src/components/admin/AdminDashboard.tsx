@@ -128,16 +128,16 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-        <p className="text-lg font-medium">Cargando datos del panel de estadísticas...</p>
-        <p className="text-sm text-muted-foreground mt-2">Esto puede tomar unos momentos</p>
+      <div className="flex flex-col items-center justify-center p-4 sm:p-8 h-[70vh]">
+        <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 text-primary animate-spin mb-3 sm:mb-4" />
+        <p className="text-base sm:text-lg font-medium text-center">Cargando datos del panel</p>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center">Esto puede tomar unos momentos</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -145,31 +145,33 @@ export default function AdminDashboard() {
       )}
 
       {/* Last updated timestamp */}
-      <div className="flex justify-end text-sm text-muted-foreground mb-2">
+      <div className="flex justify-end text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">
         <div className="flex items-center gap-1">
           <Info className="h-3 w-3" />
-          Actualizado: {format(lastUpdated, "d MMM, yyyy - HH:mm", { locale: es })}
+          <span className="text-xs">
+            Actualizado: {format(lastUpdated, "d MMM, HH:mm", { locale: es })}
+          </span>
         </div>
       </div>
 
       {userStats && bookingStats ? (
-        <Tabs defaultValue="system">
-          <TabsList className="mb-6 w-full justify-start">
-            <TabsTrigger value="system" className="gap-1.5">
-              <LayoutGrid className="h-4 w-4" />
-              <span>Resumen</span>
+        <Tabs defaultValue="system" className="w-full">
+          <TabsList className="mb-4 sm:mb-6 w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap pb-1">
+            <TabsTrigger value="system" className="gap-1 min-w-fit">
+              <LayoutGrid className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm">Resumen</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-1.5">
-              <Users className="h-4 w-4" />
-              <span>Usuarios</span>
+            <TabsTrigger value="users" className="gap-1 min-w-fit">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm">Usuarios</span>
             </TabsTrigger>
-            <TabsTrigger value="bookings" className="gap-1.5">
-              <Calendar className="h-4 w-4" />
-              <span>Reservas</span>
+            <TabsTrigger value="bookings" className="gap-1 min-w-fit">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm">Reservas</span>
             </TabsTrigger>
-            <TabsTrigger value="activity" className="gap-1.5">
-              <LineChart className="h-4 w-4" />
-              <span>Actividad</span>
+            <TabsTrigger value="activity" className="gap-1 min-w-fit">
+              <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm">Actividad</span>
             </TabsTrigger>
           </TabsList>
 
@@ -195,9 +197,9 @@ export default function AdminDashboard() {
         </Tabs>
       ) : (
         <Alert className="bg-amber-50 border-amber-200 text-amber-800">
-          <AlertDescription className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            No se pudieron cargar los datos del panel. Por favor, inténtelo de nuevo más tarde.
+          <AlertDescription className="flex items-center gap-2 text-sm">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            No se pudieron cargar los datos del panel. Inténtelo más tarde.
           </AlertDescription>
         </Alert>
       )}

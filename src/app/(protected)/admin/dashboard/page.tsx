@@ -28,10 +28,10 @@ export default async function AdminDashboardPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
-      <header className="mb-6">
+    <div className="mx-auto max-w-full px-3 py-2 sm:max-w-6xl sm:px-4 sm:py-3 min-h-[100dvh]">
+      <header className="mb-4 sm:mb-6">
         {/* Top row with back button and user menu */}
-        <div className="flex justify-between items-center gap-2 mb-4">
+        <div className="flex justify-between items-center gap-2 mb-3 sm:mb-4">
           <Button
             asChild
             variant="outline"
@@ -39,9 +39,8 @@ export default async function AdminDashboardPage() {
             className="h-8 px-2 sm:h-9 sm:px-3"
           >
             <Link href="/admin">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Volver al Panel</span>
-              <span className="sm:hidden">Volver</span>
+              <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">Volver</span>
             </Link>
           </Button>
           <div className="flex-shrink-0">
@@ -50,7 +49,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Title row */}
-        <h1 className="text-2xl sm:text-3xl font-bold">Panel de Estadísticas</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Panel de Estadísticas</h1>
       </header>
 
       <AdminDashboard />
