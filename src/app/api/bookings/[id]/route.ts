@@ -164,6 +164,19 @@ export async function PUT(
       body.apartmentNumber = currentUser.apartmentNumber;
     }
     
+    // Determine if cleaning service warning should be applied or removed
+    let noCleaningService = originalBooking.noCleaningService;
+    
+    if (body.date) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const bookingDate = new Date(body.date);
+      const daysDifference = Math.floor((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // If date is changed, update cleaning service status based on new date
+      noCleaningService = daysDifference <= 4;
+    }
+    
     // Always ensure userId is set to the authenticated user's ID
     // Create a clean update object with only the fields we want to update
     const updateData = {
@@ -176,7 +189,8 @@ export async function PUT(
       reservaHorno: body.reservaHorno !== undefined ? Boolean(body.reservaHorno) : originalBooking.reservaHorno,
       reservaBrasa: body.reservaBrasa !== undefined ? Boolean(body.reservaBrasa) : originalBooking.reservaBrasa,
       status: body.status || originalBooking.status,
-      userId: currentUser.id // Always set to current user
+      userId: currentUser.id, // Always set to current user
+      noCleaningService: noCleaningService // Set cleaning service status
     };
     
     console.log("Update data:", JSON.stringify(updateData));
@@ -206,6 +220,14 @@ export async function PUT(
     } else if (body.reservaBrasa) {
       additionalDetails += additionalDetails ? ' and' : ' with';
       additionalDetails += ' grill reservation';
+    }
+    
+    // Add cleaning service detail if it changed
+    if (noCleaningService !== originalBooking.noCleaningService) {
+      additionalDetails += additionalDetails ? ' and' : ' with';
+      additionalDetails += noCleaningService 
+        ? ' notice of no cleaning service' 
+        : ' cleaning service available';
     }
     
     // Get the user's role to include in the activity log

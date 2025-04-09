@@ -19,9 +19,9 @@ import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
-import { format } from "date-fns";
+import { format, addDays, isBefore, differenceInDays } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
-import { CalendarIcon, LockIcon, InfoIcon, AlertCircle } from "lucide-react";
+import { CalendarIcon, LockIcon, InfoIcon, AlertCircle, AlertTriangle } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 // Registrar el locale español para el datepicker
@@ -109,6 +109,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [bookingsForDates, setBookingsForDates] = useState<BookingsForDate>({});
 
+  // Add state to track if cleaning service warning applies
+  const [noCleaningService, setNoCleaningService] = useState<boolean>(
+    initialData?.noCleaningService || false
+  );
+
   // Calculate max people allowed based on selected tables
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
 
@@ -132,6 +137,17 @@ const BookingForm: React.FC<BookingFormProps> = ({
       }
     }
   }
+
+  // Check if the selected date is less than or equal to 4 days in advance
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const daysDifference = differenceInDays(date, today);
+    const needsCleaningWarning = daysDifference <= 4;
+    
+    setNoCleaningService(needsCleaningWarning);
+  }, [date]);
 
   // Fetch all bookings to highlight dates in calendar
   useEffect(() => {
@@ -418,6 +434,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         reservaHorno,
         reservaBrasa,
         userId: session?.user?.id, // Add the user ID from the session
+        noCleaningService, // Include the cleaning service status
       });
 
       // Save the apartment number for future bookings (only for non-regular users)
@@ -469,7 +486,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               minDate={new Date()}
               dateFormat="d MMMM, yyyy"
               locale="es"
-              className="w-full p-2 border rounded-md pl-10"
+              className="w-full pl-10 p-2 border rounded-md"
               wrapperClassName="w-full"
               renderDayContents={renderDayContents}
             />
@@ -727,7 +744,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               <Input
                 id="apartmentNumber"
                 value={`Apartamento #${session?.user.apartmentNumber}`}
-                disabled
+                disabled 
                 className="bg-muted"
               />
               <div className="ml-2 text-muted-foreground">
@@ -824,6 +841,17 @@ const BookingForm: React.FC<BookingFormProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Add cleaning service warning alert just above the buttons */}
+      {noCleaningService && (
+        <Alert className="bg-amber-50 border-amber-200 mt-4 mb-2">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <strong>Aviso importante:</strong> Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza. 
+            Deberá encargarse de la limpieza tras su uso.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">
         <Button

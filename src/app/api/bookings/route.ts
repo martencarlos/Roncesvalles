@@ -172,7 +172,8 @@ export async function POST(req: NextRequest) {
       reservaHorno: Boolean(body.reservaHorno),
       reservaBrasa: Boolean(body.reservaBrasa),
       status: body.status || 'pending',
-      userId: currentUser.id  // Explicitly use ID from session
+      userId: currentUser.id,  // Explicitly use ID from session
+      noCleaningService: Boolean(body.noCleaningService) // Add the cleaning service field
     };
     
     console.log("Booking data:", JSON.stringify(bookingData));
@@ -200,6 +201,12 @@ export async function POST(req: NextRequest) {
     } else if (body.reservaBrasa) {
       additionalDetails += additionalDetails ? ' y' : ' con';
       additionalDetails += ' reserva de brasa';
+    }
+    
+    // Add cleaning service detail
+    if (body.noCleaningService) {
+      additionalDetails += additionalDetails ? ' y' : ' con';
+      additionalDetails += ' aviso de ausencia de servicio de limpieza';
     }
     
     // Get the user's role to include in the activity log

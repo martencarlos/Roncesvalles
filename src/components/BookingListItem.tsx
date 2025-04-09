@@ -4,9 +4,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { IBooking } from '@/models/Booking';
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Users, Table, CheckCircle2, UtensilsCrossed, CalendarDays } from "lucide-react";
+import { Edit, Trash2, Users, Table, CheckCircle2, UtensilsCrossed, CalendarDays, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Session } from 'next-auth';
 
 interface BookingListItemProps {
@@ -39,7 +38,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   const isManager = userRole === 'manager';
   
   // Determine if user can edit/delete/confirm this booking
-  // Only regular users (for their own bookings) and IT admins can edit/delete/confirm
   const canEdit = isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === 'user');
   const canDelete = isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === 'user');
   const canConfirm = isITAdmin || (isOwner && isPending && isPast && userRole === 'user');
@@ -133,6 +131,14 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         )}
 
+        {/* No Cleaning Service Warning */}
+        {booking.noCleaningService && (
+          <div className="flex items-start gap-1 text-sm text-amber-700">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <p className="text-xs">Sin servicio de limpieza</p>
+          </div>
+        )}
+
         {/* Notes */}
         {isConfirmed && booking.notes && (
           <div className="text-xs text-muted-foreground">
@@ -199,7 +205,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                 {isPending && !isPast && (
                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                     Pendiente
-                  </Badge>
+                    </Badge>
                 )}
                 {isPending && isPast && (
                   <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
@@ -260,6 +266,14 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                   </Badge>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Cleaning Service Warning */}
+          {booking.noCleaningService && (
+            <div className="flex items-center gap-1 text-amber-700">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span className="text-xs">Sin servicio de limpieza</span>
             </div>
           )}
 

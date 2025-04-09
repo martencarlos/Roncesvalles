@@ -1,12 +1,13 @@
-// src/components/BookingCard.tsx 
+// src/components/BookingCard.tsx
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { IBooking } from '@/models/Booking';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Users, Table, CheckCircle2 } from "lucide-react";
+import { Edit, Trash2, Users, Table, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Session } from 'next-auth';
 
 interface BookingCardProps {
@@ -39,7 +40,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
   const isManager = userRole === 'manager';
   
   // Determine if user can edit/delete/confirm this booking
-  // Only regular users (for their own bookings) and IT admins can edit/delete/confirm
   const canEdit = isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === 'user');
   const canDelete = isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === 'user');
   const canConfirm = isITAdmin || (isOwner && isPending && isPast && userRole === 'user');
@@ -143,6 +143,16 @@ const BookingCard: React.FC<BookingCardProps> = ({
             )}
           </div>
         </div>
+        
+        {/* Add No Cleaning Service Warning */}
+        {booking.noCleaningService && (
+          <div className="mt-2 pt-2 border-t text-sm">
+            <div className="flex items-start text-amber-700 gap-1">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <p className="text-xs">Sin servicio de limpieza. Debe encargarse de la limpieza tras su uso.</p>
+            </div>
+          </div>
+        )}
         
         {/* Notes section (only for confirmed bookings) */}
         {isConfirmed && booking.notes && (

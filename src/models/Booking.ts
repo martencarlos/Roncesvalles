@@ -1,5 +1,4 @@
-// Update the Booking model to include userId
-// src/models/Booking.ts (updated)
+// src/models/Booking.ts
 import mongoose, { Schema } from 'mongoose';
 
 export type MealType = 'lunch' | 'dinner';
@@ -20,6 +19,7 @@ export interface IBooking {
   createdAt: Date;
   updatedAt: Date;
   userId: string; // Reference to the User who created the booking
+  noCleaningService?: boolean; // New field to track if cleaning service applies
   _id?: string;
 }
 
@@ -85,6 +85,10 @@ const BookingSchema = new Schema<IBooking>(
       type: String,
       ref: 'User',
       required: [true, 'User ID is required']
+    },
+    noCleaningService: {
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }
