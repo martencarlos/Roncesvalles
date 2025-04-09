@@ -802,6 +802,7 @@ export default function BookingsPage() {
                   locale="es"
                   className="w-full pl-10 p-2 border rounded-md"
                   renderDayContents={renderDayContents}
+                  onFocus={(e) => e.target.blur()} 
                   customInput={
                     <input
                       className="w-full pl-10 p-2 border rounded-md cursor-pointer"

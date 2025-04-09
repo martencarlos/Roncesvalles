@@ -506,6 +506,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
               minDate={new Date()}
               dateFormat="d MMMM, yyyy"
               locale="es"
+              onFocus={(e) => e.target.blur()} // Prevent keyboard from showing
+              
               wrapperClassName="w-full"
               renderDayContents={renderDayContents}
               customInput={
