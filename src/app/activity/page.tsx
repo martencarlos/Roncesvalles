@@ -167,7 +167,7 @@ export default function ActivityPage() {
                 />
               </div>
               
-              <div className="flex items-end">
+              {/* <div className="flex items-end">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="userOnly"
@@ -178,7 +178,7 @@ export default function ActivityPage() {
                     Solo mis actividades
                   </Label>
                 </div>
-              </div>
+              </div> */}
             </div>
             
             {isFilterApplied && (
