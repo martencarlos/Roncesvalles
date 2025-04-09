@@ -688,220 +688,223 @@ export default function BookingsPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6 sm:mb-8">
-  {/* Top header with title, user guide, and user menu */}
-  <div className="flex justify-between items-center gap-2 mb-4">
-    <h1 className="text-2xl sm:text-3xl font-bold truncate">
-      <Link href="/">Sociedad Roncesvalles</Link>
-    </h1>
-    <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Top header with title, user guide, and user menu */}
+        <div className="flex justify-between items-center gap-2 mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold truncate">
+            <Link href="/">Sociedad Roncesvalles</Link>
+          </h1>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 sm:h-9 sm:px-3"
+            >
+              <Link href="/how-to-use">
+                <BookOpen className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Guía de Uso</span>
+                <span className="sm:hidden">Guía</span>
+              </Link>
+            </Button>
+            <UserMenu />
+          </div>
+        </div>
+
+        <br />
+
+        {/* New Booking Section - Clearly marked and separated */}
+<div className="mb-6 p-4 border rounded-lg bg-slate-50 shadow-sm">
+  {/* Title and action buttons in a column on mobile, row on desktop */}
+  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+    <h2 className="text-xl font-semibold flex items-center">
+      <CalendarIcon className="h-5 w-5 mr-2 text-green-600" />
+      Disponibilidad
+    </h2>
+    
+    <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
+      {session?.user?.role !== "admin" && (
+        <Button
+          onClick={handleNewBooking}
+          size="sm"
+          className="cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 px-4 w-full sm:w-auto"
+        >
+          <PlusCircle className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Nueva Reserva</span>
+          <span className="sm:hidden">Reservar</span>
+        </Button>
+      )}
+      
       <Button
         asChild
         variant="outline"
         size="sm"
-        className="h-8 px-2 sm:h-9 sm:px-3"
+        className="cursor-pointer w-full sm:w-auto"
       >
-        <Link href="/how-to-use">
-          <BookOpen className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">Guía de Uso</span>
-          <span className="sm:hidden">Guía</span>
+        <Link href="/activity">
+          <History className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Ver Actividad</span>
+          <span className="sm:hidden">Actividad</span>
         </Link>
       </Button>
-      <UserMenu />
-    </div>
-  </div>
-  
-  <br />
-  
-  {/* New Booking Section - Clearly marked and separated */}
-  <div className="mb-6 p-4 border rounded-lg bg-slate-50 shadow-sm">
-    {/* Title and action buttons in the same row */}
-    <div className="flex justify-between items-center mb-4">
-      <h2 className="text-xl font-semibold flex items-center">
-        <CalendarIcon className="h-5 w-5 mr-2 text-green-600" />
-        Disponibilidad
-      </h2>
       
-      <div className="flex gap-2">
-        {session?.user?.role !== "admin" && (
-          <Button
-            onClick={handleNewBooking}
-            size="sm"
-            className="cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 px-4"
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Nueva Reserva</span>
-            <span className="sm:hidden">Reservar</span>
-          </Button>
-        )}
-        
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className="cursor-pointer"
-        >
-          <Link href="/activity">
-            <History className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Ver Actividad</span>
-            <span className="sm:hidden">Actividad</span>
-          </Link>
-        </Button>
-        
-        {/* Export button (only for admin or it_admin users) */}
-        {(session?.user?.role === "admin" ||
-          session?.user?.role === "it_admin") && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowExportDialog(true)}
-            className="cursor-pointer"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Exportar</span>
-            <span className="sm:hidden">Exportar</span>
-          </Button>
-        )}
-      </div>
-    </div>
-
-    {/* Date picker */}
-    <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-      {/* Date picker container */}
-      <div className="custom-datepicker-container w-full">
-        <div className="relative flex items-center w-full">
-          <div className="absolute left-3 pointer-events-none text-muted-foreground">
-            <CalendarIcon className="h-4 w-4" />
-          </div>
-          <DatePicker
-            selected={selectedDate}
-            onChange={(date: Date) => {
-              setSelectedDate(date);
-              setDateFilter("specific");
-            }}
-            dateFormat="d MMMM, yyyy"
-            locale="es"
-            className="w-full pl-10 p-2 border rounded-md"
-            renderDayContents={renderDayContents}
-            customInput={
-              <input
-                className="w-full pl-10 p-2 border rounded-md cursor-pointer"
-                readOnly
-              />
-            }
-          />
-        </div>
-
-        <div className="datepicker-legend">
-          <div className="datepicker-legend-item">
-            <div className="datepicker-legend-dot booking-dot-lunch"></div>
-            <span>Comida</span>
-          </div>
-          <div className="datepicker-legend-item">
-            <div className="datepicker-legend-dot booking-dot-dinner"></div>
-            <span>Cena</span>
-          </div>
-          <div className="datepicker-legend-item">
-            <div className="datepicker-legend-dot booking-dot-both"></div>
-            <span>Ambas</span>
-          </div>
-          <div className="flex items-center gap-1 text-muted-foreground ml-auto">
-            <InfoIcon className="h-3 w-3" />
-            <span>Fechas con reservas</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Display pending confirmations button if needed */}
-      {pendingConfirmations > 0 && (
+      {/* Export button (only for admin or it_admin users) */}
+      {(session?.user?.role === "admin" ||
+        session?.user?.role === "it_admin") && (
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handleDateFilterChange("pending-confirmation")}
-          className="cursor-pointer text-amber-700 border-amber-500 w-full sm:w-auto"
+          onClick={() => setShowExportDialog(true)}
+          className="cursor-pointer w-full sm:w-auto col-span-2 sm:col-span-1"
         >
-          <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
-          <span>{pendingConfirmations} reservas pendientes por confirmar</span>
+          <Download className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Exportar</span>
+          <span className="sm:hidden">Exportar</span>
         </Button>
       )}
     </div>
-
-    {/* Tabs for meal type selection */}
-    <Tabs
-      defaultValue="lunch"
-      onValueChange={(value) => setSelectedMealType(value as MealType)}
-      className="w-full"
-    >
-      <TabsList className="mb-4 w-full">
-        <TabsTrigger value="lunch" className="flex-1">
-          Comida
-        </TabsTrigger>
-        <TabsTrigger value="dinner" className="flex-1">
-          Cena
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="lunch">
-        <Card>
-          <CardHeader className="pb-3 px-4">
-            <CardTitle className="text-sm sm:text-md flex items-center gap-2">
-              <UtensilsCrossed className="h-4 w-4" />
-              Mesas disponibles para comida el{" "}
-              {formatDateEs(selectedDate, "d MMM, yyyy")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4">
-            {availableTablesLunch.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {availableTablesLunch.map((table) => (
-                  <Badge
-                    key={table}
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-green-200"
-                  >
-                    Mesa #{table}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-red-500 text-sm">
-                Todas las mesas están reservadas para comida en esta fecha.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="dinner">
-        <Card>
-          <CardHeader className="pb-3 px-4">
-            <CardTitle className="text-sm sm:text-md flex items-center gap-2">
-              <UtensilsCrossed className="h-4 w-4" />
-              Mesas disponibles para cena el{" "}
-              {formatDateEs(selectedDate, "d MMM, yyyy")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4">
-            {availableTablesDinner.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {availableTablesDinner.map((table) => (
-                  <Badge
-                    key={table}
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-green-200"
-                  >
-                    Mesa #{table}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-red-500 text-sm">
-                Todas las mesas están reservadas para cena en esta fecha.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
   </div>
-</header>
+
+          {/* Date picker */}
+          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
+            {/* Date picker container */}
+            <div className="custom-datepicker-container w-full">
+              <div className="relative flex items-center w-full">
+                <div className="absolute left-3 pointer-events-none text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4" />
+                </div>
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={(date: Date) => {
+                    setSelectedDate(date);
+                    setDateFilter("specific");
+                  }}
+                  dateFormat="d MMMM, yyyy"
+                  locale="es"
+                  className="w-full pl-10 p-2 border rounded-md"
+                  renderDayContents={renderDayContents}
+                  customInput={
+                    <input
+                      className="w-full pl-10 p-2 border rounded-md cursor-pointer"
+                      readOnly
+                    />
+                  }
+                />
+              </div>
+
+              <div className="datepicker-legend">
+                <div className="datepicker-legend-item">
+                  <div className="datepicker-legend-dot booking-dot-lunch"></div>
+                  <span>Comida</span>
+                </div>
+                <div className="datepicker-legend-item">
+                  <div className="datepicker-legend-dot booking-dot-dinner"></div>
+                  <span>Cena</span>
+                </div>
+                <div className="datepicker-legend-item">
+                  <div className="datepicker-legend-dot booking-dot-both"></div>
+                  <span>Ambas</span>
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground ml-auto">
+                  <InfoIcon className="h-3 w-3" />
+                  <span>Fechas con reservas</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Display pending confirmations button if needed */}
+            {pendingConfirmations > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDateFilterChange("pending-confirmation")}
+                className="cursor-pointer text-amber-700 border-amber-500 w-full sm:w-auto"
+              >
+                <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
+                <span>
+                  {pendingConfirmations} reservas pendientes por confirmar
+                </span>
+              </Button>
+            )}
+          </div>
+
+          {/* Tabs for meal type selection */}
+          <Tabs
+            defaultValue="lunch"
+            onValueChange={(value) => setSelectedMealType(value as MealType)}
+            className="w-full"
+          >
+            <TabsList className="mb-4 w-full">
+              <TabsTrigger value="lunch" className="flex-1">
+                Comida
+              </TabsTrigger>
+              <TabsTrigger value="dinner" className="flex-1">
+                Cena
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="lunch">
+              <Card>
+                <CardHeader className="pb-3 px-4">
+                  <CardTitle className="text-sm sm:text-md flex items-center gap-2">
+                    <UtensilsCrossed className="h-4 w-4" />
+                    Mesas disponibles para comida el{" "}
+                    {formatDateEs(selectedDate, "d MMM, yyyy")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4">
+                  {availableTablesLunch.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {availableTablesLunch.map((table) => (
+                        <Badge
+                          key={table}
+                          variant="outline"
+                          className="bg-green-50 text-green-700 border-green-200"
+                        >
+                          Mesa #{table}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-red-500 text-sm">
+                      Todas las mesas están reservadas para comida en esta
+                      fecha.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="dinner">
+              <Card>
+                <CardHeader className="pb-3 px-4">
+                  <CardTitle className="text-sm sm:text-md flex items-center gap-2">
+                    <UtensilsCrossed className="h-4 w-4" />
+                    Mesas disponibles para cena el{" "}
+                    {formatDateEs(selectedDate, "d MMM, yyyy")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4">
+                  {availableTablesDinner.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {availableTablesDinner.map((table) => (
+                        <Badge
+                          key={table}
+                          variant="outline"
+                          className="bg-green-50 text-green-700 border-green-200"
+                        >
+                          Mesa #{table}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-red-500 text-sm">
+                      Todas las mesas están reservadas para cena en esta fecha.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </header>
 
       {error && (
         <Alert variant="destructive" className="mb-6">
