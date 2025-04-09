@@ -671,7 +671,7 @@ export default function BookingsPage() {
               <Button
                 onClick={handleNewBooking}
                 size="sm"
-                className="cursor-pointer flex-grow sm:flex-grow-0"
+                className="cursor-pointer flex-grow sm:flex-grow-0 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 px-4"
               >
                 <PlusCircle className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Nueva Reserva</span>
@@ -1071,6 +1071,8 @@ export default function BookingsPage() {
           {dateFilter === "all" && "No hay reservas disponibles."}
         </p>
       )}
+
+      
       {deletingBooking && (
         <DeleteConfirmationDialog
           isOpen={showDeleteDialog}

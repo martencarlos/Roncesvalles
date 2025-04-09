@@ -14,7 +14,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'create':
-        return <Check className="h-4 w-4 text-green-600 shrink-0" />;
+        return <Check className="h-4 w-4 text-white shrink-0" />;
       case 'update':
         return <RefreshCw className="h-4 w-4 text-blue-600 shrink-0" />;
       case 'delete':

@@ -454,7 +454,10 @@ export default function BookingsManagement({
             </SelectContent>
           </Select>
 
-          <Button onClick={() => setShowForm(true)}>
+          <Button
+            onClick={() => setShowForm(true)}
+            className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150"
+          >
             <PlusCircle className="h-4 w-4 mr-2" />
             Nueva Reserva
           </Button>

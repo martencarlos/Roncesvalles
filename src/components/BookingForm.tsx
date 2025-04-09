@@ -515,8 +515,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
                   {/* Disposición de mesa en forma de U - Optimizado para móvil */}
                   <div className="relative w-full aspect-video bg-[#f5f8fa] rounded-lg mb-4 border border-gray-200 shadow-inner overflow-hidden">
-                    
-
                     {/* Mesas del lado izquierdo (1 y 2) */}
                     <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
                       {/* Table 2 */}
@@ -537,7 +535,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                             </div>
                           )}
                         </div>
-                        </div>
+                      </div>
 
                       {/* Table 1 */}
                       <div className="relative m-1 sm:m-2">
@@ -557,8 +555,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                             </div>
                           )}
                         </div>
-                       
-                        </div>
+                      </div>
                     </div>
 
                     {/* Mesas centrales superiores (3 y 4) */}
@@ -581,7 +578,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                             </div>
                           )}
                         </div>
-                       </div>
+                      </div>
 
                       {/* Table 4 */}
                       <div className="relative">
@@ -601,7 +598,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                             </div>
                           )}
                         </div>
-                       </div>
+                      </div>
                     </div>
 
                     {/* Mesas del lado derecho (5 y 6) */}
@@ -624,7 +621,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                             </div>
                           )}
                         </div>
-                        </div>
+                      </div>
 
                       {/* Table 6 */}
                       <div className="relative m-1 sm:m-2">
@@ -644,10 +641,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
                             </div>
                           )}
                         </div>
-                       </div>
+                      </div>
                     </div>
-
-                    </div>
+                  </div>
 
                   {/* Table information and selection summary */}
                   <div className="mb-3 grid grid-cols-1 gap-y-2">
@@ -810,7 +806,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="cursor-pointer w-full sm:w-auto"
+          className={`cursor-pointer w-full sm:w-auto active:scale-95 transition-all duration-150 ${
+            initialData?._id
+              ? "" // Regular styling for update
+              : "bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg" // Enhanced styling for create
+          }`}
         >
           {isSubmitting
             ? "Guardando..."

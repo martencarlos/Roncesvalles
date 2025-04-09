@@ -134,6 +134,7 @@
 }
 
 @layer utilities {
+
 ::-webkit-scrollbar {
   /* position: absolute; */
   width: 8px;
