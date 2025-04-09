@@ -54,8 +54,9 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
     };
   });
 
-  // Password resets distribution (simulated)
-  const passwordResetData = [
+  const passwordResetData = userStats.passwordResetTrends || 
+  // Fallback to simulated data if not provided from API
+  [
     { month: "Ene", resets: 0 },
     { month: "Feb", resets: 1 },
     { month: "Mar", resets: 0 },
