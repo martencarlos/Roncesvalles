@@ -14,7 +14,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'create':
-        return <Check className="h-4 w-4 text-white shrink-0" />;
+        return <Check className="h-4 w-4 text-green-600 shrink-0" />;
       case 'update':
         return <RefreshCw className="h-4 w-4 text-blue-600 shrink-0" />;
       case 'delete':
@@ -82,7 +82,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
       {/* Desktop layout - hidden on mobile */}
       <div className="hidden sm:grid py-4 w-full grid-cols-[auto_120px_1fr_auto] gap-3 items-start">
         {/* Icon column */}
-        <div className={`p-2 rounded-full self-center bg-opacity-10 ${getActionColor(log.action).replace('text-', 'bg-')}`}>
+        <div className={`p-2 rounded-full self-center bg-white ${getActionColor(log.action).replace('text-', 'bg-')}`}>
           {getActionIcon(log.action)}
         </div>
         
@@ -110,7 +110,7 @@ const ActivityLogItem: React.FC<ActivityLogItemProps> = ({ log }) => {
       <div className="sm:hidden py-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-full bg-opacity-10 ${getActionColor(log.action).replace('text-', 'bg-')}`}>
+            <div className={`p-2 rounded-full bg-white ${getActionColor(log.action).replace('text-', 'bg-')}`}>
               {getActionIcon(log.action)}
             </div>
             <span className={`font-medium ${getActionColor(log.action)} text-sm`}>
