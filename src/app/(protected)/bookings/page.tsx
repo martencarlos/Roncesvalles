@@ -961,9 +961,9 @@ export default function BookingsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div className="flex items-center gap-3">
             <h2 className="text-lg sm:text-xl font-semibold">
-              {dateFilter === "today" && "Reservas de Hoy"}
-              {dateFilter === "future" && "Próximas Reservas"}
-              {dateFilter === "past" && "Reservas Pasadas"}
+              {dateFilter === "today" && "Mis Reservas de Hoy"}
+              {dateFilter === "future" && "Mis Próximas Reservas"}
+              {dateFilter === "past" && "Mis Reservas Pasadas"}
               {dateFilter === "pending-confirmation" &&
                 "Reservas Pendientes de Confirmación"}
               {dateFilter === "specific" &&
