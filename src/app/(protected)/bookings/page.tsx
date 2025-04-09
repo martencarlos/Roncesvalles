@@ -4,6 +4,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
+  BookingCardSkeleton,
+  BookingListItemSkeleton,
+  BookingsDateSkeleton,
+  BookingsListSkeleton,
+} from "@/components/BookingCardSkeleton";
+import {
   format,
   isToday,
   isFuture,
@@ -937,8 +943,12 @@ export default function BookingsPage() {
 
       {/* Bookings display - Card or List view */}
       {loading ? (
-        <div className="flex justify-center p-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        <div>
+          {viewMode === "list" ? (
+            <BookingsListSkeleton />
+          ) : (
+            <BookingsDateSkeleton />
+          )}
         </div>
       ) : filteredBookings.length > 0 ? (
         <div className="space-y-6 sm:space-y-8">
