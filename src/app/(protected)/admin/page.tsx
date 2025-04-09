@@ -1,4 +1,4 @@
-// src/app/(protected)/admin/page.tsx
+// src/app/(protected)/admin/page.tsx (updated)
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -39,6 +39,17 @@ export default async function AdminPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Dashboard Card - NEW */}
+        <div className="bg-white rounded-lg border shadow-sm p-6">
+          <h2 className="text-xl font-semibold mb-4">Panel de Estadísticas</h2>
+          <p className="text-muted-foreground mb-4">
+            Visualice estadísticas detalladas sobre usuarios, reservas y actividad del sistema con gráficos interactivos.
+          </p>
+          <Button asChild className="w-full">
+            <Link href="/admin/dashboard">Ver Estadísticas</Link>
+          </Button>
+        </div>
+
         {/* User Management Card */}
         <div className="bg-white rounded-lg border shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Gestión de Usuarios</h2>
