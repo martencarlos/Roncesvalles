@@ -137,36 +137,37 @@ const BookingForm: React.FC<BookingFormProps> = ({
   useEffect(() => {
     const fetchAllBookings = async () => {
       try {
-        const res = await fetch("/api/bookings");
+        // Use the new parameter to get all bookings for calendar
+        const res = await fetch("/api/bookings?forCalendar=true");
         if (!res.ok) {
           throw new Error("Error al obtener reservas");
         }
-
+  
         const bookings: IBooking[] = await res.json();
-
+  
         // Organize bookings by date and meal type
         const bookingMap: BookingsForDate = {};
-
+  
         bookings.forEach((booking) => {
           const dateKey = format(new Date(booking.date), "yyyy-MM-dd");
-
+  
           if (!bookingMap[dateKey]) {
             bookingMap[dateKey] = { lunch: false, dinner: false };
           }
-
+  
           if (booking.mealType === "lunch") {
             bookingMap[dateKey].lunch = true;
           } else {
             bookingMap[dateKey].dinner = true;
           }
         });
-
+  
         setBookingsForDates(bookingMap);
       } catch (err) {
         console.error("Error fetching all bookings:", err);
       }
     };
-
+  
     fetchAllBookings();
   }, []);
 

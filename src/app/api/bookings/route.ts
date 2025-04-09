@@ -7,6 +7,7 @@ import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User'; 
 
+
 export async function GET(req: NextRequest) {
   try {
     // Get session directly
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
     const mealTypeParam = url.searchParams.get('mealType');
     const apartmentParam = url.searchParams.get('apartment');
     const availabilityCheck = url.searchParams.get('availabilityCheck');
+    const forCalendar = url.searchParams.get('forCalendar');
     
     // Build query
     let query: any = {};
@@ -51,13 +53,10 @@ export async function GET(req: NextRequest) {
       query.mealType = mealTypeParam;
     }
     
-    // IMPORTANT ENHANCEMENT:
-    // When explicitly checking for availability (from the booking form or available tables display),
-    // we need to return ALL bookings regardless of user
-    // Add an explicit parameter for this purpose
-    if (dateParam && mealTypeParam && availabilityCheck === 'true') {
-      // Do not filter by apartment for availability checks
-      console.log("Returning all bookings for availability check");
+    // For calendar view or availability checks, return all bookings regardless of user
+    if (forCalendar === 'true' || (dateParam && mealTypeParam && availabilityCheck === 'true')) {
+      // Do not filter by apartment for calendar view or availability checks
+      console.log("Returning all bookings for calendar view or availability check");
     } 
     // For queries requesting a specific date but not explicitly for availability,
     // still return all bookings for that date

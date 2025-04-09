@@ -4,8 +4,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  BookingCardSkeleton,
-  BookingListItemSkeleton,
   BookingsDateSkeleton,
   BookingsListSkeleton,
 } from "@/components/BookingCardSkeleton";
@@ -145,19 +143,27 @@ export default function BookingsPage() {
         [key: string]: { lunch: boolean; dinner: boolean };
       } = {};
 
-      sortedData.forEach((booking) => {
-        const dateKey = format(new Date(booking.date), "yyyy-MM-dd");
+      // Now fetch ALL bookings for calendar indicators (not just the user's bookings)
+      const calendarRes = await fetch("/api/bookings?forCalendar=true");
 
-        if (!bookingsByDateMap[dateKey]) {
-          bookingsByDateMap[dateKey] = { lunch: false, dinner: false };
-        }
+      if (calendarRes.ok) {
+        const allBookings = await calendarRes.json();
 
-        if (booking.mealType === "lunch") {
-          bookingsByDateMap[dateKey].lunch = true;
-        } else {
-          bookingsByDateMap[dateKey].dinner = true;
-        }
-      });
+        // Process all bookings to show in calendar
+        allBookings.forEach((booking: IBooking) => {
+          const dateKey = format(new Date(booking.date), "yyyy-MM-dd");
+
+          if (!bookingsByDateMap[dateKey]) {
+            bookingsByDateMap[dateKey] = { lunch: false, dinner: false };
+          }
+
+          if (booking.mealType === "lunch") {
+            bookingsByDateMap[dateKey].lunch = true;
+          } else {
+            bookingsByDateMap[dateKey].dinner = true;
+          }
+        });
+      }
 
       // Extract unique dates with bookings
       const uniqueDates = Object.keys(bookingsByDateMap).map(
@@ -578,9 +584,10 @@ export default function BookingsPage() {
         bookings.flatMap((booking: IBooking) => booking.tables)
       );
 
-      console.log(`Booked tables for ${date.toDateString()} - ${mealType}:`, [
-        ...bookedTables,
-      ]);
+      console.log(
+        `Booked tables for ${date.toDateString()} - ${mealType} (all users):`,
+        [...bookedTables]
+      );
 
       return bookedTables;
     } catch (err) {
@@ -745,7 +752,7 @@ export default function BookingsPage() {
               </div>
               <div className="flex items-center gap-1 text-muted-foreground ml-auto">
                 <InfoIcon className="h-3 w-3" />
-                <span>Fechas con reservas</span>
+                <span>Todas las reservas</span>
               </div>
             </div>
           </div>
