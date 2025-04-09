@@ -159,19 +159,19 @@ export default function AdminDashboard() {
           <TabsList className="mb-4 sm:mb-6 w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap pb-1">
             <TabsTrigger value="system" className="gap-1 min-w-fit">
               <LayoutGrid className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-xs sm:text-sm">Resumen</span>
+              <span className="hidden sm:inline text-sm">Resumen</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-1 min-w-fit">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-xs sm:text-sm">Usuarios</span>
+              <span className="hidden sm:inline text-sm">Usuarios</span>
             </TabsTrigger>
             <TabsTrigger value="bookings" className="gap-1 min-w-fit">
               <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-xs sm:text-sm">Reservas</span>
+              <span className="hidden sm:inline text-sm">Reservas</span>
             </TabsTrigger>
             <TabsTrigger value="activity" className="gap-1 min-w-fit">
               <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-xs sm:text-sm">Actividad</span>
+              <span className="hidden sm:inline text-sm">Actividad</span>
             </TabsTrigger>
           </TabsList>
 
