@@ -398,7 +398,7 @@ export default function BookingsManagement({
                 locale="es"
                 placeholderText="Seleccionar fecha"
                 className="w-full sm:w-40 p-2 border rounded-md"
-                customInput={<Input className="w-full sm:w-40" />}
+                customInput={<Input className="w-full sm:w-40" readOnly />}
               />
             </div>
           )}

@@ -54,6 +54,20 @@ import router from "next/router";
 // Registrar el idioma español para el datepicker
 registerLocale("es", es);
 
+// Create a skeleton for the available tables
+const TablesSkeleton = () => {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div
+          key={i}
+          className="h-7 w-16 bg-gray-200 animate-pulse rounded-full"
+        />
+      ))}
+    </div>
+  );
+};
+
 type DateFilter =
   | "all"
   | "today"
@@ -85,7 +99,7 @@ export default function BookingsPage() {
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Add these state variables at the beginning of your component where other state variables are defined
+  const [loadingTables, setLoadingTables] = useState(true);
   const [availableTablesLunch, setAvailableTablesLunch] = useState<number[]>(
     []
   );
@@ -196,6 +210,9 @@ export default function BookingsPage() {
   // Separate function to update available tables based on selected date
   const updateAvailableTables = async (date: Date) => {
     try {
+      // Set loading state to true when we start loading tables
+      setLoadingTables(true);
+
       const selectedDateString = date.toISOString().split("T")[0];
 
       // Make two separate requests for lunch and dinner availability
@@ -236,6 +253,9 @@ export default function BookingsPage() {
       }
     } catch (err) {
       console.error("Error fetching available tables:", err);
+    } finally {
+      // Set loading to false when done, regardless of success or failure
+      setLoadingTables(false);
     }
   };
 
@@ -851,7 +871,9 @@ export default function BookingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-4">
-                  {availableTablesLunch.length > 0 ? (
+                  {loadingTables ? (
+                    <TablesSkeleton />
+                  ) : availableTablesLunch.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {availableTablesLunch.map((table) => (
                         <Badge
@@ -882,7 +904,9 @@ export default function BookingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-4">
-                  {availableTablesDinner.length > 0 ? (
+                  {loadingTables ? (
+                    <TablesSkeleton />
+                  ) : availableTablesDinner.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {availableTablesDinner.map((table) => (
                         <Badge
