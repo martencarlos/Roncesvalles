@@ -87,6 +87,14 @@ export default function BookingsPage() {
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Add these state variables at the beginning of your component where other state variables are defined
+  const [availableTablesLunch, setAvailableTablesLunch] = useState<number[]>(
+    []
+  );
+  const [availableTablesDinner, setAvailableTablesDinner] = useState<number[]>(
+    []
+  );
+
   // Add view mode state
   const [viewMode, setViewMode] = useState<ViewMode>(undefined);
 
@@ -95,12 +103,12 @@ export default function BookingsPage() {
     [key: string]: { lunch: boolean; dinner: boolean };
   }>({});
 
-  // Fetch all bookings
   const fetchBookings = async () => {
     setLoading(true);
     setError("");
 
     try {
+      // Get all the user's bookings for display in their list
       const res = await fetch("/api/bookings");
 
       if (!res.ok) {
@@ -168,11 +176,60 @@ export default function BookingsPage() {
       ).length;
 
       setPendingConfirmations(pendingCount);
+
+      // Now fetch ALL bookings for the selected date to check availability
+      updateAvailableTables(selectedDate);
     } catch (err: any) {
       setError(err.message);
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Separate function to update available tables based on selected date
+  const updateAvailableTables = async (date: Date) => {
+    try {
+      const selectedDateString = date.toISOString().split("T")[0];
+
+      // Make two separate requests for lunch and dinner availability
+      const lunchRes = await fetch(
+        `/api/bookings?date=${selectedDateString}&mealType=lunch&availabilityCheck=true`
+      );
+      const dinnerRes = await fetch(
+        `/api/bookings?date=${selectedDateString}&mealType=dinner&availabilityCheck=true`
+      );
+
+      if (lunchRes.ok && dinnerRes.ok) {
+        const lunchBookings = await lunchRes.json();
+        const dinnerBookings = await dinnerRes.json();
+
+        // Get all tables booked for lunch and dinner
+        const lunchBookedTables = new Set(
+          lunchBookings.flatMap((booking: IBooking) => booking.tables)
+        );
+        const dinnerBookedTables = new Set(
+          dinnerBookings.flatMap((booking: IBooking) => booking.tables)
+        );
+
+        console.log("Lunch booked tables:", [...lunchBookedTables]);
+        console.log("Dinner booked tables:", [...dinnerBookedTables]);
+
+        // Calculate available tables by excluding booked tables
+        const availableLunch = [1, 2, 3, 4, 5, 6].filter(
+          (table) => !lunchBookedTables.has(table)
+        );
+
+        const availableDinner = [1, 2, 3, 4, 5, 6].filter(
+          (table) => !dinnerBookedTables.has(table)
+        );
+
+        // Update state with available tables
+        setAvailableTablesLunch(availableLunch);
+        setAvailableTablesDinner(availableDinner);
+      }
+    } catch (err) {
+      console.error("Error fetching available tables:", err);
     }
   };
 
@@ -261,6 +318,33 @@ export default function BookingsPage() {
   useEffect(() => {
     applyFilters(bookings, dateFilter, selectedDate);
   }, [dateFilter, selectedDate, bookings]);
+
+  // When you need to check for booked tables and update the available tables:
+  useEffect(() => {
+    const updateAvailableTablesForSelectedDate = async () => {
+      // Get booked tables for lunch
+      const bookedTablesLunch = await getBookedTablesForDateAndMeal(
+        selectedDate,
+        "lunch"
+      );
+      const availableLunch = [1, 2, 3, 4, 5, 6].filter(
+        (table) => !bookedTablesLunch.has(table)
+      );
+      setAvailableTablesLunch(availableLunch);
+
+      // Get booked tables for dinner
+      const bookedTablesDinner = await getBookedTablesForDateAndMeal(
+        selectedDate,
+        "dinner"
+      );
+      const availableDinner = [1, 2, 3, 4, 5, 6].filter(
+        (table) => !bookedTablesDinner.has(table)
+      );
+      setAvailableTablesDinner(availableDinner);
+    };
+
+    updateAvailableTablesForSelectedDate();
+  }, [selectedDate]); // This will run whenever the selected date changes
 
   const handleCreateBooking = async (data: Partial<IBooking>) => {
     // Prevent admin (read-only) from creating bookings
@@ -470,38 +554,40 @@ export default function BookingsPage() {
     }
   };
 
-  // Get all booked tables for selected date and meal type
-  const getBookedTablesForDateAndMeal = (date: Date, mealType: MealType) => {
-    const selectedDateStart = startOfDay(date);
-    const selectedDateEnd = endOfDay(date);
+  // Updated getBookedTablesForDateAndMeal function
+  const getBookedTablesForDateAndMeal = async (
+    date: Date,
+    mealType: MealType
+  ) => {
+    try {
+      const selectedDateString = date.toISOString().split("T")[0];
 
-    const bookingsForDate = bookings.filter((booking) => {
-      const bookingDate = new Date(booking.date);
-      return (
-        bookingDate >= selectedDateStart &&
-        bookingDate <= selectedDateEnd &&
-        booking.mealType === mealType
+      // Make a request specifically for availability check
+      const res = await fetch(
+        `/api/bookings?date=${selectedDateString}&mealType=${mealType}&availabilityCheck=true`
       );
-    });
 
-    return new Set(bookingsForDate.flatMap((booking) => booking.tables));
+      if (!res.ok) {
+        throw new Error("Error fetching booked tables");
+      }
+
+      const bookings = await res.json();
+
+      // Get all tables booked for this date and meal type
+      const bookedTables = new Set(
+        bookings.flatMap((booking: IBooking) => booking.tables)
+      );
+
+      console.log(`Booked tables for ${date.toDateString()} - ${mealType}:`, [
+        ...bookedTables,
+      ]);
+
+      return bookedTables;
+    } catch (err) {
+      console.error("Error in getBookedTablesForDateAndMeal:", err);
+      return new Set<number>();
+    }
   };
-
-  const bookedTablesLunch = getBookedTablesForDateAndMeal(
-    selectedDate,
-    "lunch"
-  );
-  const availableTablesLunch = [1, 2, 3, 4, 5, 6].filter(
-    (table) => !bookedTablesLunch.has(table)
-  );
-
-  const bookedTablesDinner = getBookedTablesForDateAndMeal(
-    selectedDate,
-    "dinner"
-  );
-  const availableTablesDinner = [1, 2, 3, 4, 5, 6].filter(
-    (table) => !bookedTablesDinner.has(table)
-  );
 
   const handleDateFilterChange = (filter: DateFilter) => {
     setDateFilter(filter);
@@ -1072,7 +1158,6 @@ export default function BookingsPage() {
         </p>
       )}
 
-      
       {deletingBooking && (
         <DeleteConfirmationDialog
           isOpen={showDeleteDialog}

@@ -174,45 +174,66 @@ const BookingForm: React.FC<BookingFormProps> = ({
   useEffect(() => {
     const fetchBookedTables = async () => {
       if (!date || !mealType) return;
-
+  
       setLoading(true);
-
+  
       try {
         // Format date to ISO string
         const dateString = date.toISOString().split("T")[0];
-
+        
+        // Add console logging to debug
+        console.log(`Fetching bookings for date: ${dateString}, mealType: ${mealType}`);
+  
         // Fetch bookings for selected date and meal type
         const res = await fetch(
           `/api/bookings?date=${dateString}&mealType=${mealType}`
         );
-
+  
         if (!res.ok) {
           throw new Error("Error al obtener reservas");
         }
-
+  
         const bookings: IBooking[] = await res.json();
-
+        
+        // Log all bookings received
+        console.log("All bookings for this date/meal:", bookings);
+  
         // Filter out the current booking being edited if applicable
         const filteredBookings = initialData?._id
           ? bookings.filter((booking) => booking._id !== initialData._id)
           : bookings;
-
-        // Get all booked tables
-        const tables = filteredBookings.flatMap((booking) => booking.tables);
-
-        setBookedTables(tables);
-
-        // Reset selected tables when switching meal type if any selected table is now booked
+        
+        console.log("Filtered bookings (excluding current if editing):", filteredBookings);
+  
+        // Get all booked tables from other bookings
+        const allBookedTables = filteredBookings.flatMap((booking) => booking.tables);
+        
+        console.log("Tables already booked:", allBookedTables);
+        
+        // Ensure we're setting booked tables correctly
+        setBookedTables(allBookedTables);
+  
+        // Check if any of our selected tables are now booked by others
         const hasConflict = selectedTables.some((tableNum) =>
-          tables.includes(tableNum)
+          allBookedTables.includes(tableNum)
         );
+        
         if (hasConflict) {
-          setSelectedTables([]);
-          // Optionally notify user
-          if (selectedTables.length > 0) {
-            toast.info("Selección de mesas reiniciada", {
+          console.log("Conflict detected between selected tables and booked tables");
+          // Remove only the conflicting tables
+          const validTables = selectedTables.filter(
+            (tableNum) => !allBookedTables.includes(tableNum)
+          );
+          
+          console.log("Removing conflicting tables. New selection:", validTables);
+          
+          setSelectedTables(validTables);
+          
+          // Notify user if tables were removed
+          if (selectedTables.length !== validTables.length) {
+            toast.info("Selección de mesas actualizada", {
               description:
-                "Las mesas seleccionadas ya no están disponibles para este servicio.",
+                "Algunas mesas que había seleccionado ya no están disponibles.",
             });
           }
         }
@@ -222,7 +243,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         setLoading(false);
       }
     };
-
+  
     fetchBookedTables();
   }, [date, mealType, initialData?._id]);
 
@@ -272,14 +293,17 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   // Toggle for table selection
   const toggleTable = (tableNumber: number) => {
-    // Don't allow toggling of booked tables
-    if (bookedTables.includes(tableNumber)) return;
-
+    // Don't allow toggling of booked tables - add explicit console logging
+    if (bookedTables.includes(tableNumber)) {
+      console.log(`Attempted to select booked table ${tableNumber}, but it's already booked`);
+      return;
+    }
+  
     setSelectedTables((prev) => {
       const newTables = prev.includes(tableNumber)
         ? prev.filter((t) => t !== tableNumber)
         : [...prev, tableNumber];
-
+  
       // Check if the new table selection would reduce capacity below current number of people
       const newMaxCapacity = newTables.length * MAX_PEOPLE_PER_TABLE;
       if (newTables.length > 0 && numberOfPeople > newMaxCapacity) {
@@ -288,7 +312,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
           description: `El máximo de personas permitidas para ${newTables.length} mesa(s) es ${newMaxCapacity}.`,
         });
       }
-
+  
       return newTables;
     });
   };
@@ -298,7 +322,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
     selectedTables.includes(tableNumber);
 
   // Check if a table is booked by someone else
-  const isBooked = (tableNumber: number) => bookedTables.includes(tableNumber);
+  const isBooked = (tableNumber: number) => {
+    const isTableBooked = bookedTables.includes(tableNumber);
+    // Add this for debugging
+    if (isTableBooked) {
+      console.log(`Table ${tableNumber} is marked as booked`);
+    }
+    return isTableBooked;
+  };
 
   // Custom day rendering for the date picker to highlight dates with bookings
   const renderDayContents = (day: number, date: Date | undefined) => {
@@ -402,7 +433,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
   };
 
-  // Helper function to get table style classes based on status
   // Helper function to get table style classes based on status
   const getTableClasses = (tableNumber: number) => {
     if (isBooked(tableNumber)) {

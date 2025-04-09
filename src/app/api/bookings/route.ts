@@ -5,8 +5,7 @@ import { authOptions } from "@/lib/auth";
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
-import User from '@/models/User'; // Import User model
-import { authenticate } from '@/lib/auth-utils';
+import User from '@/models/User'; 
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,6 +29,7 @@ export async function GET(req: NextRequest) {
     const dateParam = url.searchParams.get('date');
     const mealTypeParam = url.searchParams.get('mealType');
     const apartmentParam = url.searchParams.get('apartment');
+    const availabilityCheck = url.searchParams.get('availabilityCheck');
     
     // Build query
     let query: any = {};
@@ -51,17 +51,35 @@ export async function GET(req: NextRequest) {
       query.mealType = mealTypeParam;
     }
     
-    // Regular users can only see their own bookings
-    if (currentUser.role === 'user') {
-      query.apartmentNumber = currentUser.apartmentNumber;
+    // IMPORTANT ENHANCEMENT:
+    // When explicitly checking for availability (from the booking form or available tables display),
+    // we need to return ALL bookings regardless of user
+    // Add an explicit parameter for this purpose
+    if (dateParam && mealTypeParam && availabilityCheck === 'true') {
+      // Do not filter by apartment for availability checks
+      console.log("Returning all bookings for availability check");
     } 
-    // If specifically filtering by apartment number
-    else if (apartmentParam && !isNaN(parseInt(apartmentParam))) {
-      query.apartmentNumber = parseInt(apartmentParam);
+    // For queries requesting a specific date but not explicitly for availability,
+    // still return all bookings for that date
+    else if (dateParam && mealTypeParam) {
+      // Do not filter by apartment when checking specific date + meal type
+      console.log("Returning all bookings for specific date and meal type");
+    }
+    // For other queries (like listing user's bookings with no date), apply permissions
+    else {
+      // Regular users can only see their own bookings by default
+      if (currentUser.role === 'user') {
+        query.apartmentNumber = currentUser.apartmentNumber;
+      } 
+      // If specifically filtering by apartment number
+      else if (apartmentParam && !isNaN(parseInt(apartmentParam))) {
+        query.apartmentNumber = parseInt(apartmentParam);
+      }
     }
     
     // Sort by date, meal type, then apartment number
     const bookings = await Booking.find(query).sort({ date: 1, mealType: 1, apartmentNumber: 1 });
+    
     return NextResponse.json(bookings);
   } catch (error) {
     console.error('GET /api/bookings error:', error);
