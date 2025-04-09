@@ -12,7 +12,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Sector } from "recharts";
 
 interface SystemSummaryProps {
   userStats: UserStats;
@@ -42,17 +42,22 @@ export default function SystemSummary({ userStats, bookingStats }: SystemSummary
     { name: "Canceladas", value: bookingStats.totalCancelled, color: "#ef4444" },
   ];
 
-  // Custom pie chart label renderer for mobile optimization
-  const renderCustomizedLabel = ({ name, percent }: { name: string; percent: number }) => {
-    // On smaller screens, only show percentage
+  // Custom label renderer for pie charts
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius * 0.55;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    
     return (
-      <text
-        x="50%"
-        y="50%"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="text-xs md:text-sm"
-        fill="#888888"
+      <text 
+        x={x} 
+        y={y} 
+        fill="#000000" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontSize="10"
+        fontWeight="bold"
       >
         {`${(percent * 100).toFixed(0)}%`}
       </text>
