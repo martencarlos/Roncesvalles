@@ -9,12 +9,12 @@ import { UserStats } from "@/components/admin/AdminDashboard";
 import {
   Users,
   UserPlus,
-  Smartphone,
   MonitorSmartphone,
   LaptopIcon,
   SmartphoneIcon,
   TabletIcon,
   LogIn,
+  Globe
 } from "lucide-react";
 import {
   LineChart,
@@ -52,7 +52,7 @@ interface UserLogin {
   timestamp: string;
   deviceType: "desktop" | "mobile" | "tablet";
   browser: string;
-  location: string; // This now contains device model info
+  location: string; // This now contains OS info
   ipAddress: string;
 }
 
@@ -160,7 +160,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
     return (
       login.userName.toLowerCase().includes(searchLower) ||
       (login.apartmentNumber?.toString() || "").includes(searchLower) ||
-      login.location.toLowerCase().includes(searchLower) || // This now searches device model
+      login.location.toLowerCase().includes(searchLower) || // This now searches OS info
       login.deviceType.toLowerCase().includes(searchLower) ||
       login.browser.toLowerCase().includes(searchLower)
     );
@@ -513,7 +513,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     Navegador
                   </TableHead>
                   <TableHead className="hidden md:table-cell">
-                    Modelo
+                    Sistema Op.
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -541,7 +541,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-1">
-                          <SmartphoneIcon className="h-3 w-3 text-muted-foreground" />
+                          <Globe className="h-3 w-3 text-muted-foreground" />
                           {login.location}
                         </div>
                       </TableCell>

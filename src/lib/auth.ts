@@ -1,10 +1,10 @@
-// src/lib/auth.ts 
+// src/lib/auth.ts - Updated to track login events and handle session updates
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import connectDB from "./mongodb";
 import User, { IUser } from "@/models/User";
-import LoginEvent from "@/models/LoginEvent"; 
+import LoginEvent from "@/models/LoginEvent"; // Import the LoginEvent model
 import { UAParser } from 'ua-parser-js'
 
 // Helper function to determine device type
@@ -38,16 +38,10 @@ async function trackLoginEvent(
       req.connection.remoteAddress || 
       '0.0.0.0';
     
-    // Parse user agent to get device info
+    // Parse user agent to get OS info
     const parser = new UAParser(userAgent);
-    const device = parser.getDevice();
-    const deviceModel = device.model || 'Unknown device';
-    const deviceVendor = device.vendor || '';
-    
-    // Create device info string
-    const deviceInfo = deviceVendor 
-      ? `${deviceVendor} ${deviceModel}`
-      : deviceModel;
+    const os = parser.getOS();
+    const osInfo = os.name ? `${os.name} ${os.version || ''}`.trim() : 'Unknown OS';
     
     // Create login event
     const loginEvent = new LoginEvent({
@@ -57,7 +51,7 @@ async function trackLoginEvent(
       userAgent,
       browser: getBrowserInfo(userAgent),
       deviceType: getDeviceType(userAgent),
-      location: deviceInfo, // Use device info instead of location
+      location: osInfo, // Use OS info instead of location
       success,
       failureReason,
     });
