@@ -29,17 +29,17 @@ export async function GET(req: NextRequest) {
     // Fetch login statistics
     const loginStatsResponse = await fetch(new URL('/api/dashboard/login-stats', req.url).toString(), {
       headers: {
-        cookie: req.headers.get('cookie') || '' // Forward cookies for auth
+        cookie: req.headers.get('cookie') || '' 
       }
     });
     
     const loginStats = await loginStatsResponse.json();
     
-    // Combine all statistics
+    
     return NextResponse.json({
       userStats: {
         ...userStats,
-        ...loginStats // Add login stats to user stats
+        loginActivity: loginStats.loginActivity 
       },
       bookingStats
     });

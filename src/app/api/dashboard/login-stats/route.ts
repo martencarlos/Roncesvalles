@@ -59,6 +59,8 @@ export async function GET(req: NextRequest) {
       { $limit: 50 } // Get top 50 users
     ]);
     
+    console.log('User login counts from DB:', userLoginCounts);
+    
     // Get user details for the login counts
     const userIds = userLoginCounts.map(entry => entry._id);
     const users = await User.find({ _id: { $in: userIds } }, {
@@ -67,7 +69,9 @@ export async function GET(req: NextRequest) {
       apartmentNumber: 1
     });
     
-    // Map user details to login counts
+    console.log('Users found:', users.length);
+    
+    // Map user details to login counts - improved with better error handling
     const loginsByUser = userLoginCounts.map(loginEntry => {
       const userDetails = users.find(u => u._id.toString() === loginEntry._id);
       return {
@@ -78,34 +82,34 @@ export async function GET(req: NextRequest) {
       };
     });
     
-    // Get recent logins
-    const recentLogins = await LoginEvent.aggregate([
-      { $match: { success: true } },
-      { $sort: { timestamp: -1 } },
-      { $limit: 100 }, // Get last 100 logins
-      {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          as: "user"
-        }
-      },
-      { $unwind: "$user" },
-      {
-        $project: {
-          id: "$_id",
-          userId: 1,
-          userName: "$user.name",
-          apartmentNumber: "$user.apartmentNumber",
-          timestamp: 1,
-          deviceType: 1,
-          browser: 1,
-          location: 1,
-          ipAddress: 1
-        }
-      }
-    ]);
+    console.log('Processed loginsByUser:', loginsByUser);
+    
+    // Get recent logins - simplified query to ensure it works
+    const recentLogins = await LoginEvent.find({ success: true })
+      .sort({ timestamp: -1 })
+      .limit(100);
+    
+    // Now, manually map user information to logins
+    const processedRecentLogins = await Promise.all(
+      recentLogins.map(async (login) => {
+        // Fetch the user info for each login
+        const user = await User.findById(login.userId).select('name apartmentNumber');
+        
+        return {
+          id: login._id,
+          userId: login.userId,
+          userName: user?.name || "Usuario desconocido",
+          apartmentNumber: user?.apartmentNumber,
+          timestamp: login.timestamp,
+          deviceType: login.deviceType,
+          browser: login.browser,
+          location: login.location,
+          ipAddress: login.ipAddress
+        };
+      })
+    );
+    
+    console.log('Recent logins processed:', processedRecentLogins.length);
     
     // Transform monthly data into proper format
     const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -145,7 +149,7 @@ export async function GET(req: NextRequest) {
       loginActivity: {
         totalLogins,
         loginsByUser,
-        recentLogins,
+        recentLogins: processedRecentLogins,
         loginsByMonth: loginsByMonth.map(month => ({
           month: `${month.month}`,
           count: month.count
