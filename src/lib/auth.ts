@@ -1,9 +1,62 @@
-// src/lib/auth.ts
+// src/lib/auth.ts - Updated to track login events
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import connectDB from "./mongodb";
 import User, { IUser } from "@/models/User";
+import LoginEvent from "@/models/LoginEvent"; // Import the LoginEvent model
+import { UAParser } from 'ua-parser-js'
+
+// Helper function to determine device type
+function getDeviceType(userAgent: string): 'desktop' | 'mobile' | 'tablet' {
+  const parser = new UAParser(userAgent);
+  const device = parser.getDevice();
+  
+  if (device.type === 'tablet') return 'tablet';
+  if (device.type === 'mobile') return 'mobile';
+  return 'desktop';
+}
+
+// Helper function to get browser info
+function getBrowserInfo(userAgent: string): string {
+  const parser = new UAParser(userAgent);
+  const browser = parser.getBrowser();
+  return `${browser.name || 'Unknown'} ${browser.version || ''}`.trim();
+}
+
+// Function to track login events
+async function trackLoginEvent(
+  userId: string, 
+  success: boolean, 
+  req: any, 
+  failureReason?: string
+) {
+  try {
+    const userAgent = req.headers['user-agent'] || '';
+    const ipAddress = 
+      req.headers['x-forwarded-for']?.split(',')[0] || 
+      req.connection.remoteAddress || 
+      '0.0.0.0';
+    
+    // Create login event
+    const loginEvent = new LoginEvent({
+      userId,
+      timestamp: new Date(),
+      ipAddress,
+      userAgent,
+      browser: getBrowserInfo(userAgent),
+      deviceType: getDeviceType(userAgent),
+      location: 'Unknown', // You can integrate with IP geolocation services
+      success,
+      failureReason,
+    });
+    
+    await loginEvent.save();
+  } catch (error) {
+    console.error('Error tracking login event:', error);
+    // Don't throw - we don't want to interrupt the login process if tracking fails
+  }
+}
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -13,8 +66,9 @@ export const authOptions: AuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
+          await trackLoginEvent('unknown', false, req, 'Missing credentials');
           throw new Error("Invalid credentials");
         }
 
@@ -23,6 +77,7 @@ export const authOptions: AuthOptions = {
         const user = await User.findOne({ email: credentials.email.toLowerCase() });
 
         if (!user || !user.hashedPassword) {
+          await trackLoginEvent('unknown', false, req, 'User not found');
           throw new Error("Invalid credentials");
         }
 
@@ -32,8 +87,12 @@ export const authOptions: AuthOptions = {
         );
 
         if (!isPasswordMatch) {
+          await trackLoginEvent(user._id.toString(), false, req, 'Incorrect password');
           throw new Error("Invalid credentials");
         }
+
+        // Track successful login
+        await trackLoginEvent(user._id.toString(), true, req);
 
         return {
           id: user._id.toString(),

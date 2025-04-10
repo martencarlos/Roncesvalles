@@ -2,7 +2,7 @@
 "use client";
 
 import { SessionProvider, useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loading } from "@/components/ui/loading";
 
@@ -10,7 +10,6 @@ import { Loading } from "@/components/ui/loading";
 function AuthLoader({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
   const pathname = usePathname();
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   
   // Show loading state during authentication transitions

@@ -53,6 +53,33 @@ export interface UserStats {
     location: string;
     count: number;
   }[];
+  // New login activity data
+  loginActivity: {
+    totalLogins: number;
+    loginsByUser: { 
+      userId: string; 
+      name: string; 
+      apartmentNumber?: number; 
+      count: number 
+    }[];
+    recentLogins: {
+      id: string;
+      userId: string;
+      userName: string;
+      apartmentNumber?: number;
+      timestamp: string;
+      deviceType: "desktop" | "mobile" | "tablet";
+      browser: string;
+      location: string;
+      ipAddress: string;
+    }[];
+    loginsByMonth: { month: string; count: number }[];
+    loginsByDevice: {
+      desktop: number;
+      mobile: number;
+      tablet: number;
+    };
+  };
 }
 
 export interface BookingStats {
