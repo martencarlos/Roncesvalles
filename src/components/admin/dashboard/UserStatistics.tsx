@@ -9,7 +9,7 @@ import { UserStats } from "@/components/admin/AdminDashboard";
 import {
   Users,
   UserPlus,
-  MapPin,
+  Smartphone,
   MonitorSmartphone,
   LaptopIcon,
   SmartphoneIcon,
@@ -52,7 +52,7 @@ interface UserLogin {
   timestamp: string;
   deviceType: "desktop" | "mobile" | "tablet";
   browser: string;
-  location: string;
+  location: string; // This now contains device model info
   ipAddress: string;
 }
 
@@ -160,7 +160,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
     return (
       login.userName.toLowerCase().includes(searchLower) ||
       (login.apartmentNumber?.toString() || "").includes(searchLower) ||
-      login.location.toLowerCase().includes(searchLower) ||
+      login.location.toLowerCase().includes(searchLower) || // This now searches device model
       login.deviceType.toLowerCase().includes(searchLower) ||
       login.browser.toLowerCase().includes(searchLower)
     );
@@ -508,12 +508,12 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                 <TableRow>
                   <TableHead>Usuario</TableHead>
                   <TableHead>Fecha y Hora</TableHead>
-                  <TableHead>Dispositivo</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead className="hidden md:table-cell">
                     Navegador
                   </TableHead>
                   <TableHead className="hidden md:table-cell">
-                    Ubicación
+                    Modelo
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -541,7 +541,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <SmartphoneIcon className="h-3 w-3 text-muted-foreground" />
                           {login.location}
                         </div>
                       </TableCell>
