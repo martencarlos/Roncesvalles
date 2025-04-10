@@ -1,4 +1,4 @@
-// src/lib/auth.ts - Updated to track login events
+// src/lib/auth.ts - Updated to track login events and handle session updates
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
@@ -105,17 +105,29 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // Initial sign in
       if (user) {
         token.id = user.id;
         token.apartmentNumber = user.apartmentNumber;
         token.role = user.role;
       }
+      
+      // Handle session updates
+      if (trigger === 'update' && session) {
+        // Update the token with new session data
+        if (session.user?.name) {
+          token.name = session.user.name;
+        }
+        // You can add other fields here if they need to be updated
+      }
+      
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.name = token.name as string;
         session.user.apartmentNumber = token.apartmentNumber as number | undefined;
         session.user.role = token.role as string;
       }

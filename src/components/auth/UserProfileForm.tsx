@@ -75,12 +75,12 @@ export default function UserProfileForm() {
         throw new Error(data.error || "Error al actualizar el perfil");
       }
       
-      // If successful, update the session
+      // Update the session with the new name
       await update({
         ...session,
         user: {
           ...session.user,
-          name: data.name,
+          name: name,
         },
       });
       
@@ -88,6 +88,9 @@ export default function UserProfileForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      
+      // Force revalidation of server components
+      router.refresh();
       
       toast.success("Perfil actualizado correctamente");
     } catch (error: any) {

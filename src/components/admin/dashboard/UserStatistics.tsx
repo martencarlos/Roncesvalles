@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { UserStats } from "@/components/admin/AdminDashboard";
 import {
   Users,
@@ -8,19 +14,19 @@ import {
   LaptopIcon,
   SmartphoneIcon,
   TabletIcon,
-  LogIn
+  LogIn,
 } from "lucide-react";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  Legend, 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from "recharts";
 // Import table components from your UI components
 import {
@@ -29,14 +35,13 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
 
 // Enhanced UserStats interface with login tracking
 interface UserLogin {
@@ -55,11 +60,11 @@ interface UserLogin {
 interface EnhancedUserStats extends UserStats {
   loginActivity: {
     totalLogins: number;
-    loginsByUser: { 
-      userId: string; 
-      name: string; 
-      apartmentNumber?: number; 
-      count: number 
+    loginsByUser: {
+      userId: string;
+      name: string;
+      apartmentNumber?: number;
+      count: number;
     }[];
     recentLogins: UserLogin[];
     loginsByMonth: { month: string; count: number }[];
@@ -82,27 +87,64 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
 
   // Prepare data for device usage chart
   const deviceData = [
-    { name: "Desktop", value: stats.sessionsByDevice.desktop, color: "#3b82f6" }, // blue
-    { name: "Mobile", value: stats.sessionsByDevice.mobile, color: "#10b981" },   // green
-    { name: "Tablet", value: stats.sessionsByDevice.tablet, color: "#f59e0b" }    // amber
+    {
+      name: "Desktop",
+      value: stats.sessionsByDevice.desktop,
+      color: "#3b82f6",
+    }, // blue
+    { name: "Mobile", value: stats.sessionsByDevice.mobile, color: "#10b981" }, // green
+    { name: "Tablet", value: stats.sessionsByDevice.tablet, color: "#f59e0b" }, // amber
   ];
 
   // Prepare data for geographic distribution
   const locationData = stats.geographicDistribution;
 
   // Prepare data for new users trend
-  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-  const trendData = stats.newUsersTrend.map((count, index) => ({
-    month: monthNames[index],
-    count
-  }));
+  const monthNames = [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
+  ];
+  const currentMonth = new Date().getMonth(); // Get current month (0-11)
+
+  // Map the trend data to months ending with current month
+  const trendData = stats.newUsersTrend.map((count, index) => {
+    // Calculate which month this index corresponds to
+    // We want to go back 11 months from current month, then add our index
+    const monthIndex = (currentMonth - 11 + index + 12) % 12;
+    return {
+      month: monthNames[monthIndex],
+      count,
+    };
+  });
 
   // Prepare role data for detailed view
   const roleData = [
-    { name: "Usuarios Regulares", value: stats.usersByRole.user, color: "#3b82f6" },  // blue
-    { name: "Administradores", value: stats.usersByRole.admin, color: "#8b5cf6" },    // purple
-    { name: "Administradores IT", value: stats.usersByRole.it_admin, color: "#ef4444" }, // red
-    { name: "Conserjes", value: stats.usersByRole.manager, color: "#10b981" }         // green
+    {
+      name: "Usuarios Regulares",
+      value: stats.usersByRole.user,
+      color: "#3b82f6",
+    }, // blue
+    {
+      name: "Administradores",
+      value: stats.usersByRole.admin,
+      color: "#8b5cf6",
+    }, // purple
+    {
+      name: "Administradores IT",
+      value: stats.usersByRole.it_admin,
+      color: "#ef4444",
+    }, // red
+    { name: "Conserjes", value: stats.usersByRole.manager, color: "#10b981" }, // green
   ];
 
   // Format date for display
@@ -111,9 +153,9 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
   };
 
   // Filter login data based on search query
-  const filteredLogins = stats.loginActivity.recentLogins.filter(login => {
+  const filteredLogins = stats.loginActivity.recentLogins.filter((login) => {
     if (!loginSearchQuery) return true;
-    
+
     const searchLower = loginSearchQuery.toLowerCase();
     return (
       login.userName.toLowerCase().includes(searchLower) ||
@@ -154,19 +196,25 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
         {/* Total Users Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Usuarios</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Usuarios
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1">Registrados en el sistema</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Registrados en el sistema
+            </p>
           </CardContent>
         </Card>
 
         {/* New Users Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Nuevos Usuarios</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Nuevos Usuarios
+            </CardTitle>
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -178,34 +226,48 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
         {/* Total Logins Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Inicios Sesión</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Inicios Sesión
+            </CardTitle>
             <LogIn className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.loginActivity.totalLogins}</div>
-            <p className="text-xs text-muted-foreground mt-1">Inicios sesión registrados</p>
+            <div className="text-2xl font-bold">
+              {stats.loginActivity.totalLogins}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Inicios sesión registrados
+            </p>
           </CardContent>
         </Card>
 
         {/* Device Usage Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Uso por Dispositivos</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Uso por Dispositivos
+            </CardTitle>
             <MonitorSmartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <LaptopIcon className="h-4 w-4 mr-1 text-blue-500" />
-                <span className="text-sm">{stats.sessionsByDevice.desktop}%</span>
+                <span className="text-sm">
+                  {stats.sessionsByDevice.desktop}%
+                </span>
               </div>
               <div className="flex items-center">
                 <SmartphoneIcon className="h-4 w-4 mr-1 text-green-500" />
-                <span className="text-sm">{stats.sessionsByDevice.mobile}%</span>
+                <span className="text-sm">
+                  {stats.sessionsByDevice.mobile}%
+                </span>
               </div>
               <div className="flex items-center">
                 <TabletIcon className="h-4 w-4 mr-1 text-amber-500" />
-                <span className="text-sm">{stats.sessionsByDevice.tablet}%</span>
+                <span className="text-sm">
+                  {stats.sessionsByDevice.tablet}%
+                </span>
               </div>
             </div>
           </CardContent>
@@ -224,16 +286,21 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData}>
-                  <XAxis dataKey="month" />
+                  <XAxis
+                    dataKey="month"
+                    interval={0}
+                    angle={0}
+                    tick={{ fontSize: 12 }}
+                  />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    name="Nuevos Usuarios" 
-                    stroke="#3b82f6" 
-                    activeDot={{ r: 8 }} 
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    name="Nuevos Usuarios"
+                    stroke="#3b82f6"
+                    activeDot={{ r: 8 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -251,16 +318,21 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.loginActivity.loginsByMonth}>
-                  <XAxis dataKey="month" />
+                <XAxis
+                    dataKey="month"
+                    interval={0}
+                    angle={0}
+                    tick={{ fontSize: 12 }}
+                  />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    name="Inicios de Sesión" 
-                    stroke="#8b5cf6" 
-                    activeDot={{ r: 8 }} 
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    name="Inicios de Sesión"
+                    stroke="#8b5cf6"
+                    activeDot={{ r: 8 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -286,13 +358,17 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
                   >
                     {roleData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value} usuarios`, 'Cantidad']} />
+                  <Tooltip
+                    formatter={(value) => [`${value} usuarios`, "Cantidad"]}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -317,13 +393,15 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
                   >
                     {deviceData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value}%`, 'Porcentaje']} />
+                  <Tooltip formatter={(value) => [`${value}%`, "Porcentaje"]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -335,21 +413,30 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
       <Card>
         <CardHeader>
           <CardTitle>Usuarios Más Activos</CardTitle>
-          <CardDescription>Usuarios con mayor número de acciones</CardDescription>
+          <CardDescription>
+            Usuarios con mayor número de acciones
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {stats.mostActiveUsers.map((user, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border rounded-md">
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 border rounded-md"
+              >
                 <div className="flex flex-col">
                   <span className="font-medium">{user.name}</span>
                   <span className="text-sm text-muted-foreground">
-                    {user.apartmentNumber ? `Apartamento #${user.apartmentNumber}` : 'Administrador'}
+                    {user.apartmentNumber
+                      ? `Apartamento #${user.apartmentNumber}`
+                      : "Administrador"}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-md">
                   <span className="font-semibold">{user.actions}</span>
-                  <span className="text-xs text-muted-foreground">acciones</span>
+                  <span className="text-xs text-muted-foreground">
+                    acciones
+                  </span>
                 </div>
               </div>
             ))}
@@ -361,16 +448,23 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
       <Card>
         <CardHeader>
           <CardTitle>Inicios de Sesión por Usuario</CardTitle>
-          <CardDescription>Usuarios con mayor número de inicios de sesión</CardDescription>
+          <CardDescription>
+            Usuarios con mayor número de inicios de sesión
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stats.loginActivity.loginsByUser.slice(0, 6).map((user, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border rounded-md">
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 border rounded-md"
+              >
                 <div className="flex flex-col">
                   <span className="font-medium">{user.name}</span>
                   <span className="text-sm text-muted-foreground">
-                    {user.apartmentNumber ? `Apartamento #${user.apartmentNumber}` : 'Administrador'}
+                    {user.apartmentNumber
+                      ? `Apartamento #${user.apartmentNumber}`
+                      : "Administrador"}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded-md">
@@ -389,9 +483,11 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <CardTitle>Historial de Inicios de Sesión</CardTitle>
-              <CardDescription>Registro detallado de accesos al sistema</CardDescription>
+              <CardDescription>
+                Registro detallado de accesos al sistema
+              </CardDescription>
             </div>
-            
+
             <div className="w-full md:w-64">
               <Input
                 placeholder="Buscar por usuario, dispositivo..."
@@ -413,8 +509,12 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                   <TableHead>Usuario</TableHead>
                   <TableHead>Fecha y Hora</TableHead>
                   <TableHead>Dispositivo</TableHead>
-                  <TableHead className="hidden md:table-cell">Navegador</TableHead>
-                  <TableHead className="hidden md:table-cell">Ubicación</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Navegador
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Ubicación
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -436,7 +536,9 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                           <span className="capitalize">{login.deviceType}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">{login.browser}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {login.browser}
+                      </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -447,7 +549,10 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No se encontraron registros
                       {loginSearchQuery && " que coincidan con la búsqueda"}
                     </TableCell>
@@ -461,14 +566,21 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
           {filteredLogins.length > 0 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
-                Mostrando {Math.min(filteredLogins.length, (currentPage - 1) * itemsPerPage + 1)} a{" "}
-                {Math.min(currentPage * itemsPerPage, filteredLogins.length)} de {filteredLogins.length} registros
+                Mostrando{" "}
+                {Math.min(
+                  filteredLogins.length,
+                  (currentPage - 1) * itemsPerPage + 1
+                )}{" "}
+                a {Math.min(currentPage * itemsPerPage, filteredLogins.length)}{" "}
+                de {filteredLogins.length} registros
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage <= 1}
                 >
                   Anterior
@@ -476,7 +588,9 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                   disabled={currentPage >= totalPages}
                 >
                   Siguiente
