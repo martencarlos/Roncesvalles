@@ -144,7 +144,6 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
       value: stats.usersByRole.it_admin,
       color: "#ef4444",
     }, // red
-    { name: "Conserjes", value: stats.usersByRole.manager, color: "#10b981" }, // green
   ];
 
   // Format date for display

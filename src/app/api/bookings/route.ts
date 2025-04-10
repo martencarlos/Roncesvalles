@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Get the user's role to include in the activity log
-    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : 'Conserje'})` : '';
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';
     
     // Log activity
     await ActivityLog.create({

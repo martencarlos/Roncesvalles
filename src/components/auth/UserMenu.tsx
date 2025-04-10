@@ -79,8 +79,6 @@ export default function UserMenu() {
         return "Administrador (Lectura)";
       case "it_admin":
         return "Admin IT";
-      case "manager":
-        return "Conserje";
       default:
         return role;
     }

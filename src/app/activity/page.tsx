@@ -34,7 +34,7 @@ export default function ActivityPage() {
   const [apartmentFilter, setApartmentFilter] = useState('');
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   
-  const isAdmin = session?.user?.role === 'it_admin' || session?.user?.role === 'admin' || session?.user?.role === 'manager';
+  const isAdmin = session?.user?.role === 'it_admin' || session?.user?.role === 'admin' ;
   
   useEffect(() => {
     const fetchActivityLogs = async () => {

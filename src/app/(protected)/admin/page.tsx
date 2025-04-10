@@ -57,7 +57,7 @@ export default async function AdminPage() {
           <h2 className="text-xl font-semibold mb-4">Gestión de Usuarios</h2>
           <p className="text-muted-foreground mb-4">
             Administre los usuarios y sus permisos. Cree cuentas para
-            administradores y conserjes.
+            administradores y usuarios, y gestione sus roles.
           </p>
           <Button asChild className="w-full">
             <Link href="/admin/users">Gestionar Usuarios</Link>

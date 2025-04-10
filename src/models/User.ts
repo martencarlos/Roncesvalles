@@ -2,13 +2,13 @@
 import mongoose, { Schema } from 'mongoose';
 import { Model } from 'mongoose';
 
-export type UserRole = 'user' | 'admin' | 'manager' | 'it_admin';
+export type UserRole = 'user' | 'admin' | 'it_admin';
 
 export interface IUser {
   _id?: string;
   email: string;
   name: string;
-  apartmentNumber?: number; // Optional for admin/manager users
+  apartmentNumber?: number; // Optional for admin users
   hashedPassword: string;
   role: UserRole;
   createdAt: Date;
@@ -46,7 +46,7 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['user', 'admin', 'manager', 'it_admin'],
+      enum: ['user', 'admin', 'it_admin'],
       default: 'user',
     },
   },

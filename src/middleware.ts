@@ -42,13 +42,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
   
-  if (
-    pathname.startsWith("/manager") && 
-    token.role !== "manager" && 
-    token.role !== "it_admin"
-  ) {
-    return NextResponse.redirect(new URL("/unauthorized", request.url));
-  }
   
   return NextResponse.next();
 }

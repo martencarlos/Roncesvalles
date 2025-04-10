@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     if (currentUser.role === 'user') {
       query.apartmentNumber = currentUser.apartmentNumber;
     } 
-    // For admins and managers, allow filtering by apartment
+    // For admins , allow filtering by apartment
     else if (apartmentFilter && !isNaN(parseInt(apartmentFilter))) {
       query.apartmentNumber = parseInt(apartmentFilter);
     }

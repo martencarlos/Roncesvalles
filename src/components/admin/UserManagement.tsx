@@ -346,7 +346,6 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
               <SelectItem value="all">Todos los roles</SelectItem>
               <SelectItem value="user">Usuarios</SelectItem>
               <SelectItem value="admin">Administradores</SelectItem>
-              <SelectItem value="manager">Conserjes</SelectItem>
               <SelectItem value="it_admin">Administradores IT</SelectItem>
             </SelectContent>
           </Select>
@@ -389,8 +388,6 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                         ? "bg-blue-100 text-blue-800 border-blue-200"
                         : user.role === "admin"
                         ? "bg-purple-100 text-purple-800 border-purple-200"
-                        : user.role === "manager"
-                        ? "bg-green-100 text-green-800 border-green-200"
                         : "bg-red-100 text-red-800 border-red-200"
                     }
                   >
@@ -398,9 +395,9 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                       ? "Usuario"
                       : user.role === "admin"
                       ? "Administrador"
-                      : user.role === "manager"
-                      ? "Conserje"
-                      : "Admin IT"}
+                      : user.role === "it_admin"
+                      ? "Admin IT" 
+                      : ""}
                   </Badge>
                 </div>
               </CardHeader>
@@ -495,7 +492,6 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                 <SelectContent>
                   <SelectItem value="user">Usuario (Residente)</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="manager">Conserje</SelectItem>
                   <SelectItem value="it_admin">Administrador IT</SelectItem>
                 </SelectContent>
               </Select>
@@ -613,7 +609,6 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                     <SelectContent>
                       <SelectItem value="user">Usuario (Residente)</SelectItem>
                       <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="manager">Conserje</SelectItem>
                       <SelectItem value="it_admin">Administrador IT</SelectItem>
                     </SelectContent>
                   </Select>

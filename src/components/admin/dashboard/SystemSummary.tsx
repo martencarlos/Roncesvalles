@@ -32,7 +32,6 @@ export default function SystemSummary({ userStats, bookingStats }: SystemSummary
     { name: "Usuarios", value: userStats.usersByRole.user, color: "#3b82f6" },
     { name: "Admins", value: userStats.usersByRole.admin, color: "#8b5cf6" },
     { name: "IT", value: userStats.usersByRole.it_admin, color: "#ef4444" },
-    { name: "Conserjes", value: userStats.usersByRole.manager, color: "#10b981" },
   ];
 
   // Prepare data for Booking status pie chart

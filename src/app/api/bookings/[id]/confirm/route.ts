@@ -52,11 +52,9 @@ export async function POST(
     
     // Permission check:
     // - Regular users can only confirm their own apartment's bookings
-    // - Managers can view but not confirm bookings
     // - Admins and IT admins can confirm any booking
     if (
-      (currentUser.role === 'user' && booking.apartmentNumber !== currentUser.apartmentNumber) ||
-      currentUser.role === 'manager'
+      (currentUser.role === 'user' && booking.apartmentNumber !== currentUser.apartmentNumber) 
     ) {
       return NextResponse.json(
         { error: 'You do not have permission to confirm this booking' },
@@ -111,7 +109,7 @@ export async function POST(
       : '';
     
     // Get the user's role to include in the activity log
-    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : 'Conserje'})` : '';
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';
     
     // Create activity log entry
     await ActivityLog.create({

@@ -30,7 +30,7 @@ export default async function ProfilePage() {
     backUrl = "/admin";
     backText = "Volver al Panel";
   } else {
-    // For all other roles (user, admin (read-only), manager), link back to the bookings page
+    // For all other roles (user, admin (read-only)), link back to the bookings page
     // Linking to /bookings is more explicit than '/' which relies on redirection logic.
     backUrl = "/bookings";
     backText = "Volver a Reservas";

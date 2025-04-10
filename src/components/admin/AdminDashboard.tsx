@@ -29,7 +29,6 @@ export interface UserStats {
     user: number;
     admin: number;
     it_admin: number;
-    manager: number;
   };
   newUsersThisMonth: number;
   newUsersTrend: number[];

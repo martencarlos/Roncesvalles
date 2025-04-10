@@ -417,8 +417,6 @@ export default function ExportDataPanel() {
         return 'Administrador (Lectura)';
       case 'it_admin':
         return 'Administrador IT';
-      case 'manager':
-        return 'Conserje';
       default:
         return role;
     }
@@ -562,7 +560,6 @@ export default function ExportDataPanel() {
                         <SelectItem value="all">Todos los roles</SelectItem>
                         <SelectItem value="user">Solo usuarios (residentes)</SelectItem>
                         <SelectItem value="admin">Solo administradores</SelectItem>
-                        <SelectItem value="manager">Solo conserjes</SelectItem>
                         <SelectItem value="it_admin">Solo administradores IT</SelectItem>
                       </SelectContent>
                     </Select>

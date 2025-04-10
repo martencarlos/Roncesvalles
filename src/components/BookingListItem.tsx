@@ -35,15 +35,14 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   const isOwner = session?.user?.apartmentNumber === booking.apartmentNumber;
   const isAdmin = userRole === 'admin'; // Read-only admin
   const isITAdmin = userRole === 'it_admin';
-  const isManager = userRole === 'manager';
   
   // Determine if user can edit/delete/confirm this booking
   const canEdit = isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === 'user');
   const canDelete = isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === 'user');
   const canConfirm = isITAdmin || (isOwner && isPending && isPast && userRole === 'user');
   
-  // Read-only view for managers and regular admins
-  const isReadOnly = isManager || isAdmin;
+  // Read-only view for regular admins
+  const isReadOnly =  isAdmin;
 
   return (
     <div className={`p-3 sm:p-4 rounded-md border group ${isPast && !isConfirmed && !isCancelled ? 'border-amber-300' : ''} ${isConfirmed ? 'border-green-300' : ''} ${isCancelled ? 'border-red-300 opacity-75' : ''}`}>

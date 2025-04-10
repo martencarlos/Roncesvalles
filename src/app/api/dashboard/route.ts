@@ -62,8 +62,7 @@ async function getUserStats() {
   const usersByRole = {
     user: await User.countDocuments({ role: "user" }),
     admin: await User.countDocuments({ role: "admin" }),
-    it_admin: await User.countDocuments({ role: "it_admin" }),
-    manager: await User.countDocuments({ role: "manager" })
+    it_admin: await User.countDocuments({ role: "it_admin" })
   };
   
   // Get new users this month

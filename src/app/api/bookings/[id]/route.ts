@@ -102,11 +102,9 @@ export async function PUT(
     
     // Permission check:
     // - Regular users can only update their own apartment's bookings
-    // - Managers can view but not edit bookings
     // - Admins and IT admins can edit any booking
     if (
-      (currentUser.role === 'user' && originalBooking.apartmentNumber !== currentUser.apartmentNumber) ||
-      currentUser.role === 'manager'
+      (currentUser.role === 'user' && originalBooking.apartmentNumber !== currentUser.apartmentNumber) 
     ) {
       return NextResponse.json(
         { error: 'You do not have permission to update this booking' },
@@ -231,7 +229,7 @@ export async function PUT(
     }
     
     // Get the user's role to include in the activity log
-    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : 'Conserje'})` : '';
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';
     
     // Log activity
     await ActivityLog.create({
@@ -302,11 +300,9 @@ export async function DELETE(
     
     // Permission check:
     // - Regular users can only delete their own apartment's bookings
-    // - Managers can view but not delete bookings
     // - Admins and IT admins can delete any booking
     if (
-      (currentUser.role === 'user' && booking.apartmentNumber !== currentUser.apartmentNumber) ||
-      currentUser.role === 'manager'
+      (currentUser.role === 'user' && booking.apartmentNumber !== currentUser.apartmentNumber) 
     ) {
       return NextResponse.json(
         { error: 'You do not have permission to delete this booking' },
@@ -345,7 +341,7 @@ export async function DELETE(
     }
     
     // Get the user's role to include in the activity log
-    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : 'Conserje'})` : '';
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';
     
     // Delete the booking
     await Booking.findByIdAndDelete(bookingId);

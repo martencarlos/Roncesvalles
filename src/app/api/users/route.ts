@@ -7,7 +7,7 @@ import { authenticate } from "@/lib/auth-utils";
 export async function GET(req: NextRequest) {
   try {
     // Authenticate and check if admin or IT admin
-    const user = await authenticate(req, ["admin", "it_admin", "manager"]);
+    const user = await authenticate(req, ["admin", "it_admin"]);
     
     if (!user) {
       return NextResponse.json(
