@@ -4,6 +4,7 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Booking from "@/models/Booking";
 import { authenticate } from "@/lib/auth-utils";
+import LoginEvent from "@/models/LoginEvent";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 
 export async function GET(req: NextRequest) {
@@ -88,6 +89,34 @@ async function getUserStats() {
     newUsersTrend.push(count);
   }
   
+  // Get real device usage statistics from LoginEvent
+  const deviceUsageStats = await LoginEvent.aggregate([
+    { $match: { success: true } },
+    {
+      $group: {
+        _id: "$deviceType",
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+  
+  // Calculate percentages for device usage
+  const totalDeviceCount = deviceUsageStats.reduce((sum, item) => sum + item.count, 0);
+  const sessionsByDevice = {
+    desktop: 0,
+    mobile: 0,
+    tablet: 0
+  };
+  
+  if (totalDeviceCount > 0) {
+    deviceUsageStats.forEach(item => {
+      if (item._id in sessionsByDevice) {
+        const deviceType = item._id as keyof typeof sessionsByDevice;
+        sessionsByDevice[deviceType] = Math.round((item.count / totalDeviceCount) * 100);
+      }
+    });
+  }
+  
   // Password reset data (simulated)
   const passwordResets = 14;
   const passwordResetTrends = [
@@ -136,24 +165,35 @@ async function getUserStats() {
     };
   }).sort((a, b) => b.actions - a.actions);
   
-  // Simulated device usage data
-  // In a real implementation, you would track this from login events
-  const sessionsByDevice = {
-    desktop: 65,
-    mobile: 30,
-    tablet: 5
-  };
+  // Get actual geographic distribution from LoginEvent
+  const geographicData = await LoginEvent.aggregate([
+    { $match: { success: true } },
+    {
+      $group: {
+        _id: "$location",
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { count: -1 } },
+    { $limit: 5 }
+  ]);
   
-  // Simulated geographic distribution
-  // In a real implementation, you would track this from login events or IP geolocation
-  const geographicDistribution = [
-    { location: "España", count: 78 },
-    { location: "Francia", count: 5 },
-    { location: "Reino Unido", count: 3 },
-    { location: "Estados Unidos", count: 2 },
-    { location: "Otros", count: 2 }
-  ];
+  // Transform geographic data to the required format
+  const geographicDistribution = geographicData.map(item => ({
+    location: item._id || "Desconocido",
+    count: item.count
+  }));
   
+  // Add "Otros" category if we have more than 5 locations
+  const totalLogins = await LoginEvent.countDocuments({ success: true });
+  const topLocationsCount = geographicDistribution.reduce((sum, item) => sum + item.count, 0);
+  
+  if (topLocationsCount < totalLogins) {
+    geographicDistribution.push({
+      location: "Otros",
+      count: totalLogins - topLocationsCount
+    });
+  }
   
   // Return user statistics
   return {
