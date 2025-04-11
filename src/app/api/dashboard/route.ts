@@ -7,6 +7,7 @@ import { authenticate } from "@/lib/auth-utils";
 import LoginEvent from "@/models/LoginEvent";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import ActivityLog from "@/models/ActivityLog";
+import { PasswordReset } from "@/models/PasswordReset"; // Import the PasswordReset model
 
 export async function GET(req: NextRequest) {
   try {
@@ -117,22 +118,30 @@ async function getUserStats() {
     });
   }
   
-  // Password reset data (simulated)
-  const passwordResets = 14;
-  const passwordResetTrends = [
-    { month: "Ene", resets: 0 },
-    { month: "Feb", resets: 1 },
-    { month: "Mar", resets: 0 },
-    { month: "Abr", resets: 2 },
-    { month: "May", resets: 1 },
-    { month: "Jun", resets: 0 },
-    { month: "Jul", resets: 0 },
-    { month: "Ago", resets: 0 },
-    { month: "Sep", resets: 4 },
-    { month: "Oct", resets: 3 },
-    { month: "Nov", resets: 2 },
-    { month: "Dic", resets: 1 }
-  ];
+  // Get total password resets count
+  const totalPasswordResets = await PasswordReset.countDocuments();
+  
+  // Get password reset trends for the last 12 months
+  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const passwordResetTrends = [];
+  
+  for (let i = 11; i >= 0; i--) {
+    const monthStart = startOfMonth(subMonths(now, i));
+    const monthEnd = endOfMonth(subMonths(now, i));
+    const monthIndex = (now.getMonth() - i + 12) % 12; // Calculate which month this is
+    
+    const count = await PasswordReset.countDocuments({
+      createdAt: {
+        $gte: monthStart,
+        $lte: monthEnd
+      }
+    });
+    
+    passwordResetTrends.push({
+      month: monthNames[monthIndex],
+      resets: count
+    });
+  }
   
   // Get most active users based on bookings
   const bookingsPerUser = await Booking.aggregate([
@@ -201,14 +210,13 @@ async function getUserStats() {
     usersByRole,
     newUsersThisMonth,
     newUsersTrend,
-    passwordResets,
+    passwordResets: totalPasswordResets,
     passwordResetTrends,
     mostActiveUsers: mostActiveUsersList,
     sessionsByDevice,
     geographicDistribution
   };
 }
-
 
 // Update the getBookingStats function to track cancellations from activity logs
 async function getBookingStats() {
