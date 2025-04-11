@@ -6,6 +6,7 @@ import Booking from "@/models/Booking";
 import { authenticate } from "@/lib/auth-utils";
 import LoginEvent from "@/models/LoginEvent";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import ActivityLog from "@/models/ActivityLog";
 
 export async function GET(req: NextRequest) {
   try {
@@ -208,16 +209,24 @@ async function getUserStats() {
   };
 }
 
+
+// Update the getBookingStats function to track cancellations from activity logs
 async function getBookingStats() {
-  // Get total bookings
+  // Existing code for basic stats
   const totalBookings = await Booking.countDocuments();
-  
-  // Get bookings by status
   const totalConfirmed = await Booking.countDocuments({ status: "confirmed" });
   const totalPending = await Booking.countDocuments({ status: "pending" });
-  const totalCancelled = await Booking.countDocuments({ status: "cancelled" });
   
-  // Get bookings by month for the last 12 months
+  // For cancelled bookings, get both the ones with cancelled status and count from activity logs
+  const totalCancelledStatus = await Booking.countDocuments({ status: "cancelled" });
+  
+  // Get cancellations from activity logs (this captures the deleted bookings)
+  const cancellationLogs = await ActivityLog.countDocuments({ action: "delete" });
+  
+  // Total cancelled is the sum of currently cancelled bookings plus deleted bookings
+  const totalCancelled = totalCancelledStatus + cancellationLogs;
+  
+  // The rest of your existing code...
   const now = new Date();
   const bookingsByMonth = [];
   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -284,9 +293,10 @@ async function getBookingStats() {
     bookings: apt.bookings
   }));
   
-  // Simulated booking modifications and cancellations
-  // In a real implementation, you would track these events
-  const bookingModifications = Math.floor(totalBookings * 0.12); // About 12% of bookings are modified
+  // Get booking modifications from activity logs
+  const bookingModifications = await ActivityLog.countDocuments({ action: "update" });
+  
+  // Cancellations are now properly tracked
   const bookingCancellations = totalCancelled;
   
   // Get most used tables
