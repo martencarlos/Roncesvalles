@@ -164,15 +164,23 @@ export async function PUT(
     
     // Determine if cleaning service warning should be applied or removed
     let noCleaningService = originalBooking.noCleaningService;
-    
+
+    // If the booking date is changed, we need to recalculate the noCleaningService flag
     if (body.date) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const bookingDate = new Date(body.date);
-      const daysDifference = Math.floor((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const originalBookingDate = new Date(originalBooking.date);
+      const newBookingDate = new Date(body.date);
       
-      // If date is changed, update cleaning service status based on new date
-      noCleaningService = daysDifference <= 4;
+      // If date is being changed, recalculate based on current date
+      if (originalBookingDate.getTime() !== newBookingDate.getTime()) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Calculate days between today and new booking date
+        const daysDifference = Math.floor((newBookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Update cleaning service status based on current date and new booking date
+        noCleaningService = daysDifference <= 4;
+      }
     }
     
     // Always ensure userId is set to the authenticated user's ID

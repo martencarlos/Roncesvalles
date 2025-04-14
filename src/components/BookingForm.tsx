@@ -148,12 +148,19 @@ const BookingForm: React.FC<BookingFormProps> = ({
   useEffect(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
+  
     const daysDifference = differenceInDays(date, today);
-    const needsCleaningWarning = daysDifference <= 4;
-
-    setNoCleaningService(needsCleaningWarning);
-  }, [date]);
+    
+    // Update the cleaning service warning in these cases:
+    // 1. For new bookings (no initialData._id) - always calculate based on date proximity
+    // 2. For existing bookings where the date is being changed
+    
+    if (!initialData?._id || (initialData?._id && 
+        (initialData.date && new Date(initialData.date).getTime() !== date.getTime()))) {
+      const needsCleaningWarning = daysDifference <= 4;
+      setNoCleaningService(needsCleaningWarning);
+    }
+  }, [date, initialData]);
 
   // Fetch all bookings to highlight dates in calendar
   useEffect(() => {
