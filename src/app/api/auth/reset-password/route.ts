@@ -42,11 +42,12 @@ export async function POST(req: NextRequest) {
     
     // Save the token in the database
     await PasswordReset.findOneAndUpdate(
-      { userId: user._id },
+      { userId: user._id, status: 'pending' },
       {
         userId: user._id,
         token: hashedToken,
         expiresAt: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1 hour expiration
+        status: 'pending'
       },
       { upsert: true, new: true }
     );

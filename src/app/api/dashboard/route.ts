@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+
 async function getUserStats() {
   // Get total users
   const totalUsers = await User.countDocuments();
@@ -118,10 +119,10 @@ async function getUserStats() {
     });
   }
   
-  // Get total password resets count
+  // Get total password resets count - updated to count all resets regardless of status
   const totalPasswordResets = await PasswordReset.countDocuments();
   
-  // Get password reset trends for the last 12 months
+  // Get password reset trends for the last 12 months - updated to include completed resets
   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const passwordResetTrends = [];
   

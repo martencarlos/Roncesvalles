@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
     const resetRequest = await PasswordReset.findOne({
       userId: user._id,
       token: hashedToken,
+      status: 'pending',
       expiresAt: { $gt: new Date() }
     });
     
@@ -67,8 +68,10 @@ export async function POST(req: NextRequest) {
       hashedPassword: hashedPassword
     });
     
-    // Delete the used reset token
-    await PasswordReset.deleteOne({ userId: user._id });
+    // Mark the reset token as completed instead of deleting it
+    await PasswordReset.findByIdAndUpdate(resetRequest._id, {
+      status: 'completed'
+    });
     
     return NextResponse.json(
       { success: true, message: "Password updated successfully" },
