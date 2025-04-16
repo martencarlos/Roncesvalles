@@ -7,7 +7,7 @@ import { authenticate } from "@/lib/auth-utils";
 import LoginEvent from "@/models/LoginEvent";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import ActivityLog from "@/models/ActivityLog";
-import { PasswordReset } from "@/models/PasswordReset"; // Import the PasswordReset model
+import { PasswordReset } from "@/models/PasswordReset";
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,21 +23,12 @@ export async function GET(req: NextRequest) {
     
     await connectDB();
     
-    // Fetch user statistics
-    const userStats = await getUserStats();
-    
-    // Fetch booking statistics
-    const bookingStats = await getBookingStats();
-    
-    // Fetch login statistics
-    const loginStatsResponse = await fetch(new URL('/api/dashboard/login-stats', req.url).toString(), {
-      headers: {
-        cookie: req.headers.get('cookie') || '' 
-      }
-    });
-    
-    const loginStats = await loginStatsResponse.json();
-    
+    // Run these major operations in parallel
+    const [userStats, bookingStats, loginStats] = await Promise.all([
+      getUserStats(),
+      getBookingStats(),
+      getLoginStats() // Direct function call instead of nested API request
+    ]);
     
     return NextResponse.json({
       userStats: {
@@ -53,6 +44,168 @@ export async function GET(req: NextRequest) {
       { error: "Failed to fetch dashboard data" },
       { status: 500 }
     );
+  }
+}
+
+// New function to get login stats directly instead of via API call
+async function getLoginStats() {
+  try {
+    // Calculate monthly login counts for the past 12 months
+    const today = new Date();
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(today.getMonth() - 11);
+    twelveMonthsAgo.setDate(1);
+    twelveMonthsAgo.setHours(0, 0, 0, 0);
+    
+    // Run these operations in parallel
+    const [monthlyLoginData, userLoginCounts, totalLogins] = await Promise.all([
+      // Get monthly login counts
+      LoginEvent.aggregate([
+        { 
+          $match: { 
+            success: true,
+            timestamp: { $gte: twelveMonthsAgo } 
+          } 
+        },
+        {
+          $group: {
+            _id: { 
+              year: { $year: "$timestamp" },
+              month: { $month: "$timestamp" }
+            },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1 } }
+      ]),
+      
+      // Get logins per user
+      LoginEvent.aggregate([
+        { $match: { success: true } },
+        { 
+          $group: {
+            _id: "$userId",
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { count: -1 } },
+        { $limit: 50 } // Get top 50 users
+      ]),
+      
+      // Calculate total logins
+      LoginEvent.countDocuments({ success: true })
+    ]);
+    
+    // Get user details for the login counts - OPTIMIZED VERSION
+    const userIds = userLoginCounts.map(entry => entry._id);
+    const users = await User.find({ _id: { $in: userIds } }, {
+      _id: 1,
+      name: 1,
+      apartmentNumber: 1
+    });
+    
+    // Create a map for quick user lookup
+    const userMap = new Map();
+    users.forEach(user => {
+      userMap.set(user._id.toString(), user);
+    });
+    
+    // Map user details to login counts using the map for faster lookups
+    const loginsByUser = userLoginCounts.map(loginEntry => {
+      const userDetails = userMap.get(loginEntry._id);
+      return {
+        userId: loginEntry._id,
+        name: userDetails?.name || "Usuario desconocido",
+        apartmentNumber: userDetails?.apartmentNumber,
+        count: loginEntry.count
+      };
+    });
+    
+    // OPTIMIZED RECENT LOGINS - Get user data in bulk instead of per login
+    // Get recent logins
+    const recentLogins = await LoginEvent.find({ success: true })
+      .sort({ timestamp: -1 })
+      .limit(100);
+    
+    // Extract unique user IDs from recent logins
+    const recentUserIds = [...new Set(recentLogins.map(login => login.userId))];
+    
+    // Fetch all needed users in a single query
+    const recentUsers = await User.find({ _id: { $in: recentUserIds } }, {
+      _id: 1,
+      name: 1,
+      apartmentNumber: 1
+    });
+    
+    // Create a map for quick lookups
+    const recentUserMap = new Map();
+    recentUsers.forEach(user => {
+      recentUserMap.set(user._id.toString(), user);
+    });
+    
+    // Map user data to logins without additional queries
+    const processedRecentLogins = recentLogins.map(login => {
+      const user = recentUserMap.get(login.userId);
+      
+      return {
+        id: login._id,
+        userId: login.userId,
+        userName: user?.name || "Usuario desconocido",
+        apartmentNumber: user?.apartmentNumber,
+        timestamp: login.timestamp,
+        deviceType: login.deviceType,
+        browser: login.browser,
+        location: login.location,
+        ipAddress: login.ipAddress
+      };
+    });
+    
+    // Transform monthly data into proper format
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    
+    // Create array with all 12 months
+    const loginsByMonth = Array(12).fill(0).map((_, index) => {
+      const monthIndex = (today.getMonth() - 11 + index + 12) % 12;
+      const year = today.getFullYear() - (monthIndex > today.getMonth() ? 1 : 0);
+      
+      return {
+        month: monthNames[monthIndex],
+        year,
+        count: 0
+      };
+    });
+    
+    // Fill in actual data
+    monthlyLoginData.forEach(item => {
+      const monthIndex = item._id.month - 1; // MongoDB months are 1-12
+      const year = item._id.year;
+      
+      // Find corresponding month in our array
+      const targetIndex = loginsByMonth.findIndex(m => {
+        return m.month === monthNames[monthIndex] && m.year === year;
+      });
+      
+      if (targetIndex !== -1) {
+        loginsByMonth[targetIndex].count = item.count;
+      }
+    });
+    
+    // Return login statistics
+    return {
+      loginActivity: {
+        totalLogins,
+        loginsByUser,
+        recentLogins: processedRecentLogins,
+        loginsByMonth: loginsByMonth.map(month => ({
+          month: `${month.month}`,
+          count: month.count
+        }))
+      }
+    };
+    
+  } catch (error) {
+    console.error('Error getting login statistics:', error);
+    throw error;
   }
 }
 
