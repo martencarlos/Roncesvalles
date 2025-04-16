@@ -44,15 +44,27 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
   // Create user vs booking activity data
   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   
-  // Simulated monthly activity data
-  const activityTrendData = monthNames.map((month, index) => {
-    return {
-      month,
-      bookings: bookingStats.bookingsByMonth[index].count,
-      newUsers: userStats.newUsersTrend[index],
-      totalActivity: bookingStats.bookingsByMonth[index].count * 1.5 + userStats.newUsersTrend[index] * 3
-    };
-  });
+  // Get current month and align data to show the most recent 12 months
+  const currentMonth = new Date().getMonth(); // 0-11 where 0 is January
+  
+  // Correctly align the data to show the last 12 months ending with the current month
+  const activityTrendData = [];
+  for (let i = 0; i < 12; i++) {
+    // Calculate the month index. We're going back 11 months from current month and adding our loop index
+    const monthIndex = (currentMonth - 11 + i + 12) % 12; // Add 12 and mod 12 to handle negative numbers
+    
+    // Get the corresponding data from the API data arrays
+    // Assuming the data arrays are already aligned with the current month being the last element
+    const bookingData = bookingStats.bookingsByMonth[i] ? bookingStats.bookingsByMonth[i].count : 0;
+    const newUserData = userStats.newUsersTrend[i] || 0;
+    
+    activityTrendData.push({
+      month: monthNames[monthIndex],
+      bookings: bookingData,
+      newUsers: newUserData,
+      totalActivity: bookingData * 1.5 + newUserData * 3
+    });
+  }
 
   const passwordResetData = userStats.passwordResetTrends || 
   // Fallback to simulated data if not provided from API
