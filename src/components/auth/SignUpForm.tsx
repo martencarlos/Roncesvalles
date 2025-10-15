@@ -6,15 +6,28 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, InfoIcon } from "lucide-react";
 import Link from "next/link";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SignUpForm() {
   const router = useRouter();
-  
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,32 +35,32 @@ export default function SignUpForm() {
   const [apartmentNumber, setApartmentNumber] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  
+
   // Generate apartment numbers 1-48
   const apartmentNumbers = Array.from({ length: 48 }, (_, i) => i + 1);
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!name || !email || !password || !apartmentNumber) {
       setErrorMessage("Por favor, complete todos los campos");
       return;
     }
-    
+
     if (password !== confirmPassword) {
       setErrorMessage("Las contraseñas no coinciden");
       return;
     }
-    
+
     if (password.length < 8) {
       setErrorMessage("La contraseña debe tener al menos 8 caracteres");
       return;
     }
-    
+
     setIsSubmitting(true);
     setErrorMessage("");
-    
+
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -61,13 +74,13 @@ export default function SignUpForm() {
           apartmentNumber: parseInt(apartmentNumber),
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || "Error al crear la cuenta");
       }
-      
+
       // Registration successful, redirect to sign in
       router.push("/auth/signin?registered=true");
     } catch (error: any) {
@@ -76,7 +89,7 @@ export default function SignUpForm() {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -91,7 +104,7 @@ export default function SignUpForm() {
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nombre completo</Label>
@@ -104,7 +117,7 @@ export default function SignUpForm() {
               disabled={isSubmitting}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
             <Select
@@ -116,11 +129,20 @@ export default function SignUpForm() {
                 <SelectValue placeholder="Seleccionar apartamento" />
               </SelectTrigger>
               <SelectContent>
-                {apartmentNumbers.map((num) => (
-                  <SelectItem key={num} value={num.toString()}>
-                    Apartamento #{num}
-                  </SelectItem>
-                ))}
+                {apartmentNumbers.map((num) => {
+                  let label = `Apartamento #${num}`;
+
+                  if (num >= 43 && num <= 48) {
+                    const level = num - 42; // 43→1, 44→2, …, 48→6
+                    label += ` (L${level})`;
+                  }
+
+                  return (
+                    <SelectItem key={num} value={num.toString()}>
+                      {label}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
@@ -128,7 +150,7 @@ export default function SignUpForm() {
               Solo se permite una cuenta por apartamento
             </p>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="email">Correo electrónico</Label>
             <Input
@@ -141,7 +163,7 @@ export default function SignUpForm() {
               disabled={isSubmitting}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Contraseña</Label>
             <Input
@@ -153,11 +175,9 @@ export default function SignUpForm() {
               required
               disabled={isSubmitting}
             />
-            <p className="text-xs text-muted-foreground">
-              Mínimo 8 caracteres
-            </p>
+            <p className="text-xs text-muted-foreground">Mínimo 8 caracteres</p>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
             <Input
@@ -187,11 +207,11 @@ export default function SignUpForm() {
             "Crear Cuenta"
           )}
         </Button>
-        
+
         <div className="text-sm text-muted-foreground text-center">
           ¿Ya tiene una cuenta?{" "}
-          <Link 
-            href="/auth/signin" 
+          <Link
+            href="/auth/signin"
             className="text-blue-600 hover:underline font-medium"
           >
             Iniciar sesión

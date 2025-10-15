@@ -3,11 +3,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { 
-  User, 
-  LogOut, 
-  Settings,
-} from "lucide-react";
+import { User, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -19,7 +15,7 @@ export default function UserMenu() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  
+
   // Close the dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -27,27 +23,27 @@ export default function UserMenu() {
         setIsOpen(false);
       }
     }
-    
+
     // Close on escape key
     function handleEscapeKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         setIsOpen(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscapeKey);
-    
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscapeKey);
     };
   }, []);
-  
+
   if (!session?.user) {
     return (
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         onClick={() => router.push("/auth/signin")}
         className="h-8 px-2 sm:h-9 sm:px-3"
       >
@@ -57,7 +53,7 @@ export default function UserMenu() {
       </Button>
     );
   }
-  
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -66,12 +62,12 @@ export default function UserMenu() {
       .toUpperCase()
       .substring(0, 2);
   };
-  
+
   const handleSignOut = async () => {
     setIsSigningOut(true);
     await signOut({ redirect: true, callbackUrl: "/" });
   };
-  
+
   // Helper function to get role display name
   const getRoleDisplay = (role: string) => {
     switch (role) {
@@ -83,12 +79,12 @@ export default function UserMenu() {
         return role;
     }
   };
-  
+
   return (
     <div ref={menuRef} className="relative z-10">
       {/* User Button */}
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="cursor-pointer h-8 px-2 sm:h-9 sm:px-3"
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -98,10 +94,10 @@ export default function UserMenu() {
           </AvatarFallback>
         </Avatar>
         <span className="hidden sm:inline ml-2 text-sm">
-          {session.user.name.split(' ')[0]}
+          {session.user.name.split(" ")[0]}
         </span>
       </Button>
-      
+
       {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute right-0 mt-1 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -110,7 +106,18 @@ export default function UserMenu() {
             <p className="text-sm font-medium truncate">{session.user.name}</p>
             {session.user.role === "user" ? (
               <p className="text-xs text-muted-foreground mt-0.5">
-                Apartamento #{session.user.apartmentNumber}
+                {(() => {
+                  const num = session.user.apartmentNumber;
+                  if (num == null) return "Apartamento #—"; // fallback if undefined or null
+
+                  let label = `Apartamento #${num}`;
+                  if (num >= 43 && num <= 48) {
+                    const level = num - 42; // 43→1, 44→2, …, 48→6
+                    label += ` (L${level})`;
+                  }
+
+                  return label;
+                })()}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-0.5 capitalize">
@@ -118,7 +125,7 @@ export default function UserMenu() {
               </p>
             )}
           </div>
-          
+
           {/* Menu Items */}
           <div className="py-1">
             <Link
@@ -129,14 +136,16 @@ export default function UserMenu() {
               <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
               <span>Perfil</span>
             </Link>
-            
+
             <button
               className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSigningOut}
               onClick={handleSignOut}
             >
               <LogOut className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span>{isSigningOut ? "Cerrando sesión..." : "Cerrar Sesión"}</span>
+              <span>
+                {isSigningOut ? "Cerrando sesión..." : "Cerrar Sesión"}
+              </span>
             </button>
           </div>
         </div>
