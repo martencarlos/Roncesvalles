@@ -59,7 +59,6 @@ export async function GET(req: NextRequest) {
       const services: string[] = [];
       if (booking.prepararFuego) services.push('Fuego');
       if (booking.reservaHorno) services.push('Horno');
-      if (booking.reservaBrasa) services.push('Brasa');
       
       if (!apartmentData[apartmentNumber]) {
         apartmentData[apartmentNumber] = {

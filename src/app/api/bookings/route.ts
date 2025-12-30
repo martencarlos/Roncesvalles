@@ -170,7 +170,6 @@ export async function POST(req: NextRequest) {
       tables: body.tables || [],
       prepararFuego: Boolean(body.prepararFuego),
       reservaHorno: Boolean(body.reservaHorno),
-      reservaBrasa: Boolean(body.reservaBrasa),
       status: body.status || 'pending',
       userId: currentUser.id,  // Explicitly use ID from session
       noCleaningService: Boolean(body.noCleaningService) // Add the cleaning service field
@@ -192,15 +191,9 @@ export async function POST(req: NextRequest) {
       additionalDetails += ' con preparación de fuego';
     }
     
-    if (body.reservaHorno && body.reservaBrasa) {
-      additionalDetails += additionalDetails ? ' y' : ' con';
-      additionalDetails += ' reserva de horno y brasa';
-    } else if (body.reservaHorno) {
+     if (body.reservaHorno) {
       additionalDetails += additionalDetails ? ' y' : ' con';
       additionalDetails += ' reserva de horno';
-    } else if (body.reservaBrasa) {
-      additionalDetails += additionalDetails ? ' y' : ' con';
-      additionalDetails += ' reserva de brasa';
     }
     
     // Add cleaning service detail

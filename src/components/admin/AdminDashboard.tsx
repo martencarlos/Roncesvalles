@@ -109,7 +109,6 @@ export interface BookingStats {
   additionalServices: {
     prepararFuego: number;
     reservaHorno: number;
-    reservaBrasa: number;
   };
 }
 

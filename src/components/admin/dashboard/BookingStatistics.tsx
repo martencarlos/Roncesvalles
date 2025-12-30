@@ -56,8 +56,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
   // Prepare data for services usage
   const servicesData = [
     { name: "Preparación de Fuego", value: stats.additionalServices.prepararFuego, color: "#f97316" },
-    { name: "Reserva de Horno", value: stats.additionalServices.reservaHorno, color: "#8b5cf6" },
-    { name: "Reserva de Brasa", value: stats.additionalServices.reservaBrasa, color: "#ef4444" }
+    { name: "Reserva de Horno", value: stats.additionalServices.reservaHorno, color: "#8b5cf6" }
   ];
 
   // Prepare data for most used tables

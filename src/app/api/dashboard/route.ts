@@ -481,12 +481,10 @@ async function getBookingStats() {
   // Get additional services usage
   const fuegoCount = await Booking.countDocuments({ prepararFuego: true });
   const hornoCount = await Booking.countDocuments({ reservaHorno: true });
-  const brasaCount = await Booking.countDocuments({ reservaBrasa: true });
   
   const additionalServices = {
     prepararFuego: fuegoCount,
-    reservaHorno: hornoCount,
-    reservaBrasa: brasaCount
+    reservaHorno: hornoCount
   };
   
   // Return booking statistics

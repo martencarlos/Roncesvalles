@@ -209,7 +209,7 @@ export default function HowToUsePage() {
               Esta aplicación permite a los residentes de la Sociedad
               Roncesvalles gestionar las reservas de espacios comunitarios para
               comidas y cenas, incluyendo la asignación de mesas y servicios
-              adicionales como horno y brasa.
+              adicionales como la preparación del fuego o horno para la reserva.
             </p>
             <p className="text-muted-foreground mb-4">
               Cada apartamento puede tener una cuenta de usuario para realizar y
@@ -474,10 +474,7 @@ export default function HowToUsePage() {
                       <span className="font-medium">Reserva de horno</span>: Si
                       necesita utilizar el horno.
                     </li>
-                    <li>
-                      <span className="font-medium">Reserva de brasa</span>: Si
-                      necesita utilizar la parrilla/brasa.
-                    </li>
+                   
                   </ul>
                 </li>
                 <li>
@@ -741,13 +738,7 @@ export default function HowToUsePage() {
                   horno.
                 </p>
               </li>
-              <li>
-                <span className="font-medium">Reserva de brasa:</span>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Solicita el uso exclusivo de la parrilla/brasa comunitaria.
-                  Ideal para barbacoas o platos a la parrilla.
-                </p>
-              </li>
+          
             </ul>
             <div className="bg-green-50 p-3 rounded-md text-sm text-green-700 mt-4">
               <span className="font-medium">Sugerencia:</span> Si planea

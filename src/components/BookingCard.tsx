@@ -7,7 +7,6 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Users, Table, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Session } from 'next-auth';
 
 interface BookingCardProps {
@@ -89,7 +88,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
           <span className="text-sm">{booking.tables.map(t => `#${t}`).join(', ')}</span>
         </div>
         
-        {(booking.prepararFuego || booking.reservaHorno || booking.reservaBrasa) && (
+        {(booking.prepararFuego || booking.reservaHorno) && (
           <div className="flex items-center justify-between mt-1">
             <div className="flex items-center gap-1 text-sm">
               <span className="font-medium">Servicios:</span>
@@ -105,11 +104,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
                   Horno
                 </Badge>
               )}
-              {booking.reservaBrasa && (
-                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                  Brasa
-                </Badge>
-              )}
+
             </div>
           </div>
         )}

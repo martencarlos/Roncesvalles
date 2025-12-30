@@ -565,9 +565,7 @@ export default function BookingsManagement({
                         </span>
                       </div>
 
-                      {(booking.prepararFuego ||
-                        booking.reservaHorno ||
-                        booking.reservaBrasa) && (
+                      {(booking.prepararFuego || booking.reservaHorno) && (
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">
                             Servicios:
@@ -587,14 +585,6 @@ export default function BookingsManagement({
                                 className="bg-orange-50 text-orange-700 border-orange-200 text-xs"
                               >
                                 Horno
-                              </Badge>
-                            )}
-                            {booking.reservaBrasa && (
-                              <Badge
-                                variant="outline"
-                                className="bg-red-50 text-red-700 border-red-200 text-xs"
-                              >
-                                Brasa
                               </Badge>
                             )}
                           </div>
@@ -721,9 +711,7 @@ export default function BookingsManagement({
                         </span>{" "}
                         personas, Mesas {booking.tables.join(", ")}
                       </p>
-                      {(booking.prepararFuego ||
-                        booking.reservaHorno ||
-                        booking.reservaBrasa) && (
+                      {(booking.prepararFuego || booking.reservaHorno) && (
                         <div className="flex gap-1 mt-1 flex-wrap">
                           {booking.prepararFuego && (
                             <Badge
@@ -739,14 +727,6 @@ export default function BookingsManagement({
                               className="bg-orange-50 text-orange-700 border-orange-200 text-xs"
                             >
                               Horno
-                            </Badge>
-                          )}
-                          {booking.reservaBrasa && (
-                            <Badge
-                              variant="outline"
-                              className="bg-red-50 text-red-700 border-red-200 text-xs"
-                            >
-                              Brasa
                             </Badge>
                           )}
                         </div>

@@ -193,7 +193,6 @@ export async function PUT(
       tables: body.tables || originalBooking.tables,
       prepararFuego: body.prepararFuego !== undefined ? Boolean(body.prepararFuego) : originalBooking.prepararFuego,
       reservaHorno: body.reservaHorno !== undefined ? Boolean(body.reservaHorno) : originalBooking.reservaHorno,
-      reservaBrasa: body.reservaBrasa !== undefined ? Boolean(body.reservaBrasa) : originalBooking.reservaBrasa,
       status: body.status || originalBooking.status,
       userId: currentUser.id, // Always set to current user
       noCleaningService: noCleaningService // Set cleaning service status
@@ -217,16 +216,10 @@ export async function PUT(
     if (body.prepararFuego) {
       additionalDetails += ' with fire preparation';
     }
-    if (body.reservaHorno && body.reservaBrasa) {
-      additionalDetails += additionalDetails ? ' and' : ' with';
-      additionalDetails += ' oven and grill reservation';
-    } else if (body.reservaHorno) {
+    if (body.reservaHorno) {
       additionalDetails += additionalDetails ? ' and' : ' with';
       additionalDetails += ' oven reservation';
-    } else if (body.reservaBrasa) {
-      additionalDetails += additionalDetails ? ' and' : ' with';
-      additionalDetails += ' grill reservation';
-    }
+    } 
     
     // Add cleaning service detail if it changed
     if (noCleaningService !== originalBooking.noCleaningService) {
@@ -337,15 +330,9 @@ export async function DELETE(
     if (booking.prepararFuego) {
       additionalDetails += ' con preparación de fuego';
     }
-    if (booking.reservaHorno && booking.reservaBrasa) {
-      additionalDetails += additionalDetails ? ' y' : ' con';
-      additionalDetails += ' reserva de horno y brasa';
-    } else if (booking.reservaHorno) {
+    if (booking.reservaHorno) {
       additionalDetails += additionalDetails ? ' y' : ' con';
       additionalDetails += ' reserva de horno';
-    } else if (booking.reservaBrasa) {
-      additionalDetails += additionalDetails ? ' y' : ' con';
-      additionalDetails += ' reserva de brasa';
     }
     
     // Get the user's role to include in the activity log

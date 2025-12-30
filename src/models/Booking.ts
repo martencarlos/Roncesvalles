@@ -12,14 +12,13 @@ export interface IBooking {
   tables: number[];
   prepararFuego: boolean;
   reservaHorno: boolean;
-  reservaBrasa: boolean;
   status: BookingStatus;
   finalAttendees?: number;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
-  userId: string; // Reference to the User who created the booking
-  noCleaningService?: boolean; // New field to track if cleaning service applies
+  userId: string;
+  noCleaningService?: boolean;
   _id?: string;
 }
 
@@ -65,10 +64,7 @@ const BookingSchema = new Schema<IBooking>(
       type: Boolean,
       default: false
     },
-    reservaBrasa: {
-      type: Boolean,
-      default: false
-    },
+    
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
