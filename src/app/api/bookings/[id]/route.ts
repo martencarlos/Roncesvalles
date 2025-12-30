@@ -1,4 +1,4 @@
-// src/app/api/bookings/[id]/route.ts - update PUT method to use direct session
+// src/app/api/bookings/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -175,11 +175,19 @@ export async function PUT(
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // Calculate days between today and new booking date
-        const daysDifference = Math.floor((newBookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const compareDate = new Date(newBookingDate);
+        compareDate.setHours(0, 0, 0, 0);
         
-        // Update cleaning service status based on current date and new booking date
-        noCleaningService = daysDifference <= 4;
+        // 1. Calculate days between today and new booking date
+        const daysDifference = Math.floor((compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const isShortNotice = daysDifference <= 4;
+
+        // 2. Check for Concierge Rest Days (Tuesday=2, Wednesday=3)
+        const dayOfWeek = compareDate.getDay();
+        const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3;
+        
+        // Update cleaning service status
+        noCleaningService = isShortNotice || isConciergeRestDay;
       }
     }
     

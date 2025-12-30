@@ -160,11 +160,31 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
+
+    // --- CLEANING SERVICE LOGIC ---
+    // 1. Calculate notice period
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Compare date object stripped of time
+    const compareDate = new Date(bookingDate);
+    compareDate.setHours(0, 0, 0, 0);
+    
+    const daysDifference = Math.floor((compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const isShortNotice = daysDifference <= 4;
+
+    // 2. Check for Concierge Rest Days (Tuesday=2, Wednesday=3)
+    const dayOfWeek = compareDate.getDay();
+    const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3;
+
+    // Determine if cleaning service is unavailable
+    const noCleaningService = isShortNotice || isConciergeRestDay || Boolean(body.noCleaningService);
+    // ------------------------------
     
     // Create booking with explicit userId from session
     const bookingData = {
       apartmentNumber: body.apartmentNumber,
-      date: new Date(body.date),
+      date: bookingDate,
       mealType: body.mealType,
       numberOfPeople: body.numberOfPeople || 1,
       tables: body.tables || [],
@@ -172,7 +192,7 @@ export async function POST(req: NextRequest) {
       reservaHorno: Boolean(body.reservaHorno),
       status: body.status || 'pending',
       userId: currentUser.id,  // Explicitly use ID from session
-      noCleaningService: Boolean(body.noCleaningService) // Add the cleaning service field
+      noCleaningService: noCleaningService // Use calculated value
     };
     
     console.log("Booking data:", JSON.stringify(bookingData));
@@ -197,9 +217,13 @@ export async function POST(req: NextRequest) {
     }
     
     // Add cleaning service detail
-    if (body.noCleaningService) {
+    if (noCleaningService) {
       additionalDetails += additionalDetails ? ' y' : ' con';
-      additionalDetails += ' aviso de ausencia de servicio de limpieza';
+      if (isConciergeRestDay) {
+        additionalDetails += ' aviso de sin limpieza (descanso conserje)';
+      } else {
+        additionalDetails += ' aviso de ausencia de servicio de limpieza (antelación)';
+      }
     }
     
     // Get the user's role to include in the activity log

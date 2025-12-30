@@ -102,6 +102,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [noCleaningService, setNoCleaningService] = useState<boolean>(
     initialData?.noCleaningService || false
   );
+  const [cleaningWarningReason, setCleaningWarningReason] = useState<string>("");
 
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
 
@@ -126,13 +127,36 @@ const BookingForm: React.FC<BookingFormProps> = ({
   useEffect(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
   
-    const daysDifference = differenceInDays(date, today);
+    const daysDifference = differenceInDays(checkDate, today);
     
+    // Check day of week (0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)
+    const dayOfWeek = checkDate.getDay();
+    const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3; // Tue or Wed
+    const isShortNotice = daysDifference <= 4;
+
     if (!initialData?._id || (initialData?._id && 
         (initialData.date && new Date(initialData.date).getTime() !== date.getTime()))) {
-      const needsCleaningWarning = daysDifference <= 4;
-      setNoCleaningService(needsCleaningWarning);
+      
+      if (isConciergeRestDay) {
+        setNoCleaningService(true);
+        setCleaningWarningReason("Los martes y miércoles son días de descanso de la conserje.");
+      } else if (isShortNotice) {
+        setNoCleaningService(true);
+        setCleaningWarningReason("Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza.");
+      } else {
+        setNoCleaningService(false);
+        setCleaningWarningReason("");
+      }
+    } else if (initialData?.noCleaningService) {
+        // Keep original state if editing and date hasn't changed, but update text reasoning
+        if (isConciergeRestDay) {
+            setCleaningWarningReason("Los martes y miércoles son días de descanso de la conserje.");
+        } else {
+            setCleaningWarningReason("Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza.");
+        }
     }
   }, [date, initialData]);
 
@@ -431,12 +455,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
                     {/* Render Tables 1-6 using helper logic similar to original file, omitted for brevity but keeping same structure */}
                     {[1, 2, 3, 4, 5, 6].map((num) => {
                         let positionClass = "";
-                        if (num === 1) positionClass = "absolute bottom-4 left-4 mb-16"; // Simplificado para ejemplo
-                        // Usar el diseño original de posicionamiento absoluto para 1-6
-                        return null; // El renderizado real se mantiene igual que el original
+                        if (num === 1) positionClass = "absolute bottom-4 left-4 mb-16"; 
+                        return null; 
                     })}
                     
-                    {/* Reutilizar el bloque de renderizado visual de mesas original aqui */}
                     <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
                       <div className="relative m-1 sm:m-2"><div className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(2)}`} onClick={() => toggleTable(2)}><span className="font-bold">2</span>{isBooked(2) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}{isSelected(2) && <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}</div></div>
                       <div className="relative m-1 sm:m-2"><div className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(1)}`} onClick={() => toggleTable(1)}><span className="font-bold">1</span>{isBooked(1) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}{isSelected(1) && <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}</div></div>
@@ -523,7 +545,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Alert className="bg-amber-50 border-amber-200 mt-4 mb-2">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
-            <strong>Aviso importante:</strong> Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza. Deberá encargarse de la limpieza tras su uso.
+            <strong>Aviso importante:</strong> {cleaningWarningReason || "Sin servicio de limpieza."} El propietario deberá encargarse de la limpieza tras su uso.
           </AlertDescription>
         </Alert>
       )}
