@@ -494,7 +494,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <RadioGroup
           value={mealType}
           onValueChange={(value) => handleMealTypeChange(value as MealType)}
-          className="flex space-x-4"
+          className="flex mt-4 space-x-4"
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="lunch" id="lunch" />
@@ -708,7 +708,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
       {/* Additional Options */}
       <div className="space-y-2">
         <Label>Opciones Adicionales</Label>
-        <div className="flex flex-col gap-4">
+        
+        <div className="flex mt-4 flex-col gap-4">
           <div className="flex flex-col space-y-1">
             <div className="flex items-center space-x-2">
               <Checkbox
