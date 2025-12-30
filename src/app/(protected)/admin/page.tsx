@@ -1,4 +1,4 @@
-// src/app/(protected)/admin/page.tsx (updated)
+// src/app/(protected)/admin/page.tsx
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -12,16 +12,14 @@ export const metadata: Metadata = {
   description: "Panel de administración del sistema de reservas",
 };
 
-// Updated section for src/app/(protected)/admin/page.tsx
 export default async function AdminPage() {
-  // Check if user is authenticated and has it_admin role
   const session = await getServerSession(authOptions);
 
   if (!session) {
     redirect("/auth/signin?callbackUrl=/admin");
   }
 
-  // Only IT admins can access the admin panel
+  // STRICT CHECK: Only IT Admin allowed
   if (session.user.role !== "it_admin") {
     redirect("/unauthorized");
   }
@@ -76,15 +74,8 @@ export default async function AdminPage() {
           </Button>
         </div>
 
-        {/* Feedback Management Card - NEW */}
-        <div
-          className="bg-white rounded-lg border shadow-sm p-6"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
+        {/* Feedback Management Card */}
+        <div className="bg-white rounded-lg border shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Gestión de Feedback</h2>
           <p className="text-muted-foreground mb-4">
             Revise y gestione el feedback, reportes de errores y sugerencias
@@ -96,14 +87,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Export Data Card */}
-        <div
-          className="bg-white rounded-lg border shadow-sm p-6"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
+        <div className="bg-white rounded-lg border shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Exportar Datos</h2>
           <p className="text-muted-foreground mb-4">
             Exporte datos de reservas para facturación y gestión administrativa.

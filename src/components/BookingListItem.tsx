@@ -13,6 +13,7 @@ import {
   UtensilsCrossed,
   CalendarDays,
   AlertTriangle,
+  StickyNote, // Import StickyNote icon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Session } from "next-auth";
@@ -22,6 +23,7 @@ interface BookingListItemProps {
   onEdit: () => void;
   onDelete: (booking: IBooking) => void;
   onConfirm: () => void;
+  onEditNote?: (booking: IBooking) => void; // Added prop
   isPast?: boolean;
   session: Session | null;
 }
@@ -31,6 +33,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   onEdit,
   onDelete,
   onConfirm,
+  onEditNote, // Destructure new prop
   isPast = false,
   session,
 }) => {
@@ -44,6 +47,10 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   const isOwner = session?.user?.apartmentNumber === booking.apartmentNumber;
   const isAdmin = userRole === "admin"; // Read-only admin
   const isITAdmin = userRole === "it_admin";
+  const isConserje = userRole === "conserje"; // Check for conserje
+
+  // Conserje and IT Admin can manage internal notes
+  const canManageNotes = isITAdmin || isConserje;
 
   // Determine if user can edit/delete/confirm this booking
   const canEdit =
@@ -79,7 +86,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             {isConfirmed && (
               <Badge
                 variant="outline"
-                className="bg-green-50 text-green-700 border-green-200"
+                className="bg-green-100 text-green-700 border-green-200"
               >
                 Confirmado
               </Badge>
@@ -87,7 +94,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             {isPending && !isPast && (
               <Badge
                 variant="outline"
-                className="bg-blue-50 text-blue-700 border-blue-200"
+                className="bg-blue-100 text-blue-700 border-blue-200"
               >
                 Pendiente
               </Badge>
@@ -95,7 +102,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             {isPending && isPast && (
               <Badge
                 variant="outline"
-                className="bg-amber-50 text-amber-700 border-amber-200"
+                className="bg-amber-100 text-amber-700 border-amber-200"
               >
                 Por confirmar
               </Badge>
@@ -103,7 +110,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             {isCancelled && (
               <Badge
                 variant="outline"
-                className="bg-red-50 text-red-700 border-red-200"
+                className="bg-red-100 text-red-700 border-red-200"
               >
                 Cancelado
               </Badge>
@@ -178,201 +185,265 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         )}
 
-        {/* Mobile Action buttons - always visible (if not read-only) */}
-        {!isReadOnly && (
-          <div className="flex gap-2 justify-end mt-1">
-            {canConfirm && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onConfirm}
-                className="cursor-pointer h-8 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
-              >
-                <CheckCircle2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
-                Confirmar
-              </Button>
-            )}
-
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onEdit}
-                className="cursor-pointer h-8 text-xs px-2 flex-1"
-              >
-                <Edit className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
-                Editar
-              </Button>
-            )}
-
-            {canDelete && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onDelete(booking)}
-                className="cursor-pointer h-8 text-xs px-2 flex-1"
-              >
-                <Trash2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
-                Eliminar
-              </Button>
-            )}
+        {/* Internal Notes Display (Mobile) */}
+        {canManageNotes && booking.internalNotes && (
+          <div className="mt-2 pt-2 border-t text-sm bg-amber-50 p-2 rounded border border-amber-100">
+            <div className="font-medium mb-1 text-xs text-amber-800 flex items-center gap-1">
+              <StickyNote className="h-3 w-3" /> Nota Interna:
+            </div>
+            <p className="text-amber-900 text-xs whitespace-pre-wrap">
+              {booking.internalNotes}
+            </p>
           </div>
         )}
+
+        {/* Mobile Action buttons */}
+        <div className="flex gap-2 justify-end mt-1 flex-wrap">
+          {/* Internal Notes Button (Mobile) */}
+          {canManageNotes && onEditNote && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEditNote(booking)}
+              className={`cursor-pointer h-8 text-xs px-2 flex-1 ${
+                booking.internalNotes
+                  ? "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
+                  : ""
+              }`}
+            >
+              <StickyNote className="h-3.5 w-3.5 mr-1.5" />
+              {booking.internalNotes ? "Editar Nota" : "Añadir Nota"}
+            </Button>
+          )}
+
+          {!isReadOnly && (
+            <>
+              {canConfirm && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onConfirm}
+                  className="cursor-pointer h-8 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50 flex-1"
+                >
+                  <CheckCircle2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
+                  Confirmar
+                </Button>
+              )}
+
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onEdit}
+                  className="cursor-pointer h-8 text-xs px-2 flex-1"
+                >
+                  <Edit className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
+                  Editar
+                </Button>
+              )}
+
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDelete(booking)}
+                  className="cursor-pointer h-8 text-xs px-2 flex-1"
+                >
+                  <Trash2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
+                  Eliminar
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Desktop layout */}
-      <div className="hidden sm:flex sm:flex-row gap-3 sm:items-center justify-between">
-        <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-8">
-          {/* Apartment and status */}
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold">Apto. #{booking.apartmentNumber}</h3>
-              {/* Status indicator */}
-              <div>
-                {isConfirmed && (
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-green-200"
-                  >
-                    Confirmado
-                  </Badge>
-                )}
-                {isPending && !isPast && (
-                  <Badge
-                    variant="outline"
-                    className="bg-blue-50 text-blue-700 border-blue-200"
-                  >
-                    Pendiente
-                  </Badge>
-                )}
-                {isPending && isPast && (
-                  <Badge
-                    variant="outline"
-                    className="bg-amber-50 text-amber-700 border-amber-200"
-                  >
-                    Por confirmar
-                  </Badge>
-                )}
-                {isCancelled && (
-                  <Badge
-                    variant="outline"
-                    className="bg-red-50 text-red-700 border-red-200"
-                  >
-                    Cancelado
-                  </Badge>
-                )}
+      <div className="hidden sm:flex sm:flex-col gap-2">
+        <div className="flex sm:flex-row gap-3 sm:items-center justify-between">
+          <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-8">
+            {/* Apartment and status */}
+            <div className="flex flex-col min-w-[120px]">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold">Apto. #{booking.apartmentNumber}</h3>
+                {/* Status indicator */}
+                <div>
+                  {isConfirmed && (
+                    <Badge
+                      variant="outline"
+                      className="bg-green-100 text-green-700 border-green-200"
+                    >
+                      Confirmado
+                    </Badge>
+                  )}
+                  {isPending && !isPast && (
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-100 text-blue-700 border-blue-200"
+                    >
+                      Pendiente
+                    </Badge>
+                  )}
+                  {isPending && isPast && (
+                    <Badge
+                      variant="outline"
+                      className="bg-amber-100 text-amber-700 border-amber-200"
+                    >
+                      Por confirmar
+                    </Badge>
+                  )}
+                  {isCancelled && (
+                    <Badge
+                      variant="outline"
+                      className="bg-red-100 text-red-700 border-red-200"
+                    >
+                      Cancelado
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <div className="text-muted-foreground text-xs mt-1">
+                {booking.mealType === "lunch" ? "Comida" : "Cena"} ·{" "}
+                {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
               </div>
             </div>
-            <div className="text-muted-foreground text-xs mt-1">
-              {booking.mealType === "lunch" ? "Comida" : "Cena"} ·{" "}
-              {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
-            </div>
-          </div>
 
-          {/* People and tables */}
-          <div className="flex flex-row gap-6">
-            <div className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-sm">
-                {isConfirmed && booking.finalAttendees !== undefined ? (
-                  <>
-                    <span className="line-through text-muted-foreground mr-1">
-                      {booking.numberOfPeople}
-                    </span>
-                    {booking.finalAttendees}
-                  </>
-                ) : (
-                  booking.numberOfPeople
-                )}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Table className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-sm">
-                Mesas: {booking.tables.map((t) => `#${t}`).join(", ")}
-              </span>
-            </div>
-          </div>
-
-          {/* Services */}
-          {(booking.prepararFuego || booking.reservaHorno) && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Servicios:</span>
-              <div className="flex gap-1">
-                {booking.prepararFuego && (
-                  <Badge
-                    variant="outline"
-                    className="bg-blue-50 text-blue-700 border-blue-200"
-                  >
-                    Fuego
-                  </Badge>
-                )}
-                {booking.reservaHorno && (
-                  <Badge
-                    variant="outline"
-                    className="bg-orange-50 text-orange-700 border-orange-200"
-                  >
-                    Horno
-                  </Badge>
-                )}
+            {/* People and tables */}
+            <div className="flex flex-row gap-6 items-center">
+              <div className="flex items-center gap-1">
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm">
+                  {isConfirmed && booking.finalAttendees !== undefined ? (
+                    <>
+                      <span className="line-through text-muted-foreground mr-1">
+                        {booking.numberOfPeople}
+                      </span>
+                      {booking.finalAttendees}
+                    </>
+                  ) : (
+                    booking.numberOfPeople
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Table className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm">
+                  Mesas: {booking.tables.map((t) => `#${t}`).join(", ")}
+                </span>
               </div>
             </div>
-          )}
 
-          {/* Cleaning Service Warning */}
-          {booking.noCleaningService && (
-            <div className="flex items-center gap-1 text-amber-700">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              <span className="text-xs">Sin servicio de limpieza</span>
-            </div>
-          )}
+            {/* Services */}
+            {(booking.prepararFuego || booking.reservaHorno) && (
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  {booking.prepararFuego && (
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-50 text-blue-700 border-blue-200"
+                    >
+                      Fuego
+                    </Badge>
+                  )}
+                  {booking.reservaHorno && (
+                    <Badge
+                      variant="outline"
+                      className="bg-orange-50 text-orange-700 border-orange-200"
+                    >
+                      Horno
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
 
-          {/* Notes */}
-          {isConfirmed && booking.notes && (
-            <div className="text-xs text-muted-foreground sm:max-w-[250px] truncate">
-              <span className="font-medium mr-1">Notas:</span>
-              {booking.notes}
-            </div>
-          )}
+            {/* Cleaning Service Warning */}
+            {booking.noCleaningService && (
+              <div className="flex items-center gap-1 text-amber-700">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                <span className="text-xs">Sin limpieza</span>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Action buttons */}
+          <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Internal Notes Button (Desktop) */}
+            {canManageNotes && onEditNote && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEditNote(booking)}
+                className="cursor-pointer h-7 text-xs px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                title={
+                  booking.internalNotes
+                    ? "Editar nota interna"
+                    : "Añadir nota interna"
+                }
+              >
+                <StickyNote className="h-3 w-3 mr-1" />
+                {booking.internalNotes ? "Editar Nota" : "Añadir Nota"}
+              </Button>
+            )}
+
+            {!isReadOnly && (
+              <>
+                {canConfirm && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onConfirm}
+                    className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+                  >
+                    <CheckCircle2 className="cursor-pointer h-3 w-3 mr-1" />
+                    Confirmar
+                  </Button>
+                )}
+
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onEdit}
+                    className="cursor-pointer h-7 text-xs px-2"
+                  >
+                    <Edit className="cursor-pointer h-3 w-3 mr-1" />
+                    Editar
+                  </Button>
+                )}
+
+                {canDelete && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => onDelete(booking)}
+                    className="cursor-pointer h-7 text-xs px-2"
+                  >
+                    <Trash2 className="cursor-pointer h-3 w-3 mr-1" />
+                    Eliminar
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Desktop Action buttons - only visible on hover (if not read-only) */}
-        {!isReadOnly && (
-          <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-            {canConfirm && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onConfirm}
-                className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
-              >
-                <CheckCircle2 className="cursor-pointer h-3 w-3 mr-1" />
-                Confirmar
-              </Button>
+        {/* Extra Row for Notes (User & Internal) */}
+        {(booking.notes || (canManageNotes && booking.internalNotes)) && (
+          <div className="flex flex-col gap-1 mt-1 text-sm border-t pt-2 border-dashed">
+            {booking.notes && isConfirmed && (
+              <div className="text-xs text-muted-foreground truncate">
+                <span className="font-medium mr-1">Notas usuario:</span>
+                {booking.notes}
+              </div>
             )}
-
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onEdit}
-                className="cursor-pointer h-7 text-xs px-2"
-              >
-                <Edit className="cursor-pointer h-3 w-3 mr-1" />
-                Editar
-              </Button>
-            )}
-
-            {canDelete && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onDelete(booking)}
-                className="cursor-pointer h-7 text-xs px-2"
-              >
-                <Trash2 className="cursor-pointer h-3 w-3 mr-1" />
-                Eliminar
-              </Button>
+            {canManageNotes && booking.internalNotes && (
+              <div className="text-xs text-amber-900 bg-amber-50 p-1 rounded flex items-start gap-1">
+                <StickyNote className="h-3 w-3 mt-0.5 shrink-0 text-amber-700" />
+                <span className="whitespace-pre-wrap">
+                  {booking.internalNotes}
+                </span>
+              </div>
             )}
           </div>
         )}

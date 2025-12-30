@@ -30,6 +30,8 @@ import {
   List,
   InfoIcon,
   BookOpen,
+  StickyNote,
+  Save,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +51,15 @@ import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import { useSession } from "next-auth/react";
 import UserMenu from "@/components/auth/UserMenu";
 import { useRouter } from "next/navigation";
-import router from "next/router";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 // Registrar el idioma español para el datepicker
 registerLocale("es", es);
@@ -79,6 +89,7 @@ type ViewMode = "card" | "list" | undefined;
 
 export default function BookingsPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
 
   const [bookings, setBookings] = useState<IBooking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
@@ -98,6 +109,11 @@ export default function BookingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // State for Internal Notes (Conserje/IT Admin)
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [noteBooking, setNoteBooking] = useState<IBooking | null>(null);
+  const [internalNoteText, setInternalNoteText] = useState("");
 
   const [loadingTables, setLoadingTables] = useState(true);
   const [availableTablesLunch, setAvailableTablesLunch] = useState<number[]>(
@@ -133,7 +149,6 @@ export default function BookingsPage() {
 
           // Use a timeout to allow the toast to be seen
           setTimeout(() => {
-            const router = useRouter();
             router.push("/auth/signin?callbackUrl=/bookings");
           }, 2000);
           return;
@@ -235,9 +250,6 @@ export default function BookingsPage() {
           dinnerBookings.flatMap((booking: IBooking) => booking.tables)
         );
 
-        console.log("Lunch booked tables:", [...lunchBookedTables]);
-        console.log("Dinner booked tables:", [...dinnerBookedTables]);
-
         // Calculate available tables by excluding booked tables
         const availableLunch = [1, 2, 3, 4, 5, 6].filter(
           (table) => !lunchBookedTables.has(table)
@@ -287,6 +299,7 @@ export default function BookingsPage() {
     let filtered: IBooking[] = [];
 
     // For regular users, only show their own apartment's bookings
+    // Admins and Conserjes can see all bookings
     let userBookings = allBookings;
     if (session?.user.role === "user") {
       userBookings = allBookings.filter(
@@ -347,29 +360,7 @@ export default function BookingsPage() {
 
   // When you need to check for booked tables and update the available tables:
   useEffect(() => {
-    const updateAvailableTablesForSelectedDate = async () => {
-      // Get booked tables for lunch
-      const bookedTablesLunch = await getBookedTablesForDateAndMeal(
-        selectedDate,
-        "lunch"
-      );
-      const availableLunch = [1, 2, 3, 4, 5, 6].filter(
-        (table) => !bookedTablesLunch.has(table)
-      );
-      setAvailableTablesLunch(availableLunch);
-
-      // Get booked tables for dinner
-      const bookedTablesDinner = await getBookedTablesForDateAndMeal(
-        selectedDate,
-        "dinner"
-      );
-      const availableDinner = [1, 2, 3, 4, 5, 6].filter(
-        (table) => !bookedTablesDinner.has(table)
-      );
-      setAvailableTablesDinner(availableDinner);
-    };
-
-    updateAvailableTablesForSelectedDate();
+    updateAvailableTables(selectedDate);
   }, [selectedDate]); // This will run whenever the selected date changes
 
   const handleCreateBooking = async (data: Partial<IBooking>) => {
@@ -388,8 +379,6 @@ export default function BookingsPage() {
         status: "pending", // Ensure new bookings are created with pending status
         userId: session?.user?.id, // Add user ID from session
       };
-
-      console.log("Sending booking data:", JSON.stringify(bookingData));
 
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -454,8 +443,6 @@ export default function BookingsPage() {
         userId: session?.user?.id, // Make sure userId is included in updates
       };
 
-      console.log("Sending update data:", JSON.stringify(bookingData));
-
       const res = await fetch(`/api/bookings/${editingBooking._id}`, {
         method: "PUT",
         headers: {
@@ -515,7 +502,7 @@ export default function BookingsPage() {
       return;
     }
 
-    setIsSubmitting(true); // Add this line to track deletion state
+    setIsSubmitting(true);
 
     try {
       const res = await fetch(`/api/bookings/${deletingBooking._id}`, {
@@ -535,7 +522,7 @@ export default function BookingsPage() {
       setError(err.message);
       console.error(err);
     } finally {
-      setIsSubmitting(false); // Reset state when done
+      setIsSubmitting(false);
       setShowDeleteDialog(false);
       setDeletingBooking(null);
     }
@@ -580,39 +567,40 @@ export default function BookingsPage() {
     }
   };
 
-  // Updated getBookedTablesForDateAndMeal function
-  const getBookedTablesForDateAndMeal = async (
-    date: Date,
-    mealType: MealType
-  ) => {
+  // --- NEW HANDLERS: Internal Notes (For Conserje/IT Admin) ---
+  const handleOpenNoteDialog = (booking: IBooking) => {
+    setNoteBooking(booking);
+    setInternalNoteText(booking.internalNotes || "");
+    setShowNoteDialog(true);
+  };
+
+  const handleSaveInternalNote = async () => {
+    if (!noteBooking?._id) return;
+    setIsSubmitting(true);
     try {
-      const selectedDateString = date.toISOString().split("T")[0];
+      const res = await fetch(`/api/bookings/${noteBooking._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          internalNotes: internalNoteText,
+          // Sending original data to pass potential strict validation in backend if user is IT Admin
+          apartmentNumber: noteBooking.apartmentNumber,
+          date: noteBooking.date,
+          mealType: noteBooking.mealType,
+          tables: noteBooking.tables,
+        }),
+      });
 
-      // Make a request specifically for availability check
-      const res = await fetch(
-        `/api/bookings?date=${selectedDateString}&mealType=${mealType}&availabilityCheck=true`
-      );
+      if (!res.ok) throw new Error("Error al guardar la nota");
 
-      if (!res.ok) {
-        throw new Error("Error fetching booked tables");
-      }
-
-      const bookings = await res.json();
-
-      // Get all tables booked for this date and meal type
-      const bookedTables = new Set(
-        bookings.flatMap((booking: IBooking) => booking.tables)
-      );
-
-      console.log(
-        `Booked tables for ${date.toDateString()} - ${mealType} (all users):`,
-        [...bookedTables]
-      );
-
-      return bookedTables;
-    } catch (err) {
-      console.error("Error in getBookedTablesForDateAndMeal:", err);
-      return new Set<number>();
+      // Refresh local state
+      await fetchBookings();
+      toast.success("Nota interna actualizada");
+      setShowNoteDialog(false);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -742,7 +730,7 @@ export default function BookingsPage() {
             </h2>
 
             <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
-              {session?.user?.role !== "admin" && (
+              {session?.user?.role === "user" && (
                 <Button
                   onClick={handleNewBooking}
                   size="sm"
@@ -767,9 +755,10 @@ export default function BookingsPage() {
                 </Link>
               </Button>
 
-              {/* Export button (only for admin or it_admin users) */}
+              {/* Export button */}
               {(session?.user?.role === "admin" ||
-                session?.user?.role === "it_admin") && (
+                session?.user?.role === "it_admin" ||
+                session?.user?.role === "conserje") && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -802,7 +791,7 @@ export default function BookingsPage() {
                   locale="es"
                   className="w-full pl-10 p-2 border rounded-md"
                   renderDayContents={renderDayContents}
-                  onFocus={(e) => e.target.blur()} 
+                  onFocus={(e) => e.target.blur()}
                   customInput={
                     <input
                       className="w-full pl-10 p-2 border rounded-md cursor-pointer"
@@ -980,19 +969,74 @@ export default function BookingsPage() {
         onClose={() => setShowExportDialog(false)}
       />
 
+      {/* Delete Confirmation Dialog */}
+      {deletingBooking && (
+        <DeleteConfirmationDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={confirmDeleteBooking}
+          apartmentNumber={deletingBooking.apartmentNumber}
+          date={new Date(deletingBooking.date)}
+          mealType={deletingBooking.mealType}
+          isDeleting={isSubmitting}
+        />
+      )}
+
+      {/* Internal Notes Dialog */}
+      <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <StickyNote className="h-5 w-5 text-amber-500" />
+              Notas Internas (Conserjería)
+            </DialogTitle>
+            <DialogDescription>
+              Estas notas solo son visibles para conserjes y administradores.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={internalNoteText}
+              onChange={(e) => setInternalNoteText(e.target.value)}
+              placeholder="Escriba aquí anotaciones..."
+              rows={5}
+              className="bg-amber-50 border-amber-200 focus-visible:ring-amber-500"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveInternalNote}
+              disabled={isSubmitting}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isSubmitting ? (
+                "Guardando..."
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" /> Guardar Nota
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <br />
-      {/* List view title with filter info - MOVED VIEW TOGGLE AND DATE FILTER BUTTONS HERE */}
+      {/* List view title with filter info */}
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div className="flex items-center gap-3">
             <h2 className="text-lg sm:text-xl font-semibold">
-              {dateFilter === "today" && "Mis Reservas de Hoy"}
-              {dateFilter === "future" && "Mis Próximas Reservas"}
-              {dateFilter === "past" && "Mis Reservas Pasadas"}
+              {dateFilter === "today" && "Reservas de Hoy"}
+              {dateFilter === "future" && "Próximas Reservas"}
+              {dateFilter === "past" && "Reservas Pasadas"}
               {dateFilter === "pending-confirmation" &&
-                "Reservas Pendientes de Confirmación"}
+                "Pendientes de Confirmación"}
               {dateFilter === "specific" &&
-                `Reservas para ${formatDateEs(selectedDate, "d MMMM, yyyy")}`}
+                `Reservas del ${formatDateEs(selectedDate, "d MMMM, yyyy")}`}
               {dateFilter === "all" && "Todas las Reservas"}
             </h2>
 
@@ -1001,7 +1045,7 @@ export default function BookingsPage() {
               onClick={toggleViewMode}
               variant="outline"
               size="sm"
-              className="cursor-pointer"
+              className="cursor-pointer hidden sm:inline-flex"
             >
               {viewMode === "card" ? (
                 <>
@@ -1039,7 +1083,7 @@ export default function BookingsPage() {
             )}
         </div>
 
-        {/* DATE FILTER BUTTONS MOVED HERE */}
+        {/* DATE FILTER BUTTONS */}
         <div className="flex gap-2 flex-wrap">
           <Button
             variant={dateFilter === "today" ? "default" : "outline"}
@@ -1114,6 +1158,14 @@ export default function BookingsPage() {
               (booking) => booking.status === "pending" && isBookingPast
             );
 
+            // Pre-sorted list for consistent rendering order
+            const sortedBookingsForDate = bookingsForDate.sort((a, b) => {
+              if (a.mealType !== b.mealType) {
+                return a.mealType === "lunch" ? -1 : 1;
+              }
+              return a.apartmentNumber - b.apartmentNumber;
+            });
+
             return (
               <div key={dateKey}>
                 <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
@@ -1131,55 +1183,58 @@ export default function BookingsPage() {
                   {statusBadge}
                 </div>
 
-                {viewMode === "card" ? (
-                  // Card View
-                  <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                    {bookingsForDate
-                      .sort((a, b) => {
-                        // First by meal type (lunch first, then dinner)
-                        if (a.mealType !== b.mealType) {
-                          return a.mealType === "lunch" ? -1 : 1;
-                        }
-                        // Then by apartment number
-                        return a.apartmentNumber - b.apartmentNumber;
-                      })
-                      .map((booking) => (
+                {/* Mobile View: Always List View */}
+                <div className="sm:hidden flex flex-col gap-3">
+                  {sortedBookingsForDate.map((booking) => (
+                    <BookingListItem
+                      key={booking._id as string}
+                      booking={booking}
+                      onEdit={() => setEditingBooking(booking)}
+                      onDelete={() => handleDeleteBooking(booking)}
+                      onConfirm={() => setConfirmingBooking(booking)}
+                      onEditNote={handleOpenNoteDialog}
+                      isPast={isBookingPast}
+                      session={session}
+                    />
+                  ))}
+                </div>
+
+                {/* Desktop View: Toggled via viewMode state */}
+                <div className="hidden sm:block">
+                  {viewMode === "card" ? (
+                    // Card View
+                    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                      {sortedBookingsForDate.map((booking) => (
                         <BookingCard
                           key={booking._id as string}
                           booking={booking}
                           onEdit={() => setEditingBooking(booking)}
                           onDelete={() => handleDeleteBooking(booking)}
                           onConfirm={() => setConfirmingBooking(booking)}
+                          onEditNote={handleOpenNoteDialog}
                           isPast={isBookingPast}
                           session={session}
                         />
                       ))}
-                  </div>
-                ) : (
-                  // List View
-                  <div className="flex flex-col gap-3">
-                    {bookingsForDate
-                      .sort((a, b) => {
-                        // First by meal type (lunch first, then dinner)
-                        if (a.mealType !== b.mealType) {
-                          return a.mealType === "lunch" ? -1 : 1;
-                        }
-                        // Then by apartment number
-                        return a.apartmentNumber - b.apartmentNumber;
-                      })
-                      .map((booking) => (
+                    </div>
+                  ) : (
+                    // List View
+                    <div className="flex flex-col gap-3">
+                      {sortedBookingsForDate.map((booking) => (
                         <BookingListItem
                           key={booking._id as string}
                           booking={booking}
                           onEdit={() => setEditingBooking(booking)}
                           onDelete={() => handleDeleteBooking(booking)}
                           onConfirm={() => setConfirmingBooking(booking)}
+                          onEditNote={handleOpenNoteDialog}
                           isPast={isBookingPast}
                           session={session}
                         />
                       ))}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -1198,18 +1253,6 @@ export default function BookingsPage() {
             )}.`}
           {dateFilter === "all" && "No hay reservas disponibles."}
         </p>
-      )}
-
-      {deletingBooking && (
-        <DeleteConfirmationDialog
-          isOpen={showDeleteDialog}
-          onClose={() => setShowDeleteDialog(false)}
-          onConfirm={confirmDeleteBooking}
-          apartmentNumber={deletingBooking.apartmentNumber}
-          date={new Date(deletingBooking.date)}
-          mealType={deletingBooking.mealType}
-          isDeleting={isSubmitting} // Pass the isSubmitting state here
-        />
       )}
     </div>
   );

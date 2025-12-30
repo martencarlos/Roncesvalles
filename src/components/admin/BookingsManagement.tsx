@@ -3,29 +3,22 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   PlusCircle,
   Calendar,
   Search,
   X,
-  FilterIcon,
   Edit,
   Trash2,
   CheckCircle2,
-  Settings,
+  StickyNote,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -42,30 +35,43 @@ import "react-datepicker/dist/react-datepicker.css";
 import BookingFormModal from "@/components/BookingFormModal";
 import BookingConfirmationDialog from "@/components/BookingConfirmationDialog";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { IBooking } from "@/models/Booking";
 
 registerLocale("es", es);
 
 interface BookingsManagementProps {
-  isITAdmin: boolean;
+  userRole: string;
 }
 
 export default function BookingsManagement({
-  isITAdmin,
+  userRole,
 }: BookingsManagementProps) {
+  const isITAdmin = userRole === "it_admin";
+  const isConserje = userRole === "conserje";
+  // Conserje can edit notes, IT admin can do everything including notes
+  const canManageInternalNotes = isITAdmin || isConserje;
+
   const [bookings, setBookings] = useState<IBooking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Filter state
+  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [mealTypeFilter, setMealTypeFilter] = useState<string>("all");
 
-  // Booking modals state
+  // Modals state
   const [showForm, setShowForm] = useState(false);
   const [editingBooking, setEditingBooking] = useState<IBooking | null>(null);
   const [confirmingBooking, setConfirmingBooking] = useState<IBooking | null>(
@@ -75,26 +81,23 @@ export default function BookingsManagement({
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Fetch all bookings
+  // Internal Notes Modal State
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [noteBooking, setNoteBooking] = useState<IBooking | null>(null);
+  const [internalNoteText, setInternalNoteText] = useState("");
+
+  // Fetch bookings
   useEffect(() => {
     const fetchBookings = async () => {
       setLoading(true);
       setError("");
-
       try {
         const res = await fetch("/api/bookings");
-
-        if (!res.ok) {
-          throw new Error("Error al obtener reservas");
-        }
-
+        if (!res.ok) throw new Error("Error al obtener reservas");
         const data = await res.json();
-
-        // Sort bookings by date (most recent first)
         const sortedData = [...data].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-
         setBookings(sortedData);
         applyFilters(
           sortedData,
@@ -106,78 +109,54 @@ export default function BookingsManagement({
         );
       } catch (err: any) {
         setError(err.message);
-        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchBookings();
   }, []);
 
-  // Apply filters
+  // Filter Logic
   const applyFilters = (
-    bookingsList: IBooking[],
+    list: IBooking[],
     query: string,
     date: string,
     status: string,
     specificDate: Date | null,
-    mealType: string
+    meal: string
   ) => {
-    let filtered = [...bookingsList];
-
-    // Filter by search query (apartment number)
+    let filtered = [...list];
     if (query) {
-      const apartmentNumber = parseInt(query);
-      if (!isNaN(apartmentNumber)) {
-        filtered = filtered.filter(
-          (booking) => booking.apartmentNumber === apartmentNumber
-        );
-      }
+      const apt = parseInt(query);
+      if (!isNaN(apt))
+        filtered = filtered.filter((b) => b.apartmentNumber === apt);
     }
-
-    // Filter by date
-    if (date === "today") {
-      filtered = filtered.filter((booking) => isToday(new Date(booking.date)));
-    } else if (date === "future") {
-      filtered = filtered.filter((booking) => {
-        const bookingDate = new Date(booking.date);
-        return isToday(bookingDate) || bookingDate > new Date();
-      });
-    } else if (date === "past") {
-      filtered = filtered.filter((booking) => {
-        const bookingDate = new Date(booking.date);
-        return !isToday(bookingDate) && bookingDate < new Date();
-      });
-    } else if (date === "specific" && specificDate) {
-      const year = specificDate.getFullYear();
-      const month = specificDate.getMonth();
-      const day = specificDate.getDate();
-
-      filtered = filtered.filter((booking) => {
-        const bookingDate = new Date(booking.date);
+    if (date === "today")
+      filtered = filtered.filter((b) => isToday(new Date(b.date)));
+    else if (date === "future")
+      filtered = filtered.filter(
+        (b) => isToday(new Date(b.date)) || new Date(b.date) > new Date()
+      );
+    else if (date === "past")
+      filtered = filtered.filter(
+        (b) => !isToday(new Date(b.date)) && new Date(b.date) < new Date()
+      );
+    else if (date === "specific" && specificDate) {
+      filtered = filtered.filter((b) => {
+        const d = new Date(b.date);
         return (
-          bookingDate.getFullYear() === year &&
-          bookingDate.getMonth() === month &&
-          bookingDate.getDate() === day
+          d.getDate() === specificDate.getDate() &&
+          d.getMonth() === specificDate.getMonth() &&
+          d.getFullYear() === specificDate.getFullYear()
         );
       });
     }
-
-    // Filter by status
-    if (status !== "all") {
-      filtered = filtered.filter((booking) => booking.status === status);
-    }
-
-    // Filter by meal type
-    if (mealType !== "all") {
-      filtered = filtered.filter((booking) => booking.mealType === mealType);
-    }
-
+    if (status !== "all")
+      filtered = filtered.filter((b) => b.status === status);
+    if (meal !== "all") filtered = filtered.filter((b) => b.mealType === meal);
     setFilteredBookings(filtered);
   };
 
-  // Handle search and filter
   useEffect(() => {
     applyFilters(
       bookings,
@@ -196,7 +175,6 @@ export default function BookingsManagement({
     mealTypeFilter,
   ]);
 
-  // Reset filter
   const resetFilters = () => {
     setSearchQuery("");
     setDateFilter("all");
@@ -205,18 +183,13 @@ export default function BookingsManagement({
     setMealTypeFilter("all");
   };
 
-  // Handle create booking
+  // CRUD Handlers
   const handleCreateBooking = async (data: Partial<IBooking>) => {
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          status: "pending",
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, status: "pending" }),
       });
 
       if (!res.ok) {
@@ -225,19 +198,12 @@ export default function BookingsManagement({
       }
 
       const newBooking = await res.json();
-
-      // Add the new booking to the list
       setBookings((prev) => [newBooking, ...prev]);
-
-      // Close form
       setShowForm(false);
-
       toast.success("Reserva Creada", {
         description: `Apt #${
           data.apartmentNumber
-        } ha reservado las mesas ${data.tables?.join(", ")} para ${
-          data.mealType === "lunch" ? "comida" : "cena"
-        } el ${format(data.date as Date, "d MMM, yyyy", { locale: es })}`,
+        } ha reservado las mesas ${data.tables?.join(", ")}`,
       });
     } catch (err: any) {
       toast.error(err.message);
@@ -245,16 +211,12 @@ export default function BookingsManagement({
     }
   };
 
-  // Handle update booking
   const handleUpdateBooking = async (data: Partial<IBooking>) => {
     if (!editingBooking?._id) return;
-
     try {
       const res = await fetch(`/api/bookings/${editingBooking._id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
@@ -264,67 +226,42 @@ export default function BookingsManagement({
       }
 
       const updatedBooking = await res.json();
-
-      // Update booking in the list
       setBookings((prev) =>
-        prev.map((booking) =>
-          booking._id === editingBooking._id ? updatedBooking : booking
-        )
+        prev.map((b) => (b._id === editingBooking._id ? updatedBooking : b))
       );
-
-      // Close form
       setEditingBooking(null);
-
-      toast.success("Reserva Actualizada", {
-        description: `Actualizada reserva para Apt #${data.apartmentNumber}`,
-      });
+      toast.success("Reserva Actualizada");
     } catch (err: any) {
       toast.error(err.message);
       throw err;
     }
   };
 
-  // Handle delete booking
   const handleDeleteBooking = (booking: IBooking) => {
     setDeletingBooking(booking);
     setShowDeleteDialog(true);
   };
 
-  // Confirm delete booking
   const confirmDeleteBooking = async () => {
     if (!deletingBooking?._id) return;
-
-    setIsSubmitting(true); // Set loading state to true
-
+    setIsSubmitting(true);
     try {
       const res = await fetch(`/api/bookings/${deletingBooking._id}`, {
         method: "DELETE",
       });
-
-      if (!res.ok) {
-        throw new Error("Error al eliminar la reserva");
-      }
-
-      // Remove booking from the list
-      setBookings((prev) =>
-        prev.filter((booking) => booking._id !== deletingBooking._id)
-      );
-
-      toast.error("Reserva Eliminada", {
-        description: "La reserva ha sido eliminada correctamente",
-      });
+      if (!res.ok) throw new Error("Error al eliminar la reserva");
+      setBookings((prev) => prev.filter((b) => b._id !== deletingBooking._id));
+      toast.error("Reserva Eliminada");
     } catch (err: any) {
       setError(err.message);
-      console.error(err);
       toast.error(err.message);
     } finally {
-      setIsSubmitting(false); // Reset loading state
+      setIsSubmitting(false);
       setShowDeleteDialog(false);
       setDeletingBooking(null);
     }
   };
 
-  // Handle booking confirmation
   const handleConfirmBooking = async (
     id: string,
     data: { finalAttendees: number; notes: string }
@@ -332,42 +269,66 @@ export default function BookingsManagement({
     try {
       const res = await fetch(`/api/bookings/${id}/confirm`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al confirmar la reserva");
       }
-
       const updatedBooking = await res.json();
-
-      // Update booking in the list
       setBookings((prev) =>
-        prev.map((booking) => (booking._id === id ? updatedBooking : booking))
+        prev.map((b) => (b._id === id ? updatedBooking : b))
       );
-
-      // Close dialog
       setConfirmingBooking(null);
-
-      toast.success("Reserva Confirmada", {
-        description: `Reserva confirmada con ${data.finalAttendees} asistentes finales`,
-      });
+      toast.success("Reserva Confirmada");
     } catch (err: any) {
       setError(err.message);
-      console.error(err);
       toast.error(err.message);
       throw err;
     }
   };
 
-  // Format date for display
-  const formatDate = (date: string | Date) => {
-    return format(new Date(date), "d MMM, yyyy", { locale: es });
+  // Internal Notes Handlers
+  const openNoteDialog = (booking: IBooking) => {
+    setNoteBooking(booking);
+    setInternalNoteText(booking.internalNotes || "");
+    setShowNoteDialog(true);
   };
+
+  const handleSaveInternalNote = async () => {
+    if (!noteBooking?._id) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/bookings/${noteBooking._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          internalNotes: internalNoteText,
+          apartmentNumber: noteBooking.apartmentNumber,
+          date: noteBooking.date,
+          mealType: noteBooking.mealType,
+          tables: noteBooking.tables,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Error al guardar la nota");
+
+      const updatedBooking = await res.json();
+      setBookings((prev) =>
+        prev.map((b) => (b._id === updatedBooking._id ? updatedBooking : b))
+      );
+      toast.success("Nota interna actualizada");
+      setShowNoteDialog(false);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatDate = (date: string | Date) =>
+    format(new Date(date), "d MMM, yyyy", { locale: es });
 
   return (
     <div>
@@ -377,6 +338,7 @@ export default function BookingsManagement({
         </Alert>
       )}
 
+      {/* Filters Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="relative flex items-center gap-2 w-full sm:w-auto">
           <Input
@@ -408,8 +370,7 @@ export default function BookingsManagement({
             statusFilter !== "all" ||
             mealTypeFilter !== "all") && (
             <Button variant="ghost" size="sm" onClick={resetFilters}>
-              <X className="h-4 w-4 mr-1" />
-              Limpiar
+              <X className="h-4 w-4 mr-1" /> Limpiar
             </Button>
           )}
         </div>
@@ -454,13 +415,15 @@ export default function BookingsManagement({
             </SelectContent>
           </Select>
 
-          <Button
-            onClick={() => setShowForm(true)}
-            className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150"
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Nueva Reserva
-          </Button>
+          {isITAdmin && (
+            <Button
+              onClick={() => setShowForm(true)}
+              className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150"
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Nueva Reserva
+            </Button>
+          )}
         </div>
       </div>
 
@@ -471,7 +434,6 @@ export default function BookingsManagement({
       ) : filteredBookings.length > 0 ? (
         <div className="space-y-4">
           {filteredBookings.map((booking) => {
-            // Check if booking is confirmed, pending, or cancelled
             const isConfirmed = booking.status === "confirmed";
             const isPending = booking.status === "pending";
             const isCancelled = booking.status === "cancelled";
@@ -491,10 +453,11 @@ export default function BookingsManagement({
                 }`}
               >
                 <CardContent className="p-4">
-                  {/* Mobile layout */}
-                  <div className="block md:hidden">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
+                  {/* Unified Responsive Layout: Mobile (flex-col) / Desktop (flex-row) */}
+                  <div className="flex flex-col md:flex-row gap-4">
+                    {/* Info Columns */}
+                    <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="col-span-2 md:col-span-1">
                         <h3 className="font-semibold text-lg">
                           Apto. #{booking.apartmentNumber}
                         </h3>
@@ -502,23 +465,21 @@ export default function BookingsManagement({
                           {formatDate(booking.date)}
                         </p>
                       </div>
-                      <Badge
-                        variant={
-                          booking.mealType === "lunch" ? "outline" : "default"
-                        }
-                        className={
-                          booking.mealType === "lunch"
-                            ? "capitalize bg-orange-100 text-orange-800 border-orange-200"
-                            : "capitalize bg-blue-100 text-blue-800 border-blue-200"
-                        }
-                      >
-                        {booking.mealType === "lunch" ? "Comida" : "Cena"}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-2 mb-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Estado:</span>
+                      <div className="flex items-center">
+                        <Badge
+                          variant={
+                            booking.mealType === "lunch" ? "outline" : "default"
+                          }
+                          className={
+                            booking.mealType === "lunch"
+                              ? "capitalize bg-orange-100 text-orange-800 border-orange-200"
+                              : "capitalize bg-blue-100 text-blue-800 border-blue-200"
+                          }
+                        >
+                          {booking.mealType === "lunch" ? "Comida" : "Cena"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center">
                         {isConfirmed && (
                           <Badge className="bg-green-100 text-green-700 border-green-200">
                             Confirmada
@@ -540,37 +501,11 @@ export default function BookingsManagement({
                           </Badge>
                         )}
                       </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Personas:</span>
-                        <span className="text-sm">
-                          {isConfirmed &&
-                          booking.finalAttendees !== undefined ? (
-                            <>
-                              <span className="line-through text-muted-foreground mr-1">
-                                {booking.numberOfPeople}
-                              </span>
-                              {booking.finalAttendees}
-                            </>
-                          ) : (
-                            booking.numberOfPeople
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Mesas:</span>
-                        <span className="text-sm">
-                          {booking.tables.join(", ")}
-                        </span>
-                      </div>
-
-                      {(booking.prepararFuego || booking.reservaHorno) && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">
-                            Servicios:
-                          </span>
-                          <div className="flex gap-1 flex-wrap">
+                      <div className="col-span-2 md:col-span-1 text-sm">
+                        <p>Mesas: {booking.tables.join(", ")}</p>
+                        <p>{booking.numberOfPeople} pax</p>
+                        {(booking.prepararFuego || booking.reservaHorno) && (
+                          <div className="flex gap-1 mt-1 flex-wrap">
                             {booking.prepararFuego && (
                               <Badge
                                 variant="outline"
@@ -588,209 +523,98 @@ export default function BookingsManagement({
                               </Badge>
                             )}
                           </div>
-                        </div>
-                      )}
-
-                      {/* Display notes for confirmed bookings in mobile view */}
-                      {isConfirmed && booking.notes && (
-                        <div className="mt-2 pt-2 border-t">
-                          <span className="text-sm font-medium">Notas:</span>
-                          <p className="text-sm text-muted-foreground bg-gray-50 p-2 rounded mt-1 italic">
-                            {booking.notes}
-                          </p>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex gap-2 pt-3 border-t">
-                      {isPending && isPastBooking && (
+                    {/* Actions Column - Wrapped with flex-wrap for Mobile to prevent hiding */}
+                    <div className="flex flex-wrap md:flex-col gap-2 justify-end content-start items-end md:min-w-[140px] pt-2 md:pt-0 border-t md:border-0">
+                      {/* Internal Notes Button */}
+                      {canManageInternalNotes && (
                         <Button
-                          variant="outline"
+                          variant={
+                            booking.internalNotes ? "default" : "outline"
+                          }
                           size="sm"
-                          onClick={() => setConfirmingBooking(booking)}
-                          className="cursor-pointer flex-1 border-amber-500 text-amber-700 hover:bg-amber-50"
+                          onClick={() => openNoteDialog(booking)}
+                          className={`flex-1 md:flex-none w-full ${
+                            booking.internalNotes
+                              ? "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
+                              : "text-muted-foreground"
+                          }`}
+                          title="Notas de conserjería"
                         >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Confirmar
+                          <StickyNote className="h-4 w-4 mr-2" />
+                          {booking.internalNotes ? "Ver Nota" : "Añadir Nota"}
                         </Button>
                       )}
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingBooking(booking)}
-                        className="cursor-pointer flex-1"
-                        disabled={isPastBooking && isConfirmed && !isITAdmin}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteBooking(booking)}
-                        className="cursor-pointer flex-1"
-                        disabled={isPastBooking && isConfirmed && !isITAdmin}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Eliminar
-                      </Button>
+                      {/* Existing Buttons */}
+                      {isITAdmin && (
+                        <>
+                          {isPending && isPastBooking && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConfirmingBooking(booking)}
+                              className="flex-1 md:flex-none w-full border-amber-500 text-amber-700"
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-2" />{" "}
+                              Confirmar
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingBooking(booking)}
+                            className="flex-1 md:flex-none w-full"
+                          >
+                            <Edit className="h-4 w-4 mr-2" /> Editar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteBooking(booking)}
+                            className="flex-1 md:flex-none w-full"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Eliminar
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  {/* Desktop layout */}
-                  <div className="hidden md:grid md:grid-cols-12 md:gap-4 md:items-center">
-                    <div className="md:col-span-1">
-                      <span className="text-muted-foreground text-sm block">
-                        Apartamento
-                      </span>
-                      <p className="font-semibold text-lg">
-                        #{booking.apartmentNumber}
-                      </p>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <span className="text-muted-foreground text-sm block">
-                        Fecha
-                      </span>
-                      <p className="font-medium">{formatDate(booking.date)}</p>
-                    </div>
-
-                    <div className="md:col-span-1">
-                      <span className="text-muted-foreground text-sm block">
-                        Servicio
-                      </span>
-                      <Badge
-                        variant={
-                          booking.mealType === "lunch" ? "outline" : "default"
-                        }
-                        className={
-                          booking.mealType === "lunch"
-                            ? "capitalize bg-orange-100 text-orange-800 border-orange-200"
-                            : "capitalize bg-blue-100 text-blue-800 border-blue-200"
-                        }
-                      >
-                        {booking.mealType === "lunch" ? "Comida" : "Cena"}
-                      </Badge>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <span className="text-muted-foreground text-sm block">
-                        Estado
-                      </span>
-                      {isConfirmed && (
-                        <Badge className="bg-green-100 text-green-700 border-green-200">
-                          Confirmada
-                        </Badge>
-                      )}
-                      {isPending && !isPastBooking && (
-                        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                          Pendiente
-                        </Badge>
-                      )}
-                      {isPending && isPastBooking && (
-                        <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                          Por confirmar
-                        </Badge>
-                      )}
-                      {isCancelled && (
-                        <Badge className="bg-red-100 text-red-700 border-red-200">
-                          Cancelada
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-3">
-                      <span className="text-muted-foreground text-sm block">
-                        Detalles
-                      </span>
-                      <p className="text-sm">
-                        <span className="font-medium">
-                          {isConfirmed &&
-                          booking.finalAttendees !== undefined ? (
-                            <>
-                              <span className="line-through text-muted-foreground mr-1">
-                                {booking.numberOfPeople}
-                              </span>
-                              {booking.finalAttendees}
-                            </>
-                          ) : (
-                            booking.numberOfPeople
-                          )}
-                        </span>{" "}
-                        personas, Mesas {booking.tables.join(", ")}
-                      </p>
-                      {(booking.prepararFuego || booking.reservaHorno) && (
-                        <div className="flex gap-1 mt-1 flex-wrap">
-                          {booking.prepararFuego && (
-                            <Badge
-                              variant="outline"
-                              className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
-                            >
-                              Fuego
-                            </Badge>
-                          )}
-                          {booking.reservaHorno && (
-                            <Badge
-                              variant="outline"
-                              className="bg-orange-50 text-orange-700 border-orange-200 text-xs"
-                            >
-                              Horno
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Display notes for confirmed bookings in desktop view */}
-                      {isConfirmed && booking.notes && (
-                        <div className="mt-2 text-xs border-t pt-1 border-dashed">
-                          <span className="font-medium text-muted-foreground">
-                            Nota:{" "}
-                          </span>
+                  {/* Display Notes Inline - Bottom of Card */}
+                  {(booking.notes ||
+                    (booking.internalNotes && canManageInternalNotes)) && (
+                    <div className="mt-4 space-y-2 border-t pt-3">
+                      {/* User Notes */}
+                      {booking.notes && isConfirmed && (
+                        <div className="text-sm bg-gray-50 p-2 rounded border border-gray-100">
+                          <span className="font-semibold text-gray-700">
+                            Nota del usuario:
+                          </span>{" "}
                           <span className="italic text-gray-600">
                             {booking.notes}
                           </span>
                         </div>
                       )}
-                    </div>
-
-                    <div className="md:col-span-3 flex justify-end gap-2">
-                      {isPending && isPastBooking && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setConfirmingBooking(booking)}
-                          className="cursor-pointer border-amber-500 text-amber-700 hover:bg-amber-50"
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Confirmar
-                        </Button>
+                      {/* Internal Notes */}
+                      {booking.internalNotes && canManageInternalNotes && (
+                        <div className="text-sm bg-amber-50 p-2 rounded border border-amber-200 flex items-start gap-2">
+                          <StickyNote className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                          <div>
+                            <span className="font-semibold text-amber-800">
+                              Nota interna (Conserje):
+                            </span>
+                            <p className="text-amber-900 whitespace-pre-wrap">
+                              {booking.internalNotes}
+                            </p>
+                          </div>
+                        </div>
                       )}
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingBooking(booking)}
-                        className="cursor-pointer"
-                        disabled={isPastBooking && isConfirmed && !isITAdmin}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteBooking(booking)}
-                        className="cursor-pointer"
-                        disabled={isPastBooking && isConfirmed && !isITAdmin}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Eliminar
-                      </Button>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -798,21 +622,63 @@ export default function BookingsManagement({
         </div>
       ) : (
         <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-100">
-          <p className="text-muted-foreground">
-            No se encontraron reservas que coincidan con los criterios de
-            búsqueda.
-          </p>
+          <p className="text-muted-foreground">No se encontraron reservas.</p>
         </div>
       )}
 
+      {/* Internal Notes Dialog */}
+      <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <StickyNote className="h-5 w-5 text-amber-500" />
+              Notas Internas (Conserjería)
+            </DialogTitle>
+            <DialogDescription>
+              Estas notas solo son visibles para conserjes y administradores. El
+              usuario no las verá.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={internalNoteText}
+              onChange={(e) => setInternalNoteText(e.target.value)}
+              placeholder="Escriba aquí anotaciones sobre limpieza, incidencias, pagos, etc..."
+              rows={5}
+              className="bg-amber-50 border-amber-200 focus-visible:ring-amber-500"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveInternalNote}
+              disabled={isSubmitting}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isSubmitting ? (
+                "Guardando..."
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" /> Guardar Nota
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Booking Form Modal */}
-      <BookingFormModal
-        isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        onSubmit={handleCreateBooking}
-        initialData={{ date: new Date(), mealType: "lunch" }}
-        isEditing={false}
-      />
+      {isITAdmin && (
+        <BookingFormModal
+          isOpen={showForm}
+          onClose={() => setShowForm(false)}
+          onSubmit={handleCreateBooking}
+          initialData={{ date: new Date(), mealType: "lunch" }}
+          isEditing={false}
+        />
+      )}
 
       {/* Booking Edit Modal */}
       {editingBooking && (
@@ -844,7 +710,7 @@ export default function BookingsManagement({
           apartmentNumber={deletingBooking.apartmentNumber}
           date={new Date(deletingBooking.date)}
           mealType={deletingBooking.mealType}
-          isDeleting={isSubmitting} // Pass isSubmitting state
+          isDeleting={isSubmitting}
         />
       )}
     </div>

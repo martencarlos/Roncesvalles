@@ -29,19 +29,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
   
-  // Handle role-specific routes access
+  // Handle role-specific routes access for Admin Panel
   if (pathname.startsWith("/admin")) {
-    // Only IT admins can access admin panel
+    // STRICT: Only IT admins can access admin panel
+    // 'conserje' and 'admin' are blocked
     if (token.role !== "it_admin") {
       return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
   }
-  
-  // Admin (read-only) role should not be able to access admin panel
-  if (token.role === "admin" && pathname.startsWith("/admin")) {
-    return NextResponse.redirect(new URL("/unauthorized", request.url));
-  }
-  
   
   return NextResponse.next();
 }

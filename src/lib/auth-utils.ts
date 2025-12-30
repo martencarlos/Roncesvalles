@@ -1,9 +1,7 @@
 // src/lib/auth-utils.ts
 import { getServerSession } from "next-auth/next";
-import { redirect } from "next/navigation";
 import { authOptions } from "./auth";
-import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
+import { NextRequest } from "next/server";
 
 // Types for extended session user
 declare module "next-auth" {

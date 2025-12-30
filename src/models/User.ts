@@ -1,8 +1,8 @@
 // src/models/User.ts
-import mongoose, { Schema } from 'mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
+import { Model } from "mongoose";
 
-export type UserRole = 'user' | 'admin' | 'it_admin';
+export type UserRole = "user" | "admin" | "it_admin" | "conserje";
 
 export interface IUser {
   _id?: string;
@@ -19,35 +19,37 @@ const UserSchema = new Schema<IUser>(
   {
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, "Email is required"],
       unique: true,
       trim: true,
       lowercase: true,
     },
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, "Name is required"],
     },
     apartmentNumber: {
       type: Number,
-      min: [1, 'Apartment number must be between 1 and 48'],
-      max: [48, 'Apartment number must be between 1 and 48'],
+      min: [1, "Apartment number must be between 1 and 48"],
+      max: [48, "Apartment number must be between 1 and 48"],
       // Only required for regular users
       validate: {
-        validator: function(this: IUser) {
-          return this.role === 'user' ? this.apartmentNumber !== undefined : true;
+        validator: function (this: IUser) {
+          return this.role === "user"
+            ? this.apartmentNumber !== undefined
+            : true;
         },
-        message: 'Apartment number is required for regular users'
-      }
+        message: "Apartment number is required for regular users",
+      },
     },
     hashedPassword: {
       type: String,
-      required: [true, 'Password is required'],
+      required: [true, "Password is required"],
     },
     role: {
       type: String,
-      enum: ['user', 'admin', 'it_admin'],
-      default: 'user',
+      enum: ["user", "admin", "it_admin", "conserje"],
+      default: "user",
     },
   },
   { timestamps: true }
@@ -56,16 +58,17 @@ const UserSchema = new Schema<IUser>(
 // Create unique index on apartmentNumber for role='user'
 UserSchema.index(
   { apartmentNumber: 1 },
-  { 
+  {
     unique: true,
-    partialFilterExpression: { 
-      role: 'user',
-      apartmentNumber: { $exists: true } 
-    } 
+    partialFilterExpression: {
+      role: "user",
+      apartmentNumber: { $exists: true },
+    },
   }
 );
 
 // Create model
-const User = (mongoose.models.User || mongoose.model<IUser>('User', UserSchema)) as Model<IUser>;
+const User = (mongoose.models.User ||
+  mongoose.model<IUser>("User", UserSchema)) as Model<IUser>;
 
 export default User;

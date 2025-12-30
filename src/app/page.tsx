@@ -12,11 +12,11 @@ export default async function HomePage() {
     redirect("/auth/signin");
   }
   
-  // Redirect IT admins directly to admin panel
+  // Redirect ONLY IT admins to admin panel
   if (session.user.role === "it_admin") {
     redirect("/admin");
   }
   
-  // For other roles including regular admins (read-only), redirect to bookings page
+  // Conserje, Admin (read-only), and User go to bookings
   redirect("/bookings");
 }

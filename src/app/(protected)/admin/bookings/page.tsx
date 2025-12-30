@@ -22,13 +22,12 @@ export default async function AdminBookingsPage() {
     redirect("/auth/signin?callbackUrl=/admin/bookings");
   }
 
-  // Only IT admins can access the admin panel
-  if (session.user.role !== "it_admin") {
+  // Only IT admins and Conserje can access the admin panel bookings
+  if (session.user.role !== "it_admin" && session.user.role !== "conserje") {
     redirect("/unauthorized");
   }
 
-  const isITAdmin = session.user.role === "it_admin";
-
+  // Pass userRole string to component
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6">
@@ -46,7 +45,7 @@ export default async function AdminBookingsPage() {
               <span className="sm:hidden">Volver</span>
             </Link>
           </Button>
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <UserMenu />
           </div>
         </div>
@@ -55,7 +54,7 @@ export default async function AdminBookingsPage() {
         <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Reservas</h1>
       </header>
 
-      <BookingsManagement isITAdmin={isITAdmin} />
+      <BookingsManagement userRole={session.user.role} />
     </div>
   );
 }

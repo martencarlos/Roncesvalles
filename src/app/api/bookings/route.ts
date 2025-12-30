@@ -67,6 +67,16 @@ export async function GET(req: NextRequest) {
     
     const bookings = await Booking.find(query).sort({ date: 1, mealType: 1, apartmentNumber: 1 });
     
+    // SECURITY FILTER: Hide internalNotes for regular users
+    if (currentUser.role === 'user') {
+      const sanitizedBookings = bookings.map((b: any) => {
+        const bookingObj = b.toObject();
+        delete bookingObj.internalNotes; // Remove internal notes
+        return bookingObj;
+      });
+      return NextResponse.json(sanitizedBookings);
+    }
+
     return NextResponse.json(bookings);
   } catch (error) {
     console.error('GET /api/bookings error:', error);
@@ -87,7 +97,7 @@ export async function POST(req: NextRequest) {
     
     const currentUser = session.user;
     
-    if (currentUser.role === 'admin') {
+    if (currentUser.role === 'admin' || currentUser.role === 'conserje') {
       return NextResponse.json({ error: "No permission" }, { status: 403 });
     }
     
@@ -115,7 +125,7 @@ export async function POST(req: NextRequest) {
     });
     
     // 1. Table Conflict Check
-    const bookedTables = existingBookings.flatMap(booking => booking.tables);
+    const bookedTables = existingBookings.flatMap((booking: any) => booking.tables);
     const requestedTables = body.tables;
     const conflictingTables = requestedTables.filter((table: any) => bookedTables.includes(table));
     
@@ -131,7 +141,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Oven Conflict Check
     if (body.reservaHorno) {
-      const ovenAlreadyBooked = existingBookings.some(booking => booking.reservaHorno);
+      const ovenAlreadyBooked = existingBookings.some((booking: any) => booking.reservaHorno);
       if (ovenAlreadyBooked) {
         return NextResponse.json(
           { 
@@ -175,7 +185,8 @@ export async function POST(req: NextRequest) {
       reservaHorno: Boolean(body.reservaHorno),
       status: body.status || 'pending',
       userId: currentUser.id, 
-      noCleaningService: noCleaningService 
+      noCleaningService: noCleaningService,
+      // Internal notes are not set during user creation
     };
     
     const newBooking = await Booking.create(bookingData);

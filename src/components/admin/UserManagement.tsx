@@ -3,15 +3,43 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UserPlus, Loader2, UserX, UserCog, Search, X, FilterIcon } from "lucide-react";
+import {
+  UserPlus,
+  Loader2,
+  UserX,
+  UserCog,
+  Search,
+  X,
+  FilterIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -33,7 +61,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   // New user form state
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [newUser, setNewUser] = useState({
@@ -45,7 +73,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
     apartmentNumber: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Edit user form state
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -55,31 +83,31 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
     password: "",
     confirmPassword: "",
   });
-  
+
   // Delete user dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  
+
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  
+
   // Generate apartment numbers 1-48
   const apartmentNumbers = Array.from({ length: 48 }, (_, i) => i + 1);
-  
+
   // Fetch users
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
       setError("");
-      
+
       try {
         const res = await fetch("/api/users");
-        
+
         if (!res.ok) {
           throw new Error("Error al obtener usuarios");
         }
-        
+
         const data = await res.json();
         setUsers(data);
         applyFilters(data, searchQuery, roleFilter);
@@ -90,14 +118,14 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
         setLoading(false);
       }
     };
-    
+
     fetchUsers();
   }, []);
-  
+
   // Apply filters
   const applyFilters = (usersList: User[], query: string, role: string) => {
     let filtered = [...usersList];
-    
+
     // Filter by search query
     if (query) {
       const lowerQuery = query.toLowerCase();
@@ -105,29 +133,29 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
         (user) =>
           user.name.toLowerCase().includes(lowerQuery) ||
           user.email.toLowerCase().includes(lowerQuery) ||
-          (user.apartmentNumber?.toString().includes(lowerQuery))
+          user.apartmentNumber?.toString().includes(lowerQuery)
       );
     }
-    
+
     // Filter by role
     if (role !== "all") {
       filtered = filtered.filter((user) => user.role === role);
     }
-    
+
     setFilteredUsers(filtered);
   };
-  
+
   // Handle search and filter
   useEffect(() => {
     applyFilters(users, searchQuery, roleFilter);
   }, [users, searchQuery, roleFilter]);
-  
+
   // Reset filter
   const resetFilters = () => {
     setSearchQuery("");
     setRoleFilter("all");
   };
-  
+
   // Handle add user
   const handleAddUser = async () => {
     // Validation
@@ -140,14 +168,14 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
       toast.error("Por favor, complete todos los campos requeridos");
       return;
     }
-    
+
     if (newUser.password !== newUser.confirmPassword) {
       toast.error("Las contraseñas no coinciden");
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const userData = {
         name: newUser.name,
@@ -158,7 +186,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           ? { apartmentNumber: parseInt(newUser.apartmentNumber) }
           : {}),
       };
-      
+
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -166,16 +194,16 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
         },
         body: JSON.stringify(userData),
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data.error || "Error al crear usuario");
       }
-      
+
       // Add the new user to the list
       setUsers((prev) => [...prev, data]);
-      
+
       // Reset form and close dialog
       setNewUser({
         name: "",
@@ -186,7 +214,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
         apartmentNumber: "",
       });
       setIsAddUserOpen(false);
-      
+
       toast.success("Usuario creado correctamente");
     } catch (err: any) {
       toast.error(err.message);
@@ -194,7 +222,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
       setIsSubmitting(false);
     }
   };
-  
+
   // Handle edit user
   const handleEditUser = (user: User) => {
     setEditingUser(user);
@@ -206,39 +234,39 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
     });
     setIsEditUserOpen(true);
   };
-  
+
   // Handle update user
   const handleUpdateUser = async () => {
     if (!editingUser) return;
-    
+
     // Validation
     if (!editForm.name) {
       toast.error("El nombre es requerido");
       return;
     }
-    
+
     if (editForm.password && editForm.password !== editForm.confirmPassword) {
       toast.error("Las contraseñas no coinciden");
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const userData: any = {
         name: editForm.name,
       };
-      
+
       // Only IT Admins can change roles
       if (isITAdmin) {
         userData.role = editForm.role;
       }
-      
+
       // Only include password if provided
       if (editForm.password) {
         userData.password = editForm.password;
       }
-      
+
       const res = await fetch(`/api/users/${editingUser._id}`, {
         method: "PUT",
         headers: {
@@ -246,22 +274,22 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
         },
         body: JSON.stringify(userData),
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data.error || "Error al actualizar usuario");
       }
-      
+
       // Update the user in the list
       setUsers((prev) =>
         prev.map((user) => (user._id === editingUser._id ? data : user))
       );
-      
+
       // Reset form and close dialog
       setIsEditUserOpen(false);
       setEditingUser(null);
-      
+
       toast.success("Usuario actualizado correctamente");
     } catch (err: any) {
       toast.error(err.message);
@@ -269,36 +297,36 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
       setIsSubmitting(false);
     }
   };
-  
+
   // Handle delete user
   const handleDeleteUser = (user: User) => {
     setUserToDelete(user);
     setIsDeleteDialogOpen(true);
   };
-  
+
   // Confirm delete user
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const res = await fetch(`/api/users/${userToDelete._id}`, {
         method: "DELETE",
       });
-      
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Error al eliminar usuario");
       }
-      
+
       // Remove the user from the list
       setUsers((prev) => prev.filter((user) => user._id !== userToDelete._id));
-      
+
       // Reset state and close dialog
       setIsDeleteDialogOpen(false);
       setUserToDelete(null);
-      
+
       toast.success("Usuario eliminado correctamente");
     } catch (err: any) {
       toast.error(err.message);
@@ -306,7 +334,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <div>
       {error && (
@@ -314,7 +342,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -333,7 +361,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
             </button>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-full sm:w-40">
@@ -346,17 +374,18 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
               <SelectItem value="all">Todos los roles</SelectItem>
               <SelectItem value="user">Usuarios</SelectItem>
               <SelectItem value="admin">Administradores</SelectItem>
+              <SelectItem value="conserje">Conserjes</SelectItem>
               <SelectItem value="it_admin">Administradores IT</SelectItem>
             </SelectContent>
           </Select>
-          
+
           {(searchQuery || roleFilter !== "all") && (
             <Button variant="ghost" size="sm" onClick={resetFilters}>
               <X className="h-4 w-4 mr-1" />
               Limpiar
             </Button>
           )}
-          
+
           {isITAdmin && (
             <Button onClick={() => setIsAddUserOpen(true)} className="ml-2">
               <UserPlus className="h-4 w-4 mr-2" />
@@ -365,7 +394,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           )}
         </div>
       </div>
-      
+
       {loading ? (
         <div className="flex justify-center p-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -388,6 +417,8 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                         ? "bg-blue-100 text-blue-800 border-blue-200"
                         : user.role === "admin"
                         ? "bg-purple-100 text-purple-800 border-purple-200"
+                        : user.role === "conserje"
+                        ? "bg-orange-100 text-orange-800 border-orange-200"
                         : "bg-red-100 text-red-800 border-red-200"
                     }
                   >
@@ -395,8 +426,10 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                       ? "Usuario"
                       : user.role === "admin"
                       ? "Administrador"
+                      : user.role === "conserje"
+                      ? "Conserje"
                       : user.role === "it_admin"
-                      ? "Admin IT" 
+                      ? "Admin IT"
                       : ""}
                   </Badge>
                 </div>
@@ -405,8 +438,12 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                 <div className="text-sm">
                   {user.role === "user" && user.apartmentNumber && (
                     <div className="flex justify-between mb-1">
-                      <span className="text-muted-foreground">Apartamento:</span>
-                      <span className="font-medium">#{user.apartmentNumber}</span>
+                      <span className="text-muted-foreground">
+                        Apartamento:
+                      </span>
+                      <span className="font-medium">
+                        #{user.apartmentNumber}
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between">
@@ -444,10 +481,13 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
         </div>
       ) : (
         <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-100">
-          <p className="text-muted-foreground">No se encontraron usuarios que coincidan con los criterios de búsqueda.</p>
+          <p className="text-muted-foreground">
+            No se encontraron usuarios que coincidan con los criterios de
+            búsqueda.
+          </p>
         </div>
       )}
-      
+
       {/* Add User Dialog */}
       <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
         <DialogContent className="sm:max-w-md">
@@ -457,34 +497,40 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
               Complete la información para crear un nuevo usuario.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Nombre completo</Label>
               <Input
                 id="name"
                 value={newUser.name}
-                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, name: e.target.value })
+                }
                 placeholder="Nombre Apellido"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="email">Correo electrónico</Label>
               <Input
                 id="email"
                 type="email"
                 value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value.trim() })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value.trim() })
+                }
                 placeholder="correo@ejemplo.com"
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="role">Rol</Label>
               <Select
                 value={newUser.role}
-                onValueChange={(value) => setNewUser({ ...newUser, role: value })}
+                onValueChange={(value) =>
+                  setNewUser({ ...newUser, role: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar rol" />
@@ -492,17 +538,22 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                 <SelectContent>
                   <SelectItem value="user">Usuario (Residente)</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="conserje">
+                    Conserje (Gestión Notas)
+                  </SelectItem>
                   <SelectItem value="it_admin">Administrador IT</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
+
             {newUser.role === "user" && (
               <div className="grid gap-2">
                 <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
                 <Select
                   value={newUser.apartmentNumber}
-                  onValueChange={(value) => setNewUser({ ...newUser, apartmentNumber: value })}
+                  onValueChange={(value) =>
+                    setNewUser({ ...newUser, apartmentNumber: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar apartamento" />
@@ -517,31 +568,37 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                 </Select>
               </div>
             )}
-            
+
             <div className="grid gap-2">
               <Label htmlFor="password">Contraseña</Label>
               <Input
                 id="password"
                 type="password"
                 value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
                 placeholder="••••••••"
               />
-              <p className="text-xs text-muted-foreground">Mínimo 8 caracteres</p>
+              <p className="text-xs text-muted-foreground">
+                Mínimo 8 caracteres
+              </p>
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={newUser.confirmPassword}
-                onChange={(e) => setNewUser({ ...newUser, confirmPassword: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, confirmPassword: e.target.value })
+                }
                 placeholder="••••••••"
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
               Cancelar
@@ -559,7 +616,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit User Dialog */}
       <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
         <DialogContent className="sm:max-w-md">
@@ -569,7 +626,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
               Actualice la información del usuario.
             </DialogDescription>
           </DialogHeader>
-          
+
           {editingUser && (
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
@@ -577,11 +634,13 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                 <Input
                   id="edit-name"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
                   placeholder="Nombre Apellido"
                 />
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="edit-email">Correo electrónico</Label>
                 <Input
@@ -595,13 +654,15 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                   El correo electrónico no se puede cambiar
                 </p>
               </div>
-              
+
               {isITAdmin && (
                 <div className="grid gap-2">
                   <Label htmlFor="edit-role">Rol</Label>
                   <Select
                     value={editForm.role}
-                    onValueChange={(value) => setEditForm({ ...editForm, role: value })}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, role: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar rol" />
@@ -609,45 +670,59 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                     <SelectContent>
                       <SelectItem value="user">Usuario (Residente)</SelectItem>
                       <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="conserje">
+                        Conserje (Gestión Notas)
+                      </SelectItem>
                       <SelectItem value="it_admin">Administrador IT</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
-              
+
               <Separator />
-              
+
               <div>
-                <h3 className="text-sm font-medium mb-2">Cambiar contraseña (opcional)</h3>
-                
+                <h3 className="text-sm font-medium mb-2">
+                  Cambiar contraseña (opcional)
+                </h3>
+
                 <div className="grid gap-2">
                   <Label htmlFor="edit-password">Nueva contraseña</Label>
                   <Input
                     id="edit-password"
                     type="password"
                     value={editForm.password}
-                    onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, password: e.target.value })
+                    }
                     placeholder="••••••••"
                   />
                   <p className="text-xs text-muted-foreground">
                     Deje en blanco para mantener la contraseña actual
                   </p>
                 </div>
-                
+
                 <div className="grid gap-2 mt-2">
-                  <Label htmlFor="edit-confirm-password">Confirmar nueva contraseña</Label>
+                  <Label htmlFor="edit-confirm-password">
+                    Confirmar nueva contraseña
+                  </Label>
                   <Input
                     id="edit-confirm-password"
                     type="password"
                     value={editForm.confirmPassword}
-                    onChange={(e) => setEditForm({ ...editForm, confirmPassword: e.target.value })}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        confirmPassword: e.target.value,
+                      })
+                    }
                     placeholder="••••••••"
                   />
                 </div>
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               Cancelar
@@ -665,17 +740,20 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete User Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-destructive">Eliminar Usuario</DialogTitle>
+            <DialogTitle className="text-destructive">
+              Eliminar Usuario
+            </DialogTitle>
             <DialogDescription>
-              Esta acción no se puede deshacer. El usuario será eliminado permanentemente.
+              Esta acción no se puede deshacer. El usuario será eliminado
+              permanentemente.
             </DialogDescription>
           </DialogHeader>
-          
+
           {userToDelete && (
             <div className="py-4">
               <div className="space-y-4">
@@ -683,34 +761,39 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <span className="font-medium">Nombre:</span>
                     <span>{userToDelete.name}</span>
-                    
+
                     <span className="font-medium">Email:</span>
                     <span className="truncate">{userToDelete.email}</span>
-                    
+
                     <span className="font-medium">Rol:</span>
                     <span className="capitalize">{userToDelete.role}</span>
-                    
-                    {userToDelete.role === "user" && userToDelete.apartmentNumber && (
-                      <>
-                        <span className="font-medium">Apartamento:</span>
-                        <span>#{userToDelete.apartmentNumber}</span>
-                      </>
-                    )}
+
+                    {userToDelete.role === "user" &&
+                      userToDelete.apartmentNumber && (
+                        <>
+                          <span className="font-medium">Apartamento:</span>
+                          <span>#{userToDelete.apartmentNumber}</span>
+                        </>
+                      )}
                   </div>
                 </div>
-                
+
                 <Alert variant="destructive">
                   <AlertDescription>
-                    Todas las reservas asociadas a este usuario seguirán existiendo,
-                    pero ya no estarán vinculadas a un usuario activo.
+                    Todas las reservas asociadas a este usuario seguirán
+                    existiendo, pero ya no estarán vinculadas a un usuario
+                    activo.
                   </AlertDescription>
                 </Alert>
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
               Cancelar
             </Button>
             <Button
