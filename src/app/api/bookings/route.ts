@@ -1,18 +1,17 @@
 // src/app/api/bookings/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import connectDB from '@/lib/mongodb';
-import Booking from '@/models/Booking';
-import ActivityLog from '@/models/ActivityLog';
-import User from '@/models/User'; 
-
+import connectDB from "@/lib/mongodb";
+import Booking from "@/models/Booking";
+import ActivityLog from "@/models/ActivityLog";
+import User from "@/models/User";
 
 export async function GET(req: NextRequest) {
   try {
     // Get session directly
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       console.error("No valid session found in bookings GET route");
       return NextResponse.json(
@@ -20,70 +19,74 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
-    
+
     const currentUser = session.user;
-    
+
     await connectDB();
-    
+
     // Get query parameters
     const url = new URL(req.url);
-    const dateParam = url.searchParams.get('date');
-    const mealTypeParam = url.searchParams.get('mealType');
-    const apartmentParam = url.searchParams.get('apartment');
-    const availabilityCheck = url.searchParams.get('availabilityCheck');
-    const forCalendar = url.searchParams.get('forCalendar');
-    
+    const dateParam = url.searchParams.get("date");
+    const mealTypeParam = url.searchParams.get("mealType");
+    const apartmentParam = url.searchParams.get("apartment");
+    const availabilityCheck = url.searchParams.get("availabilityCheck");
+    const forCalendar = url.searchParams.get("forCalendar");
+
     // Build query
     let query: any = {};
-    
+
     if (dateParam) {
       const date = new Date(dateParam);
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
-      
+
       query.date = {
         $gte: startOfDay,
-        $lte: endOfDay
+        $lte: endOfDay,
       };
     }
-    
-    if (mealTypeParam && (mealTypeParam === 'lunch' || mealTypeParam === 'dinner')) {
+
+    if (
+      mealTypeParam &&
+      (mealTypeParam === "lunch" || mealTypeParam === "dinner")
+    ) {
       query.mealType = mealTypeParam;
     }
-    
+
     // For calendar view or availability checks, return all bookings regardless of user
-    if (forCalendar === 'true' || (dateParam && mealTypeParam && availabilityCheck === 'true')) {
+    if (
+      forCalendar === "true" ||
+      (dateParam && mealTypeParam && availabilityCheck === "true")
+    ) {
       // Do not filter by apartment for calendar view or availability checks
-      console.log("Returning all bookings for calendar view or availability check");
-    } 
-    // For queries requesting a specific date but not explicitly for availability,
-    // still return all bookings for that date
-    else if (dateParam && mealTypeParam) {
-      // Do not filter by apartment when checking specific date + meal type
-      console.log("Returning all bookings for specific date and meal type");
+      // We need to see everyone's bookings to know what is taken
     }
     // For other queries (like listing user's bookings with no date), apply permissions
     else {
       // Regular users can only see their own bookings by default
-      if (currentUser.role === 'user') {
+      if (currentUser.role === "user") {
         query.apartmentNumber = currentUser.apartmentNumber;
-      } 
-      // If specifically filtering by apartment number
+      }
+      // If specifically filtering by apartment number (for admins)
       else if (apartmentParam && !isNaN(parseInt(apartmentParam))) {
         query.apartmentNumber = parseInt(apartmentParam);
       }
     }
-    
+
     // Sort by date, meal type, then apartment number
-    const bookings = await Booking.find(query).sort({ date: 1, mealType: 1, apartmentNumber: 1 });
-    
+    const bookings = await Booking.find(query).sort({
+      date: 1,
+      mealType: 1,
+      apartmentNumber: 1,
+    });
+
     return NextResponse.json(bookings);
   } catch (error) {
-    console.error('GET /api/bookings error:', error);
+    console.error("GET /api/bookings error:", error);
     return NextResponse.json(
-      { error: 'Error al obtener las reservas' },
+      { error: "Error al obtener las reservas" },
       { status: 500 }
     );
   }
@@ -93,33 +96,31 @@ export async function POST(req: NextRequest) {
   try {
     // Get session directly
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
-      console.error("No valid session found in bookings POST route");
       return NextResponse.json(
         { error: "Unauthorized - No valid session" },
         { status: 401 }
       );
     }
-    
+
     const currentUser = session.user;
-    console.log("Current user from session:", currentUser.email, "ID:", currentUser.id);
-    
-    if (currentUser.role === 'admin') {
+
+    // Read-only admins cannot create
+    if (currentUser.role === "admin") {
       return NextResponse.json(
         { error: "You don't have permission to create bookings" },
         { status: 403 }
       );
     }
-    
+
     await connectDB();
-    
+
     const body = await req.json();
-    console.log("Request body:", JSON.stringify(body));
-    
+
     // Regular users can only create bookings for their own apartment
     if (
-      currentUser.role === 'user' && 
+      currentUser.role === "user" &&
       body.apartmentNumber !== currentUser.apartmentNumber
     ) {
       return NextResponse.json(
@@ -127,137 +128,160 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
-    
-    // Check for conflicting tables on the same date and meal type
+
+    // Define date range for the selected day
     const bookingDate = new Date(body.date);
     const startOfDay = new Date(bookingDate);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(bookingDate);
     endOfDay.setHours(23, 59, 59, 999);
-    
+
+    // Fetch all existing bookings for this time slot
     const existingBookings = await Booking.find({
       date: {
         $gte: startOfDay,
-        $lte: endOfDay
+        $lte: endOfDay,
       },
-      mealType: body.mealType
+      mealType: body.mealType,
     });
-    
-    // Check for table conflicts
-    const bookedTables = existingBookings.flatMap(booking => booking.tables);
+
+    // 1. Check for Table conflicts
+    const bookedTables = existingBookings.flatMap((booking) => booking.tables);
     const requestedTables = body.tables;
-    
-    const conflictingTables = requestedTables.filter((table: any) => 
+
+    const conflictingTables = requestedTables.filter((table: any) =>
       bookedTables.includes(table)
     );
-    
+
     if (conflictingTables.length > 0) {
       return NextResponse.json(
-        { 
-          error: 'Conflicto de reserva', 
-          message: `Las mesas ${conflictingTables.join(', ')} ya están reservadas para ${body.mealType === 'lunch' ? 'comida' : 'cena'} en esta fecha.` 
+        {
+          error: "Conflicto de reserva",
+          message: `Las mesas ${conflictingTables.join(
+            ", "
+          )} ya están reservadas.`,
         },
         { status: 409 }
       );
     }
 
-    // --- CONCIERGE REST DAYS & CLEANING LOGIC ---
+    // 2. Check for Oven conflict
+    // If user wants oven, check if anyone else already has it
+    if (body.reservaHorno) {
+      const ovenAlreadyBooked = existingBookings.some(
+        (booking) => booking.reservaHorno
+      );
+      if (ovenAlreadyBooked) {
+        return NextResponse.json(
+          {
+            error: "Conflicto de recursos",
+            message:
+              "El horno ya está reservado para este turno por otro usuario.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // --- CONCIERGE & CLEANING LOGIC ---
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    // Compare date object stripped of time
+
     const compareDate = new Date(bookingDate);
     compareDate.setHours(0, 0, 0, 0);
-    
-    // 1. Notice period
-    const daysDifference = Math.floor((compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    // A. Notice period calculation
+    const daysDifference = Math.floor(
+      (compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const isShortNotice = daysDifference <= 4;
 
-    // 2. Concierge Rest Days (Tuesday=2, Wednesday=3)
+    // B. Concierge Rest Days (Tuesday=2, Wednesday=3)
     const dayOfWeek = compareDate.getDay();
     const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3;
 
-    // Determine if cleaning service is unavailable
-    const noCleaningService = isShortNotice || isConciergeRestDay || Boolean(body.noCleaningService);
-    
-    // Determine if fire preparation is allowed
-    // If it's a rest day, fire preparation is NOT possible regardless of request
-    const prepararFuego = isConciergeRestDay ? false : Boolean(body.prepararFuego);
-    // --------------------------------------------
-    
-    // Create booking with explicit userId from session
+    // C. Determine flags
+    // Cleaning is disabled on short notice OR rest days OR if manually flagged
+    const noCleaningService =
+      isShortNotice || isConciergeRestDay || Boolean(body.noCleaningService);
+
+    // Fire prep is IMPOSSIBLE on rest days
+    const prepararFuego = isConciergeRestDay
+      ? false
+      : Boolean(body.prepararFuego);
+    // ----------------------------------
+
+    // Create booking object
     const bookingData = {
       apartmentNumber: body.apartmentNumber,
       date: bookingDate,
       mealType: body.mealType,
       numberOfPeople: body.numberOfPeople || 1,
       tables: body.tables || [],
-      prepararFuego: prepararFuego, // Use calculated restricted value
+      prepararFuego: prepararFuego,
       reservaHorno: Boolean(body.reservaHorno),
-      status: body.status || 'pending',
+      status: body.status || "pending",
       userId: currentUser.id,
-      noCleaningService: noCleaningService // Use calculated value
+      noCleaningService: noCleaningService,
     };
-    
-    console.log("Booking data:", JSON.stringify(bookingData));
-    
-    // Create booking
+
+    // Save to DB
     const newBooking = await Booking.create(bookingData);
-    console.log("Booking created successfully");
-    
-    // Get username for better activity logging
-    const user = await User.findById(currentUser.id).select('name');
-    
-    // Prepare additional details for activity log
-    let additionalDetails = '';
-    
+
+    // Prepare logs
+    const user = await User.findById(currentUser.id).select("name");
+    let additionalDetails = "";
+
     if (prepararFuego) {
-      additionalDetails += ' con preparación de fuego';
-    } else if (body.prepararFuego && isConciergeRestDay) {
-        // Log that user requested fire but it was denied due to rest day (optional detail)
-        // additionalDetails += ' (solicitud de fuego denegada por descanso conserje)';
+      additionalDetails += " con preparación de fuego";
     }
-    
-     if (body.reservaHorno) {
-      additionalDetails += additionalDetails ? ' y' : ' con';
-      additionalDetails += ' reserva de horno';
+    if (body.reservaHorno) {
+      additionalDetails += additionalDetails ? " y" : " con";
+      additionalDetails += " reserva de horno";
     }
-    
-    // Add cleaning service detail
+
     if (noCleaningService) {
-      additionalDetails += additionalDetails ? ' y' : ' con';
+      additionalDetails += additionalDetails ? " y" : " con";
       if (isConciergeRestDay) {
-        additionalDetails += ' aviso de sin limpieza (descanso conserje)';
+        additionalDetails += " aviso de sin limpieza (descanso conserje)";
       } else {
-        additionalDetails += ' aviso de ausencia de servicio de limpieza (antelación)';
+        additionalDetails += " aviso de sin limpieza (antelación)";
       }
     }
-    
-    // Get the user's role to include in the activity log
-    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';
-    
-    // Log activity
+
+    const userRole =
+      currentUser.role !== "user"
+        ? ` (${currentUser.role === "it_admin" ? "Admin IT" : ""})`
+        : "";
+
     await ActivityLog.create({
-      action: 'create',
+      action: "create",
       apartmentNumber: body.apartmentNumber,
       userId: currentUser.id,
-      details: `${user ? user.name : 'Usuario'}${userRole} ha reservado para Apto. #${body.apartmentNumber} las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
+      details: `${
+        user ? user.name : "Usuario"
+      }${userRole} ha reservado para Apto. #${
+        body.apartmentNumber
+      } las mesas ${body.tables.join(", ")} para ${
+        body.mealType === "lunch" ? "comida" : "cena"
+      } el ${new Date(body.date).toLocaleDateString(
+        "es-ES"
+      )}${additionalDetails}`,
     });
-    
+
     return NextResponse.json(newBooking, { status: 201 });
   } catch (error: any) {
-    console.error('POST /api/bookings detailed error:', error);
-    
-    if (error.name === 'ValidationError') {
-      console.error('Validation error details:', JSON.stringify(error.errors));
+    console.error("POST /api/bookings detailed error:", error);
+
+    if (error.name === "ValidationError") {
       return NextResponse.json(
-        { error: 'Error de Validación', details: error.message },
+        { error: "Error de Validación", details: error.message },
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
-      { error: 'Error al crear la reserva' },
+      { error: "Error al crear la reserva" },
       { status: 500 }
     );
   }

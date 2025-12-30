@@ -21,12 +21,7 @@ import { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
 import { format, differenceInDays } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
-import {
-  CalendarIcon,
-  LockIcon,
-  InfoIcon,
-  AlertTriangle,
-} from "lucide-react";
+import { CalendarIcon, LockIcon, InfoIcon, AlertTriangle } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 registerLocale("es", es);
@@ -102,8 +97,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [noCleaningService, setNoCleaningService] = useState<boolean>(
     initialData?.noCleaningService || false
   );
-  const [cleaningWarningReason, setCleaningWarningReason] = useState<string>("");
+  const [cleaningWarningReason, setCleaningWarningReason] =
+    useState<string>("");
   const [isConciergeRestDay, setIsConciergeRestDay] = useState<boolean>(false);
+
+  // NEW STATE: Track if oven is already booked by someone else
+  const [isOvenBooked, setIsOvenBooked] = useState<boolean>(false);
 
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
 
@@ -130,41 +129,49 @@ const BookingForm: React.FC<BookingFormProps> = ({
     today.setHours(0, 0, 0, 0);
     const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
-  
+
     const daysDifference = differenceInDays(checkDate, today);
-    
-    // Check day of week (0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)
+
     const dayOfWeek = checkDate.getDay();
     const restDay = dayOfWeek === 2 || dayOfWeek === 3; // Tue or Wed
     const isShortNotice = daysDifference <= 4;
 
     setIsConciergeRestDay(restDay);
 
-    // If it's a rest day, automatically uncheck fire preparation
     if (restDay) {
-        setPrepararFuego(false);
+      setPrepararFuego(false);
     }
 
-    if (!initialData?._id || (initialData?._id && 
-        (initialData.date && new Date(initialData.date).getTime() !== date.getTime()))) {
-      
+    if (
+      !initialData?._id ||
+      (initialData?._id &&
+        initialData.date &&
+        new Date(initialData.date).getTime() !== date.getTime())
+    ) {
       if (restDay) {
         setNoCleaningService(true);
-        setCleaningWarningReason("Los martes y miércoles son días de descanso de la conserje.");
+        setCleaningWarningReason(
+          "Los martes y miércoles son días de descanso de la conserje."
+        );
       } else if (isShortNotice) {
         setNoCleaningService(true);
-        setCleaningWarningReason("Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza.");
+        setCleaningWarningReason(
+          "Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza."
+        );
       } else {
         setNoCleaningService(false);
         setCleaningWarningReason("");
       }
     } else if (initialData?.noCleaningService) {
-        // Keep original state if editing and date hasn't changed, but update text reasoning
-        if (restDay) {
-            setCleaningWarningReason("Los martes y miércoles son días de descanso de la conserje.");
-        } else {
-            setCleaningWarningReason("Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza.");
-        }
+      if (restDay) {
+        setCleaningWarningReason(
+          "Los martes y miércoles son días de descanso de la conserje."
+        );
+      } else {
+        setCleaningWarningReason(
+          "Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza."
+        );
+      }
     }
   }, [date, initialData]);
 
@@ -196,7 +203,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   }, []);
 
   useEffect(() => {
-    const fetchBookedTables = async () => {
+    const fetchBookingsAndResources = async () => {
       if (!date || !mealType) return;
       setLoading(true);
       try {
@@ -206,16 +213,28 @@ const BookingForm: React.FC<BookingFormProps> = ({
         );
         if (!res.ok) throw new Error("Error al obtener reservas");
         const bookings: IBooking[] = await res.json();
-        
-        const filteredBookings = initialData?._id
+
+        // Filter out current booking if we are editing
+        const otherBookings = initialData?._id
           ? bookings.filter((booking) => booking._id !== initialData._id)
           : bookings;
 
-        const allBookedTables = filteredBookings.flatMap(
+        // 1. Calculate Booked Tables
+        const allBookedTables = otherBookings.flatMap(
           (booking) => booking.tables
         );
         setBookedTables(allBookedTables);
 
+        // 2. Check if Oven is already taken
+        const ovenTaken = otherBookings.some((booking) => booking.reservaHorno);
+        setIsOvenBooked(ovenTaken);
+
+        // If oven is taken by someone else, uncheck it
+        if (ovenTaken) {
+          setReservaHorno(false);
+        }
+
+        // Handle table conflicts if date changed while tables selected
         const hasConflict = selectedTables.some((tableNum) =>
           allBookedTables.includes(tableNum)
         );
@@ -227,17 +246,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
           setSelectedTables(validTables);
           if (selectedTables.length !== validTables.length) {
             toast.info("Selección de mesas actualizada", {
-              description: "Algunas mesas que había seleccionado ya no están disponibles.",
+              description:
+                "Algunas mesas que había seleccionado ya no están disponibles.",
             });
           }
         }
       } catch (err) {
-        console.error("Error fetching booked tables:", err);
+        console.error("Error fetching booked resources:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchBookedTables();
+    fetchBookingsAndResources();
   }, [date, mealType, initialData?._id]);
 
   const handleMealTypeChange = (value: MealType) => {
@@ -245,6 +265,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setSelectedTables([]);
   };
 
+  // ... (rest of the handle functions similar to previous code)
   useEffect(() => {
     if (selectedTables.length > 0 && numberOfPeople > maxPeopleAllowed) {
       setNumberOfPeople(maxPeopleAllowed);
@@ -261,7 +282,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
   };
 
-  const handleNumberOfPeopleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNumberOfPeopleChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const value = parseInt(e.target.value);
     if (isNaN(value) || value < 1) {
       setNumberOfPeople(1);
@@ -296,7 +319,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
     });
   };
 
-  const isSelected = (tableNumber: number) => selectedTables.includes(tableNumber);
+  const isSelected = (tableNumber: number) =>
+    selectedTables.includes(tableNumber);
   const isBooked = (tableNumber: number) => bookedTables.includes(tableNumber);
 
   const renderDayContents = (day: number, date: Date | undefined) => {
@@ -310,13 +334,22 @@ const BookingForm: React.FC<BookingFormProps> = ({
         {bookingInfo && (
           <>
             {bookingInfo.lunch && bookingInfo.dinner && (
-              <div className="booking-indicator booking-dot-both" title="Reservas para comida y cena" />
+              <div
+                className="booking-indicator booking-dot-both"
+                title="Reservas para comida y cena"
+              />
             )}
             {bookingInfo.lunch && !bookingInfo.dinner && (
-              <div className="booking-indicator booking-indicator-lunch booking-dot-lunch" title="Reservas para comida" />
+              <div
+                className="booking-indicator booking-indicator-lunch booking-dot-lunch"
+                title="Reservas para comida"
+              />
             )}
             {!bookingInfo.lunch && bookingInfo.dinner && (
-              <div className="booking-indicator booking-indicator-dinner booking-dot-dinner" title="Reservas para cena" />
+              <div
+                className="booking-indicator booking-indicator-dinner booking-dot-dinner"
+                title="Reservas para cena"
+              />
             )}
           </>
         )}
@@ -336,19 +369,33 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     if (!effectiveApartmentNumber) {
       setError("Por favor, seleccione un número de apartamento");
-      toast.error("Error de Validación", { description: "Por favor, seleccione un número de apartamento" });
+      toast.error("Error de Validación", {
+        description: "Por favor, seleccione un número de apartamento",
+      });
       return;
     }
 
     if (selectedTables.length === 0) {
       setError("Por favor, seleccione al menos una mesa");
-      toast.error("Error de Validación", { description: "Por favor, seleccione al menos una mesa" });
+      toast.error("Error de Validación", {
+        description: "Por favor, seleccione al menos una mesa",
+      });
       return;
     }
 
     if (numberOfPeople > maxPeopleAllowed) {
-      setError(`El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`);
-      toast.error("Error de Validación", { description: `El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}` });
+      setError(
+        `El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`
+      );
+      toast.error("Error de Validación", {
+        description: `El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`,
+      });
+      return;
+    }
+
+    // Safety check for oven
+    if (reservaHorno && isOvenBooked) {
+      setError("El horno ya está reservado para este turno");
       return;
     }
 
@@ -361,7 +408,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         mealType,
         numberOfPeople,
         tables: selectedTables,
-        prepararFuego: isConciergeRestDay ? false : prepararFuego, // Double safety check on submit
+        prepararFuego: isConciergeRestDay ? false : prepararFuego,
         reservaHorno,
         userId: session?.user?.id,
         noCleaningService,
@@ -372,7 +419,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
       }
     } catch (error: any) {
       setError(error.message || "Error al enviar la reserva");
-      toast.error("Error", { description: error.message || "Error al enviar la reserva" });
+      toast.error("Error", {
+        description: error.message || "Error al enviar la reserva",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -413,15 +462,31 @@ const BookingForm: React.FC<BookingFormProps> = ({
               onFocus={(e) => e.target.blur()}
               wrapperClassName="w-full"
               renderDayContents={renderDayContents}
-              customInput={<input className="w-full pl-10 p-2 border rounded-md cursor-pointer" readOnly />}
+              customInput={
+                <input
+                  className="w-full pl-10 p-2 border rounded-md cursor-pointer"
+                  readOnly
+                />
+              }
             />
           </div>
           <div className="datepicker-legend">
-            {/* Legend items */}
-            <div className="datepicker-legend-item"><div className="datepicker-legend-dot booking-dot-lunch"></div><span>Comida</span></div>
-            <div className="datepicker-legend-item"><div className="datepicker-legend-dot booking-dot-dinner"></div><span>Cena</span></div>
-            <div className="datepicker-legend-item"><div className="datepicker-legend-dot booking-dot-both"></div><span>Ambas</span></div>
-            <div className="flex items-center gap-1 text-muted-foreground ml-auto"><InfoIcon className="h-3 w-3" /><span>Fechas con reservas</span></div>
+            <div className="datepicker-legend-item">
+              <div className="datepicker-legend-dot booking-dot-lunch"></div>
+              <span>Comida</span>
+            </div>
+            <div className="datepicker-legend-item">
+              <div className="datepicker-legend-dot booking-dot-dinner"></div>
+              <span>Cena</span>
+            </div>
+            <div className="datepicker-legend-item">
+              <div className="datepicker-legend-dot booking-dot-both"></div>
+              <span>Ambas</span>
+            </div>
+            <div className="flex items-center gap-1 text-muted-foreground ml-auto">
+              <InfoIcon className="h-3 w-3" />
+              <span>Fechas con reservas</span>
+            </div>
           </div>
         </div>
       </div>
@@ -429,7 +494,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
       {/* Meal Type */}
       <div className="space-y-2">
         <Label htmlFor="mealType">Tipo de Comida</Label>
-        <RadioGroup value={mealType} onValueChange={(value) => handleMealTypeChange(value as MealType)} className="flex space-x-4">
+        <RadioGroup
+          value={mealType}
+          onValueChange={(value) => handleMealTypeChange(value as MealType)}
+          className="flex space-x-4"
+        >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="lunch" id="lunch" />
             <Label htmlFor="lunch">Comida</Label>
@@ -441,7 +510,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </RadioGroup>
       </div>
 
-      {/* Tables Selection */}
+      {/* Tables Selection (Visual Code kept same as before) */}
       <div className="space-y-2">
         <Label>Seleccionar Mesas</Label>
         <Card className="w-full overflow-hidden border-2">
@@ -454,30 +523,139 @@ const BookingForm: React.FC<BookingFormProps> = ({
               ) : (
                 <>
                   <div className="flex justify-end mb-3 gap-3 text-xs bg-gray-50 p-2 rounded-md">
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-orange-300 rounded-md shadow-sm"></div><span>Disponible</span></div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-primary rounded-md shadow-sm"></div><span>Seleccionada</span></div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-gray-300 rounded-md shadow-sm"></div><span>Reservada</span></div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 bg-orange-300 rounded-md shadow-sm"></div>
+                      <span>Disponible</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 bg-primary rounded-md shadow-sm"></div>
+                      <span>Seleccionada</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 bg-gray-300 rounded-md shadow-sm"></div>
+                      <span>Reservada</span>
+                    </div>
                   </div>
 
                   <div className="relative w-full aspect-video bg-[#f5f8fa] rounded-lg mb-4 border border-gray-200 shadow-inner overflow-hidden">
-                    {/* Render Tables 1-6 using helper logic similar to original file, omitted for brevity but keeping same structure */}
+                    {/* Maps are the same as previous file */}
                     {[1, 2, 3, 4, 5, 6].map((num) => {
-                        let positionClass = "";
-                        if (num === 1) positionClass = "absolute bottom-4 left-4 mb-16"; 
-                        return null; 
+                      return null;
                     })}
-                    
+
                     <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
-                      <div className="relative m-1 sm:m-2"><div className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(2)}`} onClick={() => toggleTable(2)}><span className="font-bold">2</span>{isBooked(2) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}{isSelected(2) && <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}</div></div>
-                      <div className="relative m-1 sm:m-2"><div className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(1)}`} onClick={() => toggleTable(1)}><span className="font-bold">1</span>{isBooked(1) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}{isSelected(1) && <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}</div></div>
+                      <div className="relative m-1 sm:m-2">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            2
+                          )}`}
+                          onClick={() => toggleTable(2)}
+                        >
+                          <span className="font-bold">2</span>
+                          {isBooked(2) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(2) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="relative m-1 sm:m-2">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            1
+                          )}`}
+                          onClick={() => toggleTable(1)}
+                        >
+                          <span className="font-bold">1</span>
+                          {isBooked(1) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(1) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="absolute flex justify-center space-x-2 sm:space-x-4 w-full top-2 sm:top-4">
-                      <div className="relative"><div className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(3)}`} onClick={() => toggleTable(3)}><span className="font-bold">3</span>{isBooked(3) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}{isSelected(3) && <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}</div></div>
-                      <div className="relative"><div className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(4)}`} onClick={() => toggleTable(4)}><span className="font-bold">4</span>{isBooked(4) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}{isSelected(4) && <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}</div></div>
+                      <div className="relative">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            3
+                          )}`}
+                          onClick={() => toggleTable(3)}
+                        >
+                          <span className="font-bold">3</span>
+                          {isBooked(3) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(3) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            4
+                          )}`}
+                          onClick={() => toggleTable(4)}
+                        >
+                          <span className="font-bold">4</span>
+                          {isBooked(4) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(4) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="absolute flex flex-col items-end justify-end h-full right-0 py-2 sm:py-4">
-                      <div className="relative m-1 sm:m-2"><div className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(5)}`} onClick={() => toggleTable(5)}><span className="font-bold">5</span>{isBooked(5) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}{isSelected(5) && <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}</div></div>
-                      <div className="relative m-1 sm:m-2"><div className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(6)}`} onClick={() => toggleTable(6)}><span className="font-bold">6</span>{isBooked(6) && <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />}{isSelected(6) && <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}</div></div>
+                      <div className="relative m-1 sm:m-2">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            5
+                          )}`}
+                          onClick={() => toggleTable(5)}
+                        >
+                          <span className="font-bold">5</span>
+                          {isBooked(5) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(5) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="relative m-1 sm:m-2">
+                        <div
+                          className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
+                            6
+                          )}`}
+                          onClick={() => toggleTable(6)}
+                        >
+                          <span className="font-bold">6</span>
+                          {isBooked(6) && (
+                            <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                          )}
+                          {isSelected(6) && (
+                            <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -486,17 +664,32 @@ const BookingForm: React.FC<BookingFormProps> = ({
                       <p className="font-medium text-sm sm:text-base">
                         Mesas seleccionadas:
                         {selectedTables.length > 0 ? (
-                          <span className="ml-1 text-primary">{selectedTables.sort((a, b) => a - b).join(", ")}</span>
+                          <span className="ml-1 text-primary">
+                            {selectedTables.sort((a, b) => a - b).join(", ")}
+                          </span>
                         ) : (
                           <span className="ml-1 text-gray-500">Ninguna</span>
                         )}
                       </p>
                       {selectedTables.length > 0 && (
-                        <p className="text-sm text-gray-600 mt-1">Capacidad total: <span className="font-medium">{maxPeopleAllowed} personas</span></p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Capacidad total:{" "}
+                          <span className="font-medium">
+                            {maxPeopleAllowed} personas
+                          </span>
+                        </p>
                       )}
                     </div>
                   </div>
-                  <Button variant="outline" type="button" onClick={() => setSelectedTables([])} className="w-full" size="sm">Limpiar Selección</Button>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setSelectedTables([])}
+                    className="w-full"
+                    size="sm"
+                  >
+                    Limpiar Selección
+                  </Button>
                 </>
               )}
             </div>
@@ -510,14 +703,30 @@ const BookingForm: React.FC<BookingFormProps> = ({
           <Label htmlFor="apartmentNumber">Número de Apartamento</Label>
           {isRegularUser ? (
             <div className="flex items-center">
-              <Input id="apartmentNumber" value={`Apartamento #${session?.user.apartmentNumber}`} disabled className="bg-muted" />
-              <div className="ml-2 text-muted-foreground"><LockIcon className="h-4 w-4" /></div>
+              <Input
+                id="apartmentNumber"
+                value={`Apartamento #${session?.user.apartmentNumber}`}
+                disabled
+                className="bg-muted"
+              />
+              <div className="ml-2 text-muted-foreground">
+                <LockIcon className="h-4 w-4" />
+              </div>
             </div>
           ) : (
-            <Select value={apartmentNumber} onValueChange={handleApartmentChange}>
-              <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar apartamento" /></SelectTrigger>
+            <Select
+              value={apartmentNumber}
+              onValueChange={handleApartmentChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar apartamento" />
+              </SelectTrigger>
               <SelectContent>
-                {APARTMENT_NUMBERS.map((num) => (<SelectItem key={num} value={num.toString()}>Apartamento #{num}</SelectItem>))}
+                {APARTMENT_NUMBERS.map((num) => (
+                  <SelectItem key={num} value={num.toString()}>
+                    Apartamento #{num}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           )}
@@ -525,9 +734,23 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <div className="space-y-2">
           <Label htmlFor="numberOfPeople">Número de Personas</Label>
           <div className="relative">
-            <Input id="numberOfPeople" type="number" min="1" max={selectedTables.length > 0 ? maxPeopleAllowed : undefined} required value={numberOfPeople} onChange={handleNumberOfPeopleChange} />
+            <Input
+              id="numberOfPeople"
+              type="number"
+              min="1"
+              max={selectedTables.length > 0 ? maxPeopleAllowed : undefined}
+              required
+              value={numberOfPeople}
+              onChange={handleNumberOfPeopleChange}
+            />
             {selectedTables.length > 0 && (
-              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><InfoIcon className="h-3 w-3" /><span>Máximo: {maxPeopleAllowed} personas ({MAX_PEOPLE_PER_TABLE} por mesa)</span></div>
+              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <InfoIcon className="h-3 w-3" />
+                <span>
+                  Máximo: {maxPeopleAllowed} personas ({MAX_PEOPLE_PER_TABLE}{" "}
+                  por mesa)
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -539,27 +762,53 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <div className="flex flex-col gap-4">
           <div className="flex flex-col space-y-1">
             <div className="flex items-center space-x-2">
-                <Checkbox 
-                    id="prepararFuego" 
-                    checked={prepararFuego} 
-                    onCheckedChange={() => setPrepararFuego(!prepararFuego)} 
-                    disabled={isConciergeRestDay}
-                />
-                <Label htmlFor="prepararFuego" className={`font-normal cursor-pointer ${isConciergeRestDay ? "text-muted-foreground" : ""}`}>
-                    Preparar fuego para la reserva
-                </Label>
+              <Checkbox
+                id="prepararFuego"
+                checked={prepararFuego}
+                onCheckedChange={() => setPrepararFuego(!prepararFuego)}
+                disabled={isConciergeRestDay}
+              />
+              <Label
+                htmlFor="prepararFuego"
+                className={`font-normal cursor-pointer ${
+                  isConciergeRestDay ? "text-muted-foreground" : ""
+                }`}
+              >
+                Preparar fuego para la reserva
+              </Label>
             </div>
             {isConciergeRestDay && (
-                <span className="text-xs text-amber-600 pl-6 flex items-center gap-1">
-                    <InfoIcon className="h-3 w-3" /> No disponible martes y miércoles (descanso conserje)
-                </span>
+              <span className="text-xs text-amber-600 pl-6 flex items-center gap-1">
+                <InfoIcon className="h-3 w-3" /> No disponible martes y
+                miércoles (descanso conserje)
+              </span>
             )}
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox id="reservaHorno" checked={reservaHorno} onCheckedChange={() => setReservaHorno(!reservaHorno)} />
-            <Label htmlFor="reservaHorno" className="font-normal cursor-pointer">Reserva de horno</Label>
+
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="reservaHorno"
+                checked={reservaHorno}
+                onCheckedChange={() => setReservaHorno(!reservaHorno)}
+                disabled={isOvenBooked}
+              />
+              <Label
+                htmlFor="reservaHorno"
+                className={`font-normal cursor-pointer ${
+                  isOvenBooked ? "text-muted-foreground" : ""
+                }`}
+              >
+                Reserva de horno
+              </Label>
+            </div>
+            {isOvenBooked && (
+              <span className="text-xs text-amber-600 pl-6 flex items-center gap-1">
+                <InfoIcon className="h-3 w-3" /> El horno ya está reservado por
+                otro usuario
+              </span>
+            )}
           </div>
-         
         </div>
       </div>
 
@@ -567,15 +816,36 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Alert className="bg-amber-50 border-amber-200 mt-4 mb-2">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
-            <strong>Aviso importante:</strong> {cleaningWarningReason || "Sin servicio de limpieza."} Deberá encargarse de la limpieza tras su uso.
+            <strong>Aviso importante:</strong>{" "}
+            {cleaningWarningReason || "Sin servicio de limpieza."} Deberá
+            encargarse de la limpieza tras su uso.
           </AlertDescription>
         </Alert>
       )}
 
       <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">
-        <Button variant="outline" type="button" onClick={onCancel} className="cursor-pointer w-full sm:w-auto">Cancelar</Button>
-        <Button type="submit" disabled={isSubmitting} className={`cursor-pointer w-full sm:w-auto active:scale-95 transition-all duration-150 ${initialData?._id ? "" : "bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg"}`}>
-          {isSubmitting ? "Guardando..." : initialData?._id ? "Actualizar Reserva" : "Crear Reserva"}
+        <Button
+          variant="outline"
+          type="button"
+          onClick={onCancel}
+          className="cursor-pointer w-full sm:w-auto"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className={`cursor-pointer w-full sm:w-auto active:scale-95 transition-all duration-150 ${
+            initialData?._id
+              ? ""
+              : "bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg"
+          }`}
+        >
+          {isSubmitting
+            ? "Guardando..."
+            : initialData?._id
+            ? "Actualizar Reserva"
+            : "Crear Reserva"}
         </Button>
       </div>
     </form>
