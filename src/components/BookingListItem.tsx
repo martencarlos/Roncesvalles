@@ -13,17 +13,18 @@ import {
   UtensilsCrossed,
   CalendarDays,
   AlertTriangle,
-  StickyNote, // Import StickyNote icon
+  StickyNote,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Session } from "next-auth";
+import { getApartmentLabel } from "@/lib/utils";
 
 interface BookingListItemProps {
   booking: IBooking;
   onEdit: () => void;
   onDelete: (booking: IBooking) => void;
   onConfirm: () => void;
-  onEditNote?: (booking: IBooking) => void; // Added prop
+  onEditNote?: (booking: IBooking) => void;
   isPast?: boolean;
   session: Session | null;
 }
@@ -33,26 +34,22 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   onEdit,
   onDelete,
   onConfirm,
-  onEditNote, // Destructure new prop
+  onEditNote,
   isPast = false,
   session,
 }) => {
-  // Check if booking is confirmed, pending, or cancelled
   const isConfirmed = booking.status === "confirmed";
   const isPending = booking.status === "pending";
   const isCancelled = booking.status === "cancelled";
 
-  // Check user permissions
   const userRole = session?.user?.role || "user";
   const isOwner = session?.user?.apartmentNumber === booking.apartmentNumber;
-  const isAdmin = userRole === "admin"; // Read-only admin
+  const isAdmin = userRole === "admin";
   const isITAdmin = userRole === "it_admin";
-  const isConserje = userRole === "conserje"; // Check for conserje
+  const isConserje = userRole === "conserje";
 
-  // Conserje and IT Admin can manage internal notes
   const canManageNotes = isITAdmin || isConserje;
 
-  // Determine if user can edit/delete/confirm this booking
   const canEdit =
     isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === "user");
   const canDelete =
@@ -60,7 +57,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   const canConfirm =
     isITAdmin || (isOwner && isPending && isPast && userRole === "user");
 
-  // Read-only view for regular admins
   const isReadOnly = isAdmin;
 
   return (
@@ -73,10 +69,11 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
     >
       {/* Mobile layout */}
       <div className="flex flex-col gap-3 sm:hidden">
-        {/* Header with apartment number and status */}
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-bold">Apto. #{booking.apartmentNumber}</h3>
+            <h3 className="font-bold">
+              Apto. #{getApartmentLabel(booking.apartmentNumber)}
+            </h3>
             <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
               <CalendarDays className="h-3 w-3" />
               {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
@@ -118,7 +115,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         </div>
 
-        {/* Booking details */}
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-1">
             <UtensilsCrossed className="h-3.5 w-3.5 text-muted-foreground" />
@@ -145,7 +141,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         </div>
 
-        {/* Services */}
         {(booking.prepararFuego || booking.reservaHorno) && (
           <div className="flex flex-wrap gap-2 items-center text-sm">
             <span>Servicios:</span>
@@ -170,7 +165,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         )}
 
-        {/* No Cleaning Service Warning */}
         {booking.noCleaningService && (
           <div className="flex items-start gap-1 text-sm text-amber-700">
             <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
@@ -178,14 +172,12 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         )}
 
-        {/* Notes */}
         {isConfirmed && booking.notes && (
           <div className="text-xs text-muted-foreground">
             <span className="font-medium">Notas:</span> {booking.notes}
           </div>
         )}
 
-        {/* Internal Notes Display (Mobile) */}
         {canManageNotes && booking.internalNotes && (
           <div className="mt-2 pt-2 border-t text-sm bg-amber-50 p-2 rounded border border-amber-100">
             <div className="font-medium mb-1 text-xs text-amber-800 flex items-center gap-1">
@@ -197,9 +189,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         )}
 
-        {/* Mobile Action buttons */}
         <div className="flex gap-2 justify-end mt-1 flex-wrap">
-          {/* Internal Notes Button (Mobile) */}
           {canManageNotes && onEditNote && (
             <Button
               variant="outline"
@@ -262,11 +252,11 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
       <div className="hidden sm:flex sm:flex-col gap-2">
         <div className="flex sm:flex-row gap-3 sm:items-center justify-between">
           <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-8">
-            {/* Apartment and status */}
             <div className="flex flex-col min-w-[120px]">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold">Apto. #{booking.apartmentNumber}</h3>
-                {/* Status indicator */}
+                <h3 className="font-bold">
+                  Apto. #{getApartmentLabel(booking.apartmentNumber)}
+                </h3>
                 <div>
                   {isConfirmed && (
                     <Badge
@@ -308,7 +298,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
               </div>
             </div>
 
-            {/* People and tables */}
             <div className="flex flex-row gap-6 items-center">
               <div className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
@@ -333,7 +322,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
               </div>
             </div>
 
-            {/* Services */}
             {(booking.prepararFuego || booking.reservaHorno) && (
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
@@ -357,7 +345,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
               </div>
             )}
 
-            {/* Cleaning Service Warning */}
             {booking.noCleaningService && (
               <div className="flex items-center gap-1 text-amber-700">
                 <AlertTriangle className="h-3.5 w-3.5" />
@@ -366,9 +353,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             )}
           </div>
 
-          {/* Desktop Action buttons */}
           <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-            {/* Internal Notes Button (Desktop) */}
             {canManageNotes && onEditNote && (
               <Button
                 variant="ghost"
@@ -428,7 +413,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         </div>
 
-        {/* Extra Row for Notes (User & Internal) */}
         {(booking.notes || (canManageNotes && booking.internalNotes)) && (
           <div className="flex flex-col gap-1 mt-1 text-sm border-t pt-2 border-dashed">
             {booking.notes && isConfirmed && (

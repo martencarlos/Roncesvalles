@@ -21,13 +21,13 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Session } from "next-auth";
+import { getApartmentLabel } from "@/lib/utils";
 
 interface BookingCardProps {
   booking: IBooking;
   onEdit: () => void;
   onDelete: (booking: IBooking) => void;
   onConfirm: () => void;
-  // New prop for editing notes
   onEditNote?: (booking: IBooking) => void;
   isPast?: boolean;
   session: Session | null;
@@ -51,7 +51,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
   const isITAdmin = userRole === "it_admin";
   const isConserje = userRole === "conserje";
 
-  // Conserje and IT Admin can manage internal notes
   const canManageNotes = isITAdmin || isConserje;
 
   const canEdit =
@@ -61,7 +60,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
   const canConfirm =
     isITAdmin || (isOwner && isPending && isPast && userRole === "user");
 
-  // Read-only for regular admins (who are NOT conserjes or IT admins)
   const isReadOnly = userRole === "admin";
 
   return (
@@ -75,7 +73,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
       <CardHeader className="pb-2 px-4">
         <div className="flex justify-between items-center">
           <h3 className="font-bold text-base sm:text-lg">
-            Apto. #{booking.apartmentNumber}
+            Apto. #{getApartmentLabel(booking.apartmentNumber)}
           </h3>
           <div className="text-xs sm:text-sm text-muted-foreground">
             {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
@@ -197,7 +195,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
           </div>
         )}
 
-        {/* User Notes */}
         {isConfirmed && booking.notes && (
           <div className="mt-2 pt-2 border-t text-sm">
             <div className="font-medium mb-1 text-xs">Notas usuario:</div>
@@ -207,7 +204,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
           </div>
         )}
 
-        {/* Internal Notes Display (Only for Conserje/IT Admin) */}
         {canManageNotes && booking.internalNotes && (
           <div className="mt-2 pt-2 border-t text-sm bg-amber-50 p-2 rounded border border-amber-100">
             <div className="font-medium mb-1 text-xs text-amber-800 flex items-center gap-1">
@@ -221,7 +217,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
       </CardContent>
 
       <CardFooter className="pt-2 flex justify-end gap-2 px-4 pb-4">
-        {/* Conserje/IT Admin Button for Notes */}
         {canManageNotes && onEditNote && (
           <Button
             variant="ghost"
@@ -239,7 +234,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
           </Button>
         )}
 
-        {/* Standard Action Buttons */}
         {!isReadOnly && (
           <div className="flex gap-2">
             {canConfirm && (
