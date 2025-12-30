@@ -347,6 +347,9 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
         <div className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            id="user-search"
+            name="search"
+            autoComplete="off"
             placeholder="Buscar por nombre, email o apartamento..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -521,6 +524,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                   setNewUser({ ...newUser, email: e.target.value.trim() })
                 }
                 placeholder="correo@ejemplo.com"
+                autoComplete="off"
               />
             </div>
 
@@ -579,6 +583,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                   setNewUser({ ...newUser, password: e.target.value })
                 }
                 placeholder="••••••••"
+                autoComplete="new-password"
               />
               <p className="text-xs text-muted-foreground">
                 Mínimo 8 caracteres
@@ -595,6 +600,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                   setNewUser({ ...newUser, confirmPassword: e.target.value })
                 }
                 placeholder="••••••••"
+                autoComplete="new-password"
               />
             </div>
           </div>
@@ -696,6 +702,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                       setEditForm({ ...editForm, password: e.target.value })
                     }
                     placeholder="••••••••"
+                    autoComplete="new-password"
                   />
                   <p className="text-xs text-muted-foreground">
                     Deje en blanco para mantener la contraseña actual
@@ -717,6 +724,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                       })
                     }
                     placeholder="••••••••"
+                    autoComplete="new-password"
                   />
                 </div>
               </div>

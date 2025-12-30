@@ -99,12 +99,14 @@ export async function POST(req: NextRequest) {
     }
     
     // Return success without sensitive data
+    // FIXED: Return _id and createdAt to match frontend expectations
     return NextResponse.json(
       {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
+        createdAt: user.createdAt,
         ...(user.apartmentNumber ? { apartmentNumber: user.apartmentNumber } : {})
       },
       { status: 201 }
