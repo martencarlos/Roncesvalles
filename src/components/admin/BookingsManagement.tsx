@@ -590,6 +590,16 @@ export default function BookingsManagement({
                           </div>
                         </div>
                       )}
+
+                      {/* Display notes for confirmed bookings in mobile view */}
+                      {isConfirmed && booking.notes && (
+                        <div className="mt-2 pt-2 border-t">
+                          <span className="text-sm font-medium">Notas:</span>
+                          <p className="text-sm text-muted-foreground bg-gray-50 p-2 rounded mt-1 italic">
+                            {booking.notes}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-2 pt-3 border-t">
@@ -729,6 +739,18 @@ export default function BookingsManagement({
                               Horno
                             </Badge>
                           )}
+                        </div>
+                      )}
+
+                      {/* Display notes for confirmed bookings in desktop view */}
+                      {isConfirmed && booking.notes && (
+                        <div className="mt-2 text-xs border-t pt-1 border-dashed">
+                          <span className="font-medium text-muted-foreground">
+                            Nota:{" "}
+                          </span>
+                          <span className="italic text-gray-600">
+                            {booking.notes}
+                          </span>
                         </div>
                       )}
                     </div>
