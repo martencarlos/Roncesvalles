@@ -161,8 +161,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- CLEANING SERVICE LOGIC ---
-    // 1. Calculate notice period
+    // --- CONCIERGE REST DAYS & CLEANING LOGIC ---
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -170,16 +169,21 @@ export async function POST(req: NextRequest) {
     const compareDate = new Date(bookingDate);
     compareDate.setHours(0, 0, 0, 0);
     
+    // 1. Notice period
     const daysDifference = Math.floor((compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     const isShortNotice = daysDifference <= 4;
 
-    // 2. Check for Concierge Rest Days (Tuesday=2, Wednesday=3)
+    // 2. Concierge Rest Days (Tuesday=2, Wednesday=3)
     const dayOfWeek = compareDate.getDay();
     const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3;
 
     // Determine if cleaning service is unavailable
     const noCleaningService = isShortNotice || isConciergeRestDay || Boolean(body.noCleaningService);
-    // ------------------------------
+    
+    // Determine if fire preparation is allowed
+    // If it's a rest day, fire preparation is NOT possible regardless of request
+    const prepararFuego = isConciergeRestDay ? false : Boolean(body.prepararFuego);
+    // --------------------------------------------
     
     // Create booking with explicit userId from session
     const bookingData = {
@@ -188,10 +192,10 @@ export async function POST(req: NextRequest) {
       mealType: body.mealType,
       numberOfPeople: body.numberOfPeople || 1,
       tables: body.tables || [],
-      prepararFuego: Boolean(body.prepararFuego),
+      prepararFuego: prepararFuego, // Use calculated restricted value
       reservaHorno: Boolean(body.reservaHorno),
       status: body.status || 'pending',
-      userId: currentUser.id,  // Explicitly use ID from session
+      userId: currentUser.id,
       noCleaningService: noCleaningService // Use calculated value
     };
     
@@ -207,8 +211,11 @@ export async function POST(req: NextRequest) {
     // Prepare additional details for activity log
     let additionalDetails = '';
     
-    if (body.prepararFuego) {
+    if (prepararFuego) {
       additionalDetails += ' con preparación de fuego';
+    } else if (body.prepararFuego && isConciergeRestDay) {
+        // Log that user requested fire but it was denied due to rest day (optional detail)
+        // additionalDetails += ' (solicitud de fuego denegada por descanso conserje)';
     }
     
      if (body.reservaHorno) {

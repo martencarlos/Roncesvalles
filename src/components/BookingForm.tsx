@@ -103,6 +103,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     initialData?.noCleaningService || false
   );
   const [cleaningWarningReason, setCleaningWarningReason] = useState<string>("");
+  const [isConciergeRestDay, setIsConciergeRestDay] = useState<boolean>(false);
 
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
 
@@ -134,13 +135,20 @@ const BookingForm: React.FC<BookingFormProps> = ({
     
     // Check day of week (0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)
     const dayOfWeek = checkDate.getDay();
-    const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3; // Tue or Wed
+    const restDay = dayOfWeek === 2 || dayOfWeek === 3; // Tue or Wed
     const isShortNotice = daysDifference <= 4;
+
+    setIsConciergeRestDay(restDay);
+
+    // If it's a rest day, automatically uncheck fire preparation
+    if (restDay) {
+        setPrepararFuego(false);
+    }
 
     if (!initialData?._id || (initialData?._id && 
         (initialData.date && new Date(initialData.date).getTime() !== date.getTime()))) {
       
-      if (isConciergeRestDay) {
+      if (restDay) {
         setNoCleaningService(true);
         setCleaningWarningReason("Los martes y miércoles son días de descanso de la conserje.");
       } else if (isShortNotice) {
@@ -152,7 +160,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       }
     } else if (initialData?.noCleaningService) {
         // Keep original state if editing and date hasn't changed, but update text reasoning
-        if (isConciergeRestDay) {
+        if (restDay) {
             setCleaningWarningReason("Los martes y miércoles son días de descanso de la conserje.");
         } else {
             setCleaningWarningReason("Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza.");
@@ -353,7 +361,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         mealType,
         numberOfPeople,
         tables: selectedTables,
-        prepararFuego,
+        prepararFuego: isConciergeRestDay ? false : prepararFuego, // Double safety check on submit
         reservaHorno,
         userId: session?.user?.id,
         noCleaningService,
@@ -529,9 +537,23 @@ const BookingForm: React.FC<BookingFormProps> = ({
       <div className="space-y-2">
         <Label>Opciones Adicionales</Label>
         <div className="flex flex-col gap-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox id="prepararFuego" checked={prepararFuego} onCheckedChange={() => setPrepararFuego(!prepararFuego)} />
-            <Label htmlFor="prepararFuego" className="font-normal cursor-pointer">Preparar fuego para la reserva</Label>
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center space-x-2">
+                <Checkbox 
+                    id="prepararFuego" 
+                    checked={prepararFuego} 
+                    onCheckedChange={() => setPrepararFuego(!prepararFuego)} 
+                    disabled={isConciergeRestDay}
+                />
+                <Label htmlFor="prepararFuego" className={`font-normal cursor-pointer ${isConciergeRestDay ? "text-muted-foreground" : ""}`}>
+                    Preparar fuego para la reserva
+                </Label>
+            </div>
+            {isConciergeRestDay && (
+                <span className="text-xs text-amber-600 pl-6 flex items-center gap-1">
+                    <InfoIcon className="h-3 w-3" /> No disponible martes y miércoles (descanso conserje)
+                </span>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox id="reservaHorno" checked={reservaHorno} onCheckedChange={() => setReservaHorno(!reservaHorno)} />
@@ -545,7 +567,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Alert className="bg-amber-50 border-amber-200 mt-4 mb-2">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
-            <strong>Aviso importante:</strong> {cleaningWarningReason || "Sin servicio de limpieza."} El propietario deberá encargarse de la limpieza tras su uso.
+            <strong>Aviso importante:</strong> {cleaningWarningReason || "Sin servicio de limpieza."} Deberá encargarse de la limpieza tras su uso.
           </AlertDescription>
         </Alert>
       )}

@@ -90,7 +90,7 @@ export async function PUT(
     const body = await req.json();
     const bookingId = params.id;
     
-    // Get the original booking for activity log and permissions check
+    // Get the original booking
     const originalBooking = await Booking.findById(bookingId);
     
     if (!originalBooking) {
@@ -100,9 +100,7 @@ export async function PUT(
       );
     }
     
-    // Permission check:
-    // - Regular users can only update their own apartment's bookings
-    // - Admins and IT admins can edit any booking
+    // Permission check
     if (
       (currentUser.role === 'user' && originalBooking.apartmentNumber !== currentUser.apartmentNumber) 
     ) {
@@ -112,7 +110,7 @@ export async function PUT(
       );
     }
     
-    // Regular users cannot modify confirmed bookings
+    // Confirmed booking check
     if (
       currentUser.role === 'user' && 
       originalBooking.status === 'confirmed'
@@ -123,38 +121,44 @@ export async function PUT(
       );
     }
     
-    // Check for conflicting tables on the same date and meal type (excluding this booking)
-    const bookingDate = new Date(body.date);
-    const startOfDay = new Date(bookingDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(bookingDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    // Determine Effective Date (New date or keep original)
+    const effectiveDate = body.date ? new Date(body.date) : new Date(originalBooking.date);
     
-    const existingBookings = await Booking.find({
-      _id: { $ne: bookingId },
-      date: {
-        $gte: startOfDay,
-        $lte: endOfDay
-      },
-      mealType: body.mealType
-    });
-    
-    // Check for table conflicts
-    const bookedTables = existingBookings.flatMap(booking => booking.tables);
-    const requestedTables = body.tables;
-    
-    const conflictingTables = requestedTables.filter((table: any) => 
-      bookedTables.includes(table)
-    );
-    
-    if (conflictingTables.length > 0) {
-      return NextResponse.json(
-        { 
-          error: 'Booking conflict', 
-          message: `Tables ${conflictingTables.join(', ')} are already booked for ${body.mealType} on this date.` 
-        },
-        { status: 409 }
-      );
+    // Check for conflicts if date or mealType changes, or tables change
+    // Simplified conflict check reusing the logic:
+    if (body.date || body.mealType || body.tables) {
+        const checkDate = new Date(effectiveDate);
+        const startOfDay = new Date(checkDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(checkDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        const checkMealType = body.mealType || originalBooking.mealType;
+        
+        const existingBookings = await Booking.find({
+          _id: { $ne: bookingId },
+          date: {
+            $gte: startOfDay,
+            $lte: endOfDay
+          },
+          mealType: checkMealType
+        });
+        
+        const bookedTables = existingBookings.flatMap(booking => booking.tables);
+        const requestedTables = body.tables || originalBooking.tables;
+        
+        const conflictingTables = requestedTables.filter((table: any) => 
+          bookedTables.includes(table)
+        );
+        
+        if (conflictingTables.length > 0) {
+          return NextResponse.json(
+            { 
+              error: 'Booking conflict', 
+              message: `Tables ${conflictingTables.join(', ')} are already booked for ${checkMealType} on this date.` 
+            },
+            { status: 409 }
+          );
+        }
     }
     
     // Regular users cannot change apartment number
@@ -162,48 +166,52 @@ export async function PUT(
       body.apartmentNumber = currentUser.apartmentNumber;
     }
     
-    // Determine if cleaning service warning should be applied or removed
+    // --- CONCIERGE REST DAYS & CLEANING LOGIC ---
     let noCleaningService = originalBooking.noCleaningService;
+    let prepararFuego = body.prepararFuego !== undefined ? Boolean(body.prepararFuego) : originalBooking.prepararFuego;
 
-    // If the booking date is changed, we need to recalculate the noCleaningService flag
-    if (body.date) {
-      const originalBookingDate = new Date(originalBooking.date);
-      const newBookingDate = new Date(body.date);
-      
-      // If date is being changed, recalculate based on current date
-      if (originalBookingDate.getTime() !== newBookingDate.getTime()) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const compareDate = new Date(newBookingDate);
-        compareDate.setHours(0, 0, 0, 0);
-        
-        // 1. Calculate days between today and new booking date
-        const daysDifference = Math.floor((compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        const isShortNotice = daysDifference <= 4;
-
-        // 2. Check for Concierge Rest Days (Tuesday=2, Wednesday=3)
-        const dayOfWeek = compareDate.getDay();
-        const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3;
-        
-        // Update cleaning service status
-        noCleaningService = isShortNotice || isConciergeRestDay;
-      }
-    }
+    // Analyze effective date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(effectiveDate);
+    compareDate.setHours(0, 0, 0, 0);
     
-    // Always ensure userId is set to the authenticated user's ID
-    // Create a clean update object with only the fields we want to update
+    // 1. Concierge Rest Days (Tuesday=2, Wednesday=3)
+    const dayOfWeek = compareDate.getDay();
+    const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3;
+    
+    // 2. Notice period
+    const daysDifference = Math.floor((compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const isShortNotice = daysDifference <= 4;
+
+    // If date changed, recalculate cleaning status entirely
+    if (body.date) {
+        noCleaningService = isShortNotice || isConciergeRestDay;
+    } else {
+        // If date didn't change, we still enforce rest day rules on existing date
+        if (isConciergeRestDay) {
+            noCleaningService = true;
+        }
+    }
+
+    // Force prepare fire to false if it's a rest day
+    if (isConciergeRestDay) {
+        prepararFuego = false;
+    }
+    // --------------------------------------------
+    
+    // Create a clean update object
     const updateData = {
       apartmentNumber: body.apartmentNumber,
-      date: new Date(body.date),
+      date: effectiveDate,
       mealType: body.mealType,
       numberOfPeople: body.numberOfPeople || originalBooking.numberOfPeople,
       tables: body.tables || originalBooking.tables,
-      prepararFuego: body.prepararFuego !== undefined ? Boolean(body.prepararFuego) : originalBooking.prepararFuego,
+      prepararFuego: prepararFuego, // Use calculated value
       reservaHorno: body.reservaHorno !== undefined ? Boolean(body.reservaHorno) : originalBooking.reservaHorno,
       status: body.status || originalBooking.status,
-      userId: currentUser.id, // Always set to current user
-      noCleaningService: noCleaningService // Set cleaning service status
+      userId: currentUser.id,
+      noCleaningService: noCleaningService // Use calculated value
     };
     
     console.log("Update data:", JSON.stringify(updateData));
@@ -215,37 +223,34 @@ export async function PUT(
       { new: true, runValidators: true }
     );
     
-    // Get username for better activity logging
+    // Activity logging
     const user = await User.findById(currentUser.id).select('name');
     
-    // Prepare additional details for activity log
     let additionalDetails = '';
     
-    if (body.prepararFuego) {
+    if (prepararFuego) {
       additionalDetails += ' with fire preparation';
     }
-    if (body.reservaHorno) {
+    if (updateData.reservaHorno) {
       additionalDetails += additionalDetails ? ' and' : ' with';
       additionalDetails += ' oven reservation';
     } 
     
-    // Add cleaning service detail if it changed
-    if (noCleaningService !== originalBooking.noCleaningService) {
+    // Add cleaning service detail if it changed or is active
+    if (noCleaningService !== originalBooking.noCleaningService || (noCleaningService && body.date)) {
       additionalDetails += additionalDetails ? ' and' : ' with';
       additionalDetails += noCleaningService 
         ? ' notice of no cleaning service' 
         : ' cleaning service available';
     }
     
-    // Get the user's role to include in the activity log
     const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';
     
-    // Log activity
     await ActivityLog.create({
       action: 'update',
-      apartmentNumber: body.apartmentNumber,
+      apartmentNumber: updateData.apartmentNumber,
       userId: currentUser.id,
-      details: `${user ? user.name : 'Usuario'}${userRole} ha modificado la reserva de Apto #${body.apartmentNumber} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}, mesas ${body.tables.join(', ')}${additionalDetails}`,
+      details: `${user ? user.name : 'Usuario'}${userRole} ha modificado la reserva de Apto #${updateData.apartmentNumber} para ${updateData.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(updateData.date).toLocaleDateString('es-ES')}, mesas ${updateData.tables.join(', ')}${additionalDetails}`,
     });
     
     return NextResponse.json(updatedBooking);
@@ -307,9 +312,7 @@ export async function DELETE(
       );
     }
     
-    // Permission check:
-    // - Regular users can only delete their own apartment's bookings
-    // - Admins and IT admins can delete any booking
+    // Permission check
     if (
       (currentUser.role === 'user' && booking.apartmentNumber !== currentUser.apartmentNumber) 
     ) {
@@ -343,7 +346,6 @@ export async function DELETE(
       additionalDetails += ' reserva de horno';
     }
     
-    // Get the user's role to include in the activity log
     const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';
     
     // Delete the booking
