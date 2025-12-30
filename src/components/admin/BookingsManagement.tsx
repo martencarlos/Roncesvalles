@@ -10,13 +10,18 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   PlusCircle,
   Calendar,
-  Search,
   X,
   Edit,
   Trash2,
   CheckCircle2,
   StickyNote,
   Save,
+  Users,
+  Table as TableIcon,
+  Flame,
+  Utensils,
+  AlertTriangle,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -44,6 +49,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { IBooking } from "@/models/Booking";
+import { getApartmentLabel } from "@/lib/utils";
 
 registerLocale("es", es);
 
@@ -56,7 +62,6 @@ export default function BookingsManagement({
 }: BookingsManagementProps) {
   const isITAdmin = userRole === "it_admin";
   const isConserje = userRole === "conserje";
-  // Conserje can edit notes, IT admin can do everything including notes
   const canManageInternalNotes = isITAdmin || isConserje;
 
   const [bookings, setBookings] = useState<IBooking[]>([]);
@@ -339,13 +344,13 @@ export default function BookingsManagement({
       )}
 
       {/* Filters Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="relative flex items-center gap-2 w-full sm:w-auto">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
+        <div className="relative flex items-center gap-2 w-full xl:w-auto">
           <Input
-            placeholder="Filtrar por nº de apartamento"
+            placeholder="Nº apto"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:w-60"
+            className="w-full sm:w-32"
             type="number"
             min="1"
             max="48"
@@ -358,9 +363,9 @@ export default function BookingsManagement({
                 onChange={(date: Date) => setSelectedDate(date)}
                 dateFormat="dd/MM/yyyy"
                 locale="es"
-                placeholderText="Seleccionar fecha"
-                className="w-full sm:w-40 p-2 border rounded-md"
-                customInput={<Input className="w-full sm:w-40" readOnly />}
+                placeholderText="Fecha"
+                className="w-full sm:w-36 p-2 border rounded-md"
+                customInput={<Input className="w-full sm:w-36" readOnly />}
               />
             </div>
           )}
@@ -375,9 +380,9 @@ export default function BookingsManagement({
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 w-full xl:w-auto">
           <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-full sm:w-32">
+            <SelectTrigger className="w-full sm:w-[130px]">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <SelectValue placeholder="Fecha" />
@@ -393,7 +398,7 @@ export default function BookingsManagement({
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-32">
+            <SelectTrigger className="w-full sm:w-[130px]">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -405,7 +410,7 @@ export default function BookingsManagement({
           </Select>
 
           <Select value={mealTypeFilter} onValueChange={setMealTypeFilter}>
-            <SelectTrigger className="w-full sm:w-32">
+            <SelectTrigger className="w-full sm:w-[130px]">
               <SelectValue placeholder="Servicio" />
             </SelectTrigger>
             <SelectContent>
@@ -418,10 +423,10 @@ export default function BookingsManagement({
           {isITAdmin && (
             <Button
               onClick={() => setShowForm(true)}
-              className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150"
+              className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 w-full sm:w-auto"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
-              Nueva Reserva
+              Nueva
             </Button>
           )}
         </div>
@@ -432,7 +437,7 @@ export default function BookingsManagement({
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
         </div>
       ) : filteredBookings.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredBookings.map((booking) => {
             const isConfirmed = booking.status === "confirmed";
             const isPending = booking.status === "pending";
@@ -441,10 +446,38 @@ export default function BookingsManagement({
               isPast(new Date(booking.date)) &&
               !isToday(new Date(booking.date));
 
+            // Status Badge Logic
+            let statusBadge = null;
+            if (isConfirmed) {
+              statusBadge = (
+                <Badge className="bg-green-100 text-green-700 border-green-200 shadow-none hover:bg-green-100">
+                  Confirmada
+                </Badge>
+              );
+            } else if (isCancelled) {
+              statusBadge = (
+                <Badge className="bg-red-100 text-red-700 border-red-200 shadow-none hover:bg-red-100">
+                  Cancelada
+                </Badge>
+              );
+            } else if (isPending && isPastBooking) {
+              statusBadge = (
+                <Badge className="bg-amber-100 text-amber-700 border-amber-200 shadow-none hover:bg-amber-100">
+                  Por confirmar
+                </Badge>
+              );
+            } else {
+              statusBadge = (
+                <Badge className="bg-blue-100 text-blue-700 border-blue-200 shadow-none hover:bg-blue-100">
+                  Pendiente
+                </Badge>
+              );
+            }
+
             return (
               <Card
                 key={booking._id as string}
-                className={`py-0 ${
+                className={`py-0 transition-colors hover:bg-gray-50/50 ${
                   isPastBooking && !isConfirmed && !isCancelled
                     ? "border-amber-300"
                     : ""
@@ -452,104 +485,130 @@ export default function BookingsManagement({
                   isCancelled ? "border-red-300 opacity-75" : ""
                 }`}
               >
-                <CardContent className="p-4">
-                  {/* Unified Responsive Layout: Mobile (flex-col) / Desktop (flex-row) */}
-                  <div className="flex flex-col md:flex-row gap-4">
-                    {/* Info Columns */}
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="col-span-2 md:col-span-1">
-                        <h3 className="font-semibold text-lg">
-                          Apto. #{booking.apartmentNumber}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(booking.date)}
-                        </p>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 lg:items-center">
+                    {/* INFO GRID */}
+                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-12 gap-y-2 gap-x-4 items-center">
+                      {/* 1. Apartment & Date */}
+                      <div className="col-span-2 sm:col-span-4 lg:col-span-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg font-bold text-gray-900">
+                            #{getApartmentLabel(booking.apartmentNumber)}
+                          </span>
+                          <span className="text-gray-300 hidden sm:inline">
+                            |
+                          </span>
+                          {statusBadge}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span>{formatDate(booking.date)}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center">
+
+                      {/* 2. Meal Type & Services */}
+                      <div className="col-span-1 sm:col-span-4 lg:col-span-3 flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2">
                         <Badge
-                          variant={
-                            booking.mealType === "lunch" ? "outline" : "default"
-                          }
+                          variant="outline"
                           className={
                             booking.mealType === "lunch"
-                              ? "capitalize bg-orange-100 text-orange-800 border-orange-200"
-                              : "capitalize bg-blue-100 text-blue-800 border-blue-200"
+                              ? "bg-orange-50 text-orange-700 border-orange-200 w-fit"
+                              : "bg-blue-50 text-blue-700 border-blue-200 w-fit"
                           }
                         >
                           {booking.mealType === "lunch" ? "Comida" : "Cena"}
                         </Badge>
-                      </div>
-                      <div className="flex items-center">
-                        {isConfirmed && (
-                          <Badge className="bg-green-100 text-green-700 border-green-200">
-                            Confirmada
-                          </Badge>
-                        )}
-                        {isPending && !isPastBooking && (
-                          <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                            Pendiente
-                          </Badge>
-                        )}
-                        {isPending && isPastBooking && (
-                          <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                            Por confirmar
-                          </Badge>
-                        )}
-                        {isCancelled && (
-                          <Badge className="bg-red-100 text-red-700 border-red-200">
-                            Cancelada
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="col-span-2 md:col-span-1 text-sm">
-                        <p>Mesas: {booking.tables.join(", ")}</p>
-                        <p>{booking.numberOfPeople} pax</p>
+
                         {(booking.prepararFuego || booking.reservaHorno) && (
-                          <div className="flex gap-1 mt-1 flex-wrap">
+                          <div className="flex gap-1.5 flex-wrap">
                             {booking.prepararFuego && (
                               <Badge
                                 variant="outline"
-                                className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
+                                className="bg-rose-50 text-rose-700 border-rose-200 px-1.5 py-0 h-5 text-[10px] gap-1"
                               >
-                                Fuego
+                                <Flame className="h-3 w-3" /> Fuego
                               </Badge>
                             )}
                             {booking.reservaHorno && (
                               <Badge
                                 variant="outline"
-                                className="bg-orange-50 text-orange-700 border-orange-200 text-xs"
+                                className="bg-amber-50 text-amber-700 border-amber-200 px-1.5 py-0 h-5 text-[10px] gap-1"
                               >
-                                Horno
+                                <Utensils className="h-3 w-3" /> Horno
                               </Badge>
                             )}
                           </div>
                         )}
                       </div>
+
+                      {/* 3. Details (Tables & Pax) */}
+                      <div className="col-span-1 sm:col-span-4 lg:col-span-6 flex flex-col sm:flex-row gap-y-1 gap-x-6 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2" title="Mesas">
+                          <TableIcon className="h-4 w-4" />
+                          <span className="font-medium text-gray-700">
+                            Mesas: {booking.tables.join(", ")}
+                          </span>
+                        </div>
+                        <div
+                          className="flex items-center gap-2"
+                          title="Asistentes"
+                        >
+                          <Users className="h-4 w-4" />
+                          <span>
+                            {isConfirmed &&
+                            booking.finalAttendees !== undefined ? (
+                              <>
+                                <span className="line-through mr-1 opacity-70">
+                                  {booking.numberOfPeople}
+                                </span>
+                                <span className="font-medium text-gray-700">
+                                  {booking.finalAttendees}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="font-medium text-gray-700">
+                                {booking.numberOfPeople}
+                              </span>
+                            )}{" "}
+                            pax
+                          </span>
+                        </div>
+
+                        {booking.noCleaningService && (
+                          <div
+                            className="flex items-center gap-1.5 text-amber-600 sm:ml-auto"
+                            title="Sin servicio de limpieza"
+                          >
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            <span className="text-xs font-medium">
+                              Sin limpieza
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Actions Column - Wrapped with flex-wrap for Mobile to prevent hiding */}
-                    <div className="flex flex-wrap md:flex-col gap-2 justify-end content-start items-end md:min-w-[140px] pt-2 md:pt-0 border-t md:border-0">
-                      {/* Internal Notes Button */}
+                    {/* ACTIONS ROW */}
+                    <div className="flex flex-wrap lg:flex-nowrap gap-2 justify-end items-center mt-2 lg:mt-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-gray-100">
+                      {/* Notes Button */}
                       {canManageInternalNotes && (
                         <Button
-                          variant={
-                            booking.internalNotes ? "default" : "outline"
-                          }
+                          variant={booking.internalNotes ? "default" : "ghost"}
                           size="sm"
                           onClick={() => openNoteDialog(booking)}
-                          className={`flex-1 md:flex-none w-full ${
+                          className={`h-8 px-2.5 text-xs ${
                             booking.internalNotes
-                              ? "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
-                              : "text-muted-foreground"
+                              ? "bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 shadow-none"
+                              : "text-muted-foreground hover:bg-gray-100"
                           }`}
-                          title="Notas de conserjería"
+                          title="Notas internas"
                         >
-                          <StickyNote className="h-4 w-4 mr-2" />
-                          {booking.internalNotes ? "Ver Nota" : "Añadir Nota"}
+                          <StickyNote className="h-3.5 w-3.5 mr-1.5" />
+                          {booking.internalNotes ? "Nota" : "Nota"}
                         </Button>
                       )}
 
-                      {/* Existing Buttons */}
+                      {/* Admin Actions */}
                       {isITAdmin && (
                         <>
                           {isPending && isPastBooking && (
@@ -557,60 +616,58 @@ export default function BookingsManagement({
                               variant="outline"
                               size="sm"
                               onClick={() => setConfirmingBooking(booking)}
-                              className="flex-1 md:flex-none w-full border-amber-500 text-amber-700"
+                              className="h-8 text-xs border-green-500 text-green-700 hover:bg-green-50 hover:text-green-800"
                             >
-                              <CheckCircle2 className="h-4 w-4 mr-2" />{" "}
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                               Confirmar
                             </Button>
                           )}
+
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setEditingBooking(booking)}
-                            className="flex-1 md:flex-none w-full"
+                            className="h-8 w-8 p-0 lg:w-auto lg:px-3 text-xs"
+                            title="Editar"
                           >
-                            <Edit className="h-4 w-4 mr-2" /> Editar
+                            <Edit className="h-3.5 w-3.5 lg:mr-1.5" />
+                            <span className="hidden lg:inline">Editar</span>
                           </Button>
+
                           <Button
-                            variant="destructive"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteBooking(booking)}
-                            className="flex-1 md:flex-none w-full"
+                            className="h-8 w-8 p-0 lg:w-auto lg:px-3 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Eliminar"
                           >
-                            <Trash2 className="h-4 w-4 mr-2" /> Eliminar
+                            <Trash2 className="h-3.5 w-3.5 lg:mr-1.5" />
+                            <span className="hidden lg:inline">Eliminar</span>
                           </Button>
                         </>
                       )}
                     </div>
                   </div>
 
-                  {/* Display Notes Inline - Bottom of Card */}
+                  {/* Notes Display Section */}
                   {(booking.notes ||
                     (booking.internalNotes && canManageInternalNotes)) && (
-                    <div className="mt-4 space-y-2 border-t pt-3">
+                    <div className="mt-3 pt-3 border-t border-dashed border-gray-200 flex flex-col gap-2">
                       {/* User Notes */}
-                      {booking.notes && isConfirmed && (
-                        <div className="text-sm bg-gray-50 p-2 rounded border border-gray-100">
-                          <span className="font-semibold text-gray-700">
-                            Nota del usuario:
-                          </span>{" "}
-                          <span className="italic text-gray-600">
-                            {booking.notes}
-                          </span>
+                      {booking.notes && (
+                        <div className="text-xs flex items-start gap-2 text-gray-600">
+                          <MessageSquare className="h-3.5 w-3.5 mt-0.5 shrink-0 text-gray-400" />
+                          <span className="italic">{booking.notes}</span>
                         </div>
                       )}
+
                       {/* Internal Notes */}
                       {booking.internalNotes && canManageInternalNotes && (
-                        <div className="text-sm bg-amber-50 p-2 rounded border border-amber-200 flex items-start gap-2">
-                          <StickyNote className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                          <div>
-                            <span className="font-semibold text-amber-800">
-                              Nota interna (Conserje):
-                            </span>
-                            <p className="text-amber-900 whitespace-pre-wrap">
-                              {booking.internalNotes}
-                            </p>
-                          </div>
+                        <div className="text-xs bg-amber-50/50 p-2 rounded border border-amber-100/50 flex items-start gap-2">
+                          <StickyNote className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
+                          <span className="text-amber-900 whitespace-pre-wrap">
+                            {booking.internalNotes}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -621,12 +678,21 @@ export default function BookingsManagement({
           })}
         </div>
       ) : (
-        <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-100">
-          <p className="text-muted-foreground">No se encontraron reservas.</p>
+        <div className="text-center p-12 bg-white rounded-lg border border-dashed border-gray-300">
+          <Calendar className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-gray-900">
+            No se encontraron reservas
+          </h3>
+          <p className="text-gray-500 text-sm mt-1">
+            Intente ajustar los filtros de búsqueda.
+          </p>
+          <Button variant="outline" onClick={resetFilters} className="mt-4">
+            Limpiar filtros
+          </Button>
         </div>
       )}
 
-      {/* Internal Notes Dialog */}
+      {/* Modals */}
       <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -635,15 +701,14 @@ export default function BookingsManagement({
               Notas Internas (Conserjería)
             </DialogTitle>
             <DialogDescription>
-              Estas notas solo son visibles para conserjes y administradores. El
-              usuario no las verá.
+              Estas notas solo son visibles para conserjes y administradores.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea
               value={internalNoteText}
               onChange={(e) => setInternalNoteText(e.target.value)}
-              placeholder="Escriba aquí anotaciones sobre limpieza, incidencias, pagos, etc..."
+              placeholder="Escriba aquí anotaciones..."
               rows={5}
               className="bg-amber-50 border-amber-200 focus-visible:ring-amber-500"
             />
@@ -657,19 +722,12 @@ export default function BookingsManagement({
               disabled={isSubmitting}
               className="bg-amber-600 hover:bg-amber-700 text-white"
             >
-              {isSubmitting ? (
-                "Guardando..."
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" /> Guardar Nota
-                </>
-              )}
+              {isSubmitting ? "Guardando..." : "Guardar Nota"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Booking Form Modal */}
       {isITAdmin && (
         <BookingFormModal
           isOpen={showForm}
@@ -680,7 +738,6 @@ export default function BookingsManagement({
         />
       )}
 
-      {/* Booking Edit Modal */}
       {editingBooking && (
         <BookingFormModal
           isOpen={!!editingBooking}
@@ -691,7 +748,6 @@ export default function BookingsManagement({
         />
       )}
 
-      {/* Booking Confirmation Modal */}
       {confirmingBooking && (
         <BookingConfirmationDialog
           isOpen={!!confirmingBooking}
@@ -701,7 +757,6 @@ export default function BookingsManagement({
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
       {deletingBooking && (
         <DeleteConfirmationDialog
           isOpen={showDeleteDialog}

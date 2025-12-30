@@ -694,7 +694,7 @@ export default function BookingsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
+    <div className="max-w-6xl mb-32 mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6 sm:mb-8">
         {/* Top header with title, user guide, and user menu */}
         <div className="flex justify-between items-center gap-2 mb-4">
