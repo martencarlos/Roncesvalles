@@ -817,7 +817,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
             <strong>Aviso importante:</strong>{" "}
-            {cleaningWarningReason || "Sin servicio de limpieza."} Deberá
+            {cleaningWarningReason || "Sin servicio de limpieza."} El propietario deberá
             encargarse de la limpieza tras su uso.
           </AlertDescription>
         </Alert>

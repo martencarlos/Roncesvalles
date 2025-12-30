@@ -482,7 +482,7 @@ export default function BookingsManagement({
             return (
               <Card
                 key={booking._id as string}
-                className={`${
+                className={`py-0 ${
                   isPastBooking && !isConfirmed && !isCancelled
                     ? "border-amber-300"
                     : ""
