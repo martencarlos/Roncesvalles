@@ -27,7 +27,6 @@ import { getApartmentLabel } from "@/lib/utils";
 
 registerLocale("es", es);
 
-// ... (interfaces remain same)
 interface BookingsForDate {
   [date: string]: {
     lunch: boolean;
@@ -51,7 +50,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
   initialData,
   onCancel,
 }) => {
-  // ... (setup state remains the same)
   const { data: session } = useSession();
   const isRegularUser = session?.user?.role === "user";
 
@@ -103,11 +101,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [cleaningWarningReason, setCleaningWarningReason] =
     useState<string>("");
   const [isConciergeRestDay, setIsConciergeRestDay] = useState<boolean>(false);
+  const [isShortNotice, setIsShortNotice] = useState<boolean>(false);
   const [isOvenBooked, setIsOvenBooked] = useState<boolean>(false);
 
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
 
-  // ... (helper functions remain same)
   function getLastSelectedApartment(): number | undefined {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(LAST_APARTMENT_KEY);
@@ -126,7 +124,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
   }
 
-  // ... (useEffect hooks remain same)
+  // Effect to handle Concierge Service Logic (Days of week & Notice)
   useEffect(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -136,15 +134,22 @@ const BookingForm: React.FC<BookingFormProps> = ({
     const daysDifference = differenceInDays(checkDate, today);
 
     const dayOfWeek = checkDate.getDay();
-    const restDay = dayOfWeek === 2 || dayOfWeek === 3;
-    const isShortNotice = daysDifference <= 4;
+    const restDay = dayOfWeek === 2 || dayOfWeek === 3; // 2=Tuesday, 3=Wednesday
+    const shortNotice = daysDifference <= 4;
 
     setIsConciergeRestDay(restDay);
+    setIsShortNotice(shortNotice);
 
-    if (restDay) {
+    // LOGIC:
+    // 1. If Short Notice (< 5 days): Disable Fire (User must do it). Oven allowed.
+    // 2. If Rest Day (Tue/Wed): Disable Fire (No Concierge). Oven allowed (not a concierge task).
+    
+    if (restDay || shortNotice) {
       setPrepararFuego(false);
+      // Removed setReservaHorno(false) so Oven is preserved
     }
 
+    // Logic for "No Cleaning Service" flag and warnings
     if (
       !initialData?._id ||
       (initialData?._id &&
@@ -154,25 +159,26 @@ const BookingForm: React.FC<BookingFormProps> = ({
       if (restDay) {
         setNoCleaningService(true);
         setCleaningWarningReason(
-          "Los martes y miércoles son días de descanso de la conserje."
+          "Los martes y miércoles no hay servicio de conserjería."
         );
-      } else if (isShortNotice) {
+      } else if (shortNotice) {
         setNoCleaningService(true);
         setCleaningWarningReason(
-          "Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza."
+          "Para reservas con menos de 5 días de antelación no se proporciona servicio de conserjería."
         );
       } else {
         setNoCleaningService(false);
         setCleaningWarningReason("");
       }
     } else if (initialData?.noCleaningService) {
+      // Logic for editing existing bookings with the flag set
       if (restDay) {
         setCleaningWarningReason(
-          "Los martes y miércoles son días de descanso de la conserje."
+          "Los martes y miércoles no hay servicio de conserjería."
         );
       } else {
         setCleaningWarningReason(
-          "Para reservas con menos de 5 días de antelación no se proporciona servicio de limpieza."
+          "Para reservas con menos de 5 días de antelación no se proporciona servicio de conserjería."
         );
       }
     }
@@ -258,7 +264,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
     fetchBookingsAndResources();
   }, [date, mealType, initialData?._id]);
 
-  // ... (rest of handler functions remain same)
   const handleMealTypeChange = (value: MealType) => {
     setMealType(value);
     setSelectedTables([]);
@@ -405,8 +410,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
         mealType,
         numberOfPeople,
         tables: selectedTables,
-        prepararFuego: isConciergeRestDay ? false : prepararFuego,
-        reservaHorno,
+        // Force fire to false if rest day OR short notice (Concierge logic)
+        prepararFuego: (isConciergeRestDay || isShortNotice) ? false : prepararFuego,
+        // Allow oven regardless of rest day (unless conflict)
+        reservaHorno: reservaHorno,
         userId: session?.user?.id,
         noCleaningService,
       });
@@ -716,21 +723,23 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 id="prepararFuego"
                 checked={prepararFuego}
                 onCheckedChange={() => setPrepararFuego(!prepararFuego)}
-                disabled={isConciergeRestDay}
+                disabled={isConciergeRestDay || isShortNotice}
               />
               <Label
                 htmlFor="prepararFuego"
                 className={`font-normal cursor-pointer ${
-                  isConciergeRestDay ? "text-muted-foreground" : ""
+                  (isConciergeRestDay || isShortNotice) ? "text-muted-foreground" : ""
                 }`}
               >
                 Preparar fuego para la reserva
               </Label>
             </div>
-            {isConciergeRestDay && (
+            {(isConciergeRestDay || isShortNotice) && (
               <span className="text-xs text-amber-600 pl-6 flex items-center gap-1">
-                <InfoIcon className="h-3 w-3" /> No disponible martes y
-                miércoles (descanso conserje)
+                <InfoIcon className="h-3 w-3" /> 
+                {isConciergeRestDay 
+                  ? "No disponible martes y miércoles (sin conserje)." 
+                  : "No disponible con menos de 5 días (autogestión)."}
               </span>
             )}
           </div>
@@ -767,8 +776,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
             <strong>Aviso importante:</strong>{" "}
-            {cleaningWarningReason || "Sin servicio de limpieza."} El
-            propietario deberá encargarse de la limpieza tras su uso.
+            {cleaningWarningReason || "Sin servicio de conserjería."} El
+            propietario deberá encargarse de los servicios de conserjería, incluida la limpieza tras su uso.
           </AlertDescription>
         </Alert>
       )}

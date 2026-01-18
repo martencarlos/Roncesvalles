@@ -139,7 +139,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Oven Conflict Check
+    // 2. Oven Conflict Check (Checking against existing bookings)
+    // Note: We'll re-check if oven is allowed based on day-of-week below
     if (body.reservaHorno) {
       const ovenAlreadyBooked = existingBookings.some((booking: any) => booking.reservaHorno);
       if (ovenAlreadyBooked) {
@@ -168,11 +169,15 @@ export async function POST(req: NextRequest) {
     const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3;
 
     // C. Determine Flags
-    // No cleaning if short notice OR rest day OR manually set
+    // No cleaning (No Concierge) if short notice OR rest day OR manually set
     const noCleaningService = isShortNotice || isConciergeRestDay || Boolean(body.noCleaningService);
     
-    // Fire preparation disabled on rest days
-    const prepararFuego = isConciergeRestDay ? false : Boolean(body.prepararFuego);
+    // Fire preparation: Disabled if Short Notice OR Rest Days (User must do it / No Concierge)
+    const prepararFuego = (isConciergeRestDay || isShortNotice) ? false : Boolean(body.prepararFuego);
+    
+    // Oven allowed even on rest days/short notice (unless conflict above caught it)
+    const reservaHorno = Boolean(body.reservaHorno);
+    
     // -------------------------------------
     
     const bookingData = {
@@ -182,7 +187,7 @@ export async function POST(req: NextRequest) {
       numberOfPeople: body.numberOfPeople || 1,
       tables: body.tables || [],
       prepararFuego: prepararFuego,
-      reservaHorno: Boolean(body.reservaHorno),
+      reservaHorno: reservaHorno,
       status: body.status || 'pending',
       userId: currentUser.id, 
       noCleaningService: noCleaningService,
@@ -195,10 +200,14 @@ export async function POST(req: NextRequest) {
     const user = await User.findById(currentUser.id).select('name');
     let additionalDetails = '';
     if (prepararFuego) additionalDetails += ' con preparación de fuego';
-    if (body.reservaHorno) additionalDetails += ' y reserva de horno';
+    if (reservaHorno) additionalDetails += ' y reserva de horno';
     if (noCleaningService) {
         additionalDetails += additionalDetails ? ' y' : ' con';
-        additionalDetails += isConciergeRestDay ? ' aviso de sin limpieza (descanso conserje)' : ' aviso de sin limpieza (antelación)';
+        if (isConciergeRestDay) {
+          additionalDetails += ' aviso de sin conserje (descanso)';
+        } else if (isShortNotice) {
+          additionalDetails += ' aviso de sin conserje (antelación)';
+        }
     }
     
     const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';

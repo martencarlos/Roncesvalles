@@ -577,11 +577,11 @@ export default function BookingsManagement({
                         {booking.noCleaningService && (
                           <div
                             className="flex items-center gap-1.5 text-amber-600 sm:ml-auto"
-                            title="Sin servicio de limpieza"
+                            title="Sin servicio de conserjería"
                           >
                             <AlertTriangle className="h-3.5 w-3.5" />
                             <span className="text-xs font-medium">
-                              Sin limpieza
+                              Sin conserje
                             </span>
                           </div>
                         )}

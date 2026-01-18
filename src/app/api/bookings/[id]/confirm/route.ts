@@ -6,7 +6,6 @@ import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User'; // Import User model
-import { authenticate } from '@/lib/auth-utils';
 
 export async function POST(
   req: NextRequest,

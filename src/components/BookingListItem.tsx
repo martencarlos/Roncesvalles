@@ -168,7 +168,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
         {booking.noCleaningService && (
           <div className="flex items-start gap-1 text-sm text-amber-700">
             <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <p className="text-xs">Sin servicio de limpieza</p>
+            <p className="text-xs">Sin servicio de conserjería</p>
           </div>
         )}
 
@@ -348,7 +348,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             {booking.noCleaningService && (
               <div className="flex items-center gap-1 text-amber-700">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                <span className="text-xs">Sin limpieza</span>
+                <span className="text-xs">Sin conserjería</span>
               </div>
             )}
           </div>

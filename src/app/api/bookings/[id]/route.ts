@@ -112,11 +112,47 @@ export async function PUT(
       : new Date(originalBooking.date);
     const checkMealType = body.mealType || originalBooking.mealType;
     const requestedTables = body.tables || originalBooking.tables;
-    // For boolean values, explicitly check undefined because false is a valid value
-    const wantsOven =
+    
+    // Oven logic: take body value, or original if undefined. 
+    // Validation for availability happens in Conflict Check later.
+    let wantsOven =
       body.reservaHorno !== undefined
         ? Boolean(body.reservaHorno)
         : originalBooking.reservaHorno;
+
+    // --- CLEANING & CONCIERGE LOGIC ---
+    let noCleaningService = originalBooking.noCleaningService;
+    let prepararFuego =
+      body.prepararFuego !== undefined
+        ? Boolean(body.prepararFuego)
+        : originalBooking.prepararFuego;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(effectiveDate);
+    compareDate.setHours(0, 0, 0, 0);
+
+    const dayOfWeek = compareDate.getDay();
+    const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3; // Tue/Wed
+    const daysDifference = Math.floor(
+      (compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const isShortNotice = daysDifference <= 4;
+
+    // Recalculate if date changed OR enforce strict rules on existing date
+    if (body.date) {
+      noCleaningService = isShortNotice || isConciergeRestDay;
+    } else {
+      // Logic holds if context changed (e.g. time passed)
+      if (isConciergeRestDay) noCleaningService = true;
+    }
+
+    // Force disable FIRE on rest days OR short notice
+    if (isConciergeRestDay || isShortNotice) {
+      prepararFuego = false;
+    }
+    // Oven remains allowed (not forced to false) even on rest days/short notice
+    // ----------------------------------
 
     // --- CONFLICT CHECKS ---
     // If anything relevant changed, check conflicts
@@ -157,7 +193,7 @@ export async function PUT(
         );
       }
 
-      // 2. Oven Conflict
+      // 2. Oven Conflict (only if allowed/wantsOven)
       if (wantsOven) {
         const ovenTaken = existingBookings.some((b: any) => b.reservaHorno);
         if (ovenTaken) {
@@ -174,38 +210,6 @@ export async function PUT(
 
     if (currentUser.role === "user")
       body.apartmentNumber = currentUser.apartmentNumber;
-
-    // --- CLEANING & CONCIERGE LOGIC ---
-    let noCleaningService = originalBooking.noCleaningService;
-    let prepararFuego =
-      body.prepararFuego !== undefined
-        ? Boolean(body.prepararFuego)
-        : originalBooking.prepararFuego;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const compareDate = new Date(effectiveDate);
-    compareDate.setHours(0, 0, 0, 0);
-
-    const dayOfWeek = compareDate.getDay();
-    const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3; // Tue/Wed
-    const daysDifference = Math.floor(
-      (compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const isShortNotice = daysDifference <= 4;
-
-    // Recalculate if date changed OR enforce strict rules on existing date
-    if (body.date) {
-      noCleaningService = isShortNotice || isConciergeRestDay;
-    } else {
-      if (isConciergeRestDay) noCleaningService = true;
-    }
-
-    // Force disable fire prep on rest days
-    if (isConciergeRestDay) {
-      prepararFuego = false;
-    }
-    // ----------------------------------
 
     const updateData: any = {
       apartmentNumber: body.apartmentNumber,
@@ -241,7 +245,7 @@ export async function PUT(
       noCleaningService !== originalBooking.noCleaningService ||
       (noCleaningService && body.date)
     ) {
-      details += noCleaningService ? " (sin limpieza)" : " (con limpieza)";
+      details += noCleaningService ? " (sin conserje)" : " (con conserje)";
     }
 
     if (
