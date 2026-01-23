@@ -63,13 +63,33 @@ export async function GET(req: NextRequest) {
         // Rule 1: Off-season is 0€
         amount = 0;
       } else {
-        // Rule 2: In-season (Dec - Apr)
-        // 7€ per person, minimum 30€ per booking
-        const pricePerPerson = 7;
-        const minimumBookingPrice = 30;
-        const calculatedPrice = attendees * pricePerPerson;
+        // In-season (Dec - Apr)
         
-        amount = Math.max(minimumBookingPrice, calculatedPrice);
+        // Check days in advance (Booking Date - Created Date)
+        const createdDate = new Date(booking.createdAt);
+        
+        // Normalize dates to reset time part for accurate day diff
+        const targetDateNormalized = new Date(bookingDate);
+        targetDateNormalized.setHours(0, 0, 0, 0);
+        
+        const createdDateNormalized = new Date(createdDate);
+        createdDateNormalized.setHours(0, 0, 0, 0);
+        
+        const diffTime = targetDateNormalized.getTime() - createdDateNormalized.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Rule 2: Short notice (< 5 days) in high season -> Flat 30€
+        if (diffDays < 5) {
+          amount = 30;
+        } else {
+          // Rule 3: Standard In-season logic
+          // 7€ per person, minimum 30€ per booking
+          const pricePerPerson = 7;
+          const minimumBookingPrice = 30;
+          const calculatedPrice = attendees * pricePerPerson;
+          
+          amount = Math.max(minimumBookingPrice, calculatedPrice);
+        }
       }
       // -----------------------------
 
