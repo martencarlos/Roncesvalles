@@ -46,13 +46,34 @@ export async function GET(req: NextRequest) {
       }>;
     }> = {};
     
-    const pricePerPerson = 7; // 7€ per person
-    
     bookings.forEach(booking => {
       const apartmentNumber = booking.apartmentNumber;
       const attendees = booking.finalAttendees || booking.numberOfPeople;
-      const amount = attendees * pricePerPerson;
-      const date = new Date(booking.date).toLocaleDateString('es-ES');
+      
+      // --- Billing Logic Update ---
+      const bookingDate = new Date(booking.date);
+      const month = bookingDate.getMonth(); // 0 = Jan, 11 = Dec
+      
+      // Off-season: May 1st (Index 4) to November 30th (Index 10) included
+      const isOffSeason = month >= 4 && month <= 10;
+      
+      let amount = 0;
+      
+      if (isOffSeason) {
+        // Rule 1: Off-season is 0€
+        amount = 0;
+      } else {
+        // Rule 2: In-season (Dec - Apr)
+        // 7€ per person, minimum 30€ per booking
+        const pricePerPerson = 7;
+        const minimumBookingPrice = 30;
+        const calculatedPrice = attendees * pricePerPerson;
+        
+        amount = Math.max(minimumBookingPrice, calculatedPrice);
+      }
+      // -----------------------------
+
+      const dateStr = bookingDate.toLocaleDateString('es-ES');
       const mealType = booking.mealType === 'lunch' ? 'Comida' : 'Cena';
       
       // Determine which services were used
@@ -73,7 +94,7 @@ export async function GET(req: NextRequest) {
       apartmentData[apartmentNumber].totalAttendees += attendees;
       apartmentData[apartmentNumber].totalAmount += amount;
       apartmentData[apartmentNumber].bookingDetails.push({
-        date,
+        date: dateStr,
         mealType,
         attendees,
         amount,
