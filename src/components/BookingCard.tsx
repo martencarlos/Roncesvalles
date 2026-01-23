@@ -48,6 +48,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
 
   const userRole = session?.user?.role || "user";
   const isOwner = session?.user?.apartmentNumber === booking.apartmentNumber;
+  const isAdmin = userRole === "admin";
   const isITAdmin = userRole === "it_admin";
   const isConserje = userRole === "conserje";
 
@@ -57,10 +58,10 @@ const BookingCard: React.FC<BookingCardProps> = ({
     isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === "user");
   const canDelete =
     isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === "user");
+  
+  // Allow admins to confirm any past/pending booking
   const canConfirm =
-    isITAdmin || (isOwner && isPending && isPast && userRole === "user");
-
-  const isReadOnly = userRole === "admin";
+    isITAdmin || isAdmin || (isOwner && isPending && isPast && userRole === "user");
 
   return (
     <Card
@@ -234,45 +235,43 @@ const BookingCard: React.FC<BookingCardProps> = ({
           </Button>
         )}
 
-        {!isReadOnly && (
-          <div className="flex gap-2">
-            {canConfirm && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onConfirm}
-                className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
-              >
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Confirmar
-              </Button>
-            )}
+        <div className="flex gap-2">
+          {canConfirm && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onConfirm}
+              className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+            >
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Confirmar
+            </Button>
+          )}
 
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onEdit}
-                className="cursor-pointer h-7 text-xs px-2"
-              >
-                <Edit className="h-3 w-3 mr-1" />
-                Editar
-              </Button>
-            )}
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="cursor-pointer h-7 text-xs px-2"
+            >
+              <Edit className="h-3 w-3 mr-1" />
+              Editar
+            </Button>
+          )}
 
-            {canDelete && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onDelete(booking)}
-                className="cursor-pointer h-7 text-xs px-2"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Eliminar
-              </Button>
-            )}
-          </div>
-        )}
+          {canDelete && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(booking)}
+              className="cursor-pointer h-7 text-xs px-2"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              Eliminar
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

@@ -533,13 +533,6 @@ export default function BookingsPage() {
     id: string,
     data: { finalAttendees: number; notes: string }
   ) => {
-    // Prevent admin (read-only) from confirming bookings
-    if (session?.user.role === "admin") {
-      toast.error("Acceso Denegado", {
-        description: "No tiene permisos para confirmar reservas.",
-      });
-      return;
-    }
 
     try {
       const res = await fetch(`/api/bookings/${id}/confirm`, {

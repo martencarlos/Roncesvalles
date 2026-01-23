@@ -26,14 +26,6 @@ export async function POST(
     const currentUser = session.user;
     console.log("Current user from session:", currentUser.email, "ID:", currentUser.id);
 
-    // Prevent regular admins (read-only) from confirming bookings
-    if (currentUser.role === 'admin') {
-      return NextResponse.json(
-        { error: "You don't have permission to confirm bookings" },
-        { status: 403 }
-      );
-    }
-    
     await connectDB();
     
     const body = await req.json();
@@ -107,7 +99,7 @@ export async function POST(
       : '';
     
     // Get the user's role to include in the activity log
-    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : ''})` : '';
+    const userRole = currentUser.role !== 'user' ? ` (${currentUser.role === 'it_admin' ? 'Admin IT' : currentUser.role === 'admin' ? 'Admin' : ''})` : '';
     
     // Create activity log entry
     await ActivityLog.create({
