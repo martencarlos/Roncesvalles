@@ -139,19 +139,32 @@ export async function PUT(
     );
     const isShortNotice = daysDifference <= 4;
 
+    // Check if the date actually changed
+    const dateHasChanged = body.date && new Date(body.date).getTime() !== new Date(originalBooking.date).getTime();
+
     // Recalculate if date changed OR enforce strict rules on existing date
-    if (body.date) {
+    if (dateHasChanged) {
+      // If date changed, re-evaluate short notice based on *today*
       noCleaningService = isShortNotice || isConciergeRestDay;
     } else {
-      // Logic holds if context changed (e.g. time passed)
-      if (isConciergeRestDay) noCleaningService = true;
+      // If date remains the same, PRESERVE original short-notice status
+      // (User shouldn't lose cleaning service just because they edited the booking late)
+      // However, Concierge Rest Days (Tue/Wed) always override
+      if (isConciergeRestDay) {
+        noCleaningService = true;
+      } else {
+        noCleaningService = originalBooking.noCleaningService;
+      }
     }
 
-    // Force disable FIRE on rest days OR short notice
-    if (isConciergeRestDay || isShortNotice) {
+    // Force disable FIRE on rest days OR short notice (if date changed)
+    // If date didn't change, fire logic should also respect original timing context unless it's a rest day
+    if (isConciergeRestDay) {
       prepararFuego = false;
-    }
-    // Oven remains allowed (not forced to false) even on rest days/short notice
+    } else if (dateHasChanged && isShortNotice) {
+      prepararFuego = false;
+    } 
+    // Note: If date didn't change, we allow 'prepararFuego' to stay true if it was originally allowed
     // ----------------------------------
 
     // --- CONFLICT CHECKS ---
