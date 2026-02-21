@@ -18,23 +18,13 @@ import { INotificationLog } from '@/models/NotificationLog';
 
 export default function PushNotificationManager() {
   const { data: session } = useSession();
-  const { permission, isSubscribed, isLoading, subscribe, unsubscribe } =
+  const { permission, isLoading, subscribe, unsubscribe } =
     usePushSubscription();
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [hasPrompted, setHasPrompted] = useState(false);
   const [notifications, setNotifications] = useState<INotificationLog[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 639px)');
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-
   const isConserje = session?.user?.role === 'conserje';
 
   // Auto-open popover once when permission is still unknown (first visit)
@@ -104,8 +94,7 @@ export default function PushNotificationManager() {
       <PopoverContent
         align="end"
         avoidCollisions={false}
-        className="p-0 sm:w-96"
-        style={isMobile ? { left: 0, right: 0, width: '100vw', transform: 'none' } : undefined}
+        className="notification-panel p-0 sm:w-96"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
