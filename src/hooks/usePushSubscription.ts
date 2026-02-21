@@ -77,9 +77,16 @@ export function usePushSubscription(): PushSubscriptionState {
   }, [status, isConserje, isSupported]);
 
   const subscribe = useCallback(async () => {
-    if (!isSupported || !registrationRef.current) return;
+    if (!isSupported) return;
     setIsLoading(true);
     try {
+      // Ensure service worker is registered even if init() hasn't finished yet
+      if (!registrationRef.current) {
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        await navigator.serviceWorker.ready;
+        registrationRef.current = reg;
+      }
+
       const result = await Notification.requestPermission();
       if (result !== 'granted') {
         setPermission('denied');
