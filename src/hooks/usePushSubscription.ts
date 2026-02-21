@@ -66,7 +66,8 @@ export function usePushSubscription(): PushSubscriptionState {
         registrationRef.current = await navigator.serviceWorker.ready;
 
         const currentPermission = Notification.permission;
-        if (currentPermission === 'granted') {
+        const userOptedOut = localStorage.getItem('push-opted-out') === 'true';
+        if (currentPermission === 'granted' && !userOptedOut) {
           setPermission('granted');
           let sub = await registrationRef.current!.pushManager.getSubscription();
           if (!sub) {
@@ -87,6 +88,9 @@ export function usePushSubscription(): PushSubscriptionState {
             }
           }
           setIsSubscribed(!!sub);
+        } else if (currentPermission === 'granted' && userOptedOut) {
+          setPermission('unknown');
+          setIsSubscribed(false);
         } else if (currentPermission === 'denied') {
           setPermission('denied');
           setIsSubscribed(false);
@@ -120,6 +124,7 @@ export function usePushSubscription(): PushSubscriptionState {
         return;
       }
       setPermission('granted');
+      localStorage.removeItem('push-opted-out');
 
       let sub = await registrationRef.current.pushManager.getSubscription();
       if (!sub) {
@@ -164,6 +169,7 @@ export function usePushSubscription(): PushSubscriptionState {
       }
       setIsSubscribed(false);
       setPermission('unknown');
+      localStorage.setItem('push-opted-out', 'true');
     } catch (err) {
       console.error('[push] Unsubscribe error:', err);
     } finally {
