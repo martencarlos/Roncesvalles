@@ -3,6 +3,7 @@ import webpush from 'web-push';
 import connectDB from '@/lib/mongodb';
 import PushSubscription from '@/models/PushSubscription';
 import User from '@/models/User';
+import NotificationLog from '@/models/NotificationLog';
 
 export interface PushPayload {
   title: string;
@@ -32,6 +33,13 @@ export async function sendPushToConserje(payload: PushPayload): Promise<void> {
     );
 
     await connectDB();
+
+    // Persist notification to history (always, regardless of subscription state)
+    await NotificationLog.create({
+      title: payload.title,
+      body: payload.body,
+      tag: payload.tag,
+    });
 
     // Find all conserje users
     const conserjes = await User.find({ role: 'conserje' }).select('_id');

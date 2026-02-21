@@ -4,36 +4,38 @@ import { useState, useEffect } from 'react';
 import { Bell, BellOff, BellRing, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { INotificationLog } from '@/models/NotificationLog';
 
 export default function PushNotificationManager() {
   const { data: session } = useSession();
   const { permission, isSubscribed, isLoading, subscribe, unsubscribe } =
     usePushSubscription();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const [hasPrompted, setHasPrompted] = useState(false);
+  const [notifications, setNotifications] = useState<INotificationLog[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
 
-  // Only relevant for conserje
   const isConserje = session?.user?.role === 'conserje';
 
-  // Auto-open dialog once when permission is still unknown (first visit)
+  // Auto-open popover once when permission is still unknown (first visit)
   useEffect(() => {
     if (!isConserje) return;
     if (permission !== 'unknown') return;
     if (hasPrompted) return;
 
-    // Small delay so the page finishes loading before showing the dialog
     const timer = setTimeout(() => {
-      setDialogOpen(true);
+      setPopoverOpen(true);
       setHasPrompted(true);
     }, 1200);
 
@@ -43,131 +45,132 @@ export default function PushNotificationManager() {
   if (!isConserje) return null;
   if (permission === 'unsupported') return null;
 
-  // ── Status indicator ────────────────────────────────────────────────────────
-
-  const indicator = (() => {
-    if (permission === 'unknown') {
-      return (
-        <button
-          onClick={() => setDialogOpen(true)}
-          title="Configurar notificaciones"
-          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
-        >
-          <Bell className="h-3.5 w-3.5 shrink-0" />
-          <span className="hidden sm:inline">Notificaciones desactivadas</span>
-        </button>
-      );
+  const fetchRecentNotifications = async () => {
+    setNotifLoading(true);
+    try {
+      const res = await fetch('/api/notifications?limit=15');
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications);
+      }
+    } finally {
+      setNotifLoading(false);
     }
+  };
 
-    if (permission === 'denied') {
-      return (
-        <div
-          title="Notificaciones bloqueadas por el navegador. Actívalas en la configuración del sitio."
-          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-red-50 text-red-700 border border-red-300"
-        >
-          <BellOff className="h-3.5 w-3.5 shrink-0" />
-          <span className="hidden sm:inline">Notificaciones bloqueadas</span>
-        </div>
-      );
-    }
-
-    if (permission === 'granted') {
-      return (
-        <button
-          onClick={() => setDialogOpen(true)}
-          title="Notificaciones activas. Haz clic para gestionar."
-          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-green-50 text-green-700 border border-green-300 hover:bg-green-100 transition-colors cursor-pointer"
-        >
-          <BellRing className="h-3.5 w-3.5 shrink-0" />
-          <span className="hidden sm:inline">Notificaciones activas</span>
-        </button>
-      );
-    }
-  })();
-
-  // ── Dialog ──────────────────────────────────────────────────────────────────
+  const handlePopoverOpenChange = (open: boolean) => {
+    setPopoverOpen(open);
+    if (open) fetchRecentNotifications();
+  };
 
   const handleEnable = async () => {
     await subscribe();
-    setDialogOpen(false);
   };
 
   const handleDisable = async () => {
     await unsubscribe();
-    setDialogOpen(false);
   };
 
-  const dialogContent = (() => {
-    if (permission === 'denied') {
-      return {
-        title: 'Notificaciones bloqueadas',
-        description:
-          'El navegador ha bloqueado las notificaciones para este sitio. Para activarlas, ve a la configuración de tu navegador → Privacidad y seguridad → Configuración del sitio → Notificaciones y permite este sitio.',
-        actions: (
-          <Button variant="outline" onClick={() => setDialogOpen(false)}>
-            Cerrar
-          </Button>
-        ),
-      };
-    }
-
+  const bellIcon = (() => {
     if (permission === 'granted') {
-      return {
-        title: 'Notificaciones activas',
-        description:
-          'Recibirás una notificación cada vez que se cree o modifique una reserva con servicio de conserjería. ¿Quieres desactivarlas?',
-        actions: (
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Mantener activas
-            </Button>
+      return <BellRing className="h-5 w-5 text-green-600" />;
+    }
+    if (permission === 'denied') {
+      return <BellOff className="h-5 w-5 text-red-500" />;
+    }
+    return <Bell className="h-5 w-5 text-amber-500" />;
+  })();
+
+  return (
+    <Popover open={popoverOpen} onOpenChange={handlePopoverOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          title="Notificaciones"
+          className="relative p-1.5 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+        >
+          {bellIcon}
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent align="end" className="w-80 sm:w-96 p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3">
+          <h3 className="font-semibold text-sm">Notificaciones</h3>
+          <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
+            <Link href="/notifications" onClick={() => setPopoverOpen(false)}>
+              Ver todas →
+            </Link>
+          </Button>
+        </div>
+
+        <Separator />
+
+        {/* Notification list */}
+        <div className="max-h-72 overflow-y-auto">
+          {notifLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <p className="text-center text-muted-foreground text-sm py-8">
+              Sin notificaciones recientes
+            </p>
+          ) : (
+            notifications.map((n) => (
+              <div
+                key={n._id}
+                className="px-4 py-3 border-b last:border-0 hover:bg-muted/40 transition-colors"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <p className="text-sm font-medium leading-snug">{n.title}</p>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    {formatDistanceToNow(new Date(n.sentAt), {
+                      addSuffix: true,
+                      locale: es,
+                    })}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{n.body}</p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <Separator />
+
+        {/* Footer: subscription toggle */}
+        <div className="px-4 py-3">
+          {permission === 'unknown' && (
             <Button
-              variant="destructive"
+              size="sm"
+              className="w-full"
+              onClick={handleEnable}
+              disabled={isLoading}
+            >
+              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Activar notificaciones
+            </Button>
+          )}
+          {permission === 'granted' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-destructive border-destructive hover:bg-destructive/10"
               onClick={handleDisable}
               disabled={isLoading}
             >
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Desactivar notificaciones
             </Button>
-          </div>
-        ),
-      };
-    }
-
-    return {
-      title: 'Activar notificaciones',
-      description:
-        'Recibirás una notificación del navegador cada vez que se cree o modifique una reserva que requiera servicio de conserjería. ¿Quieres activarlas?',
-      actions: (
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button variant="outline" onClick={() => setDialogOpen(false)}>
-            Ahora no
-          </Button>
-          <Button onClick={handleEnable} disabled={isLoading}>
-            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Activar notificaciones
-          </Button>
+          )}
+          {permission === 'denied' && (
+            <p className="text-xs text-muted-foreground text-center">
+              Notificaciones bloqueadas por el navegador. Actívalas en la
+              configuración del sitio.
+            </p>
+          )}
         </div>
-      ),
-    };
-  })();
-
-  return (
-    <>
-      {indicator}
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              {dialogContent.title}
-            </DialogTitle>
-            <DialogDescription>{dialogContent.description}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>{dialogContent.actions}</DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+      </PopoverContent>
+    </Popover>
   );
 }

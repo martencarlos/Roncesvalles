@@ -37,6 +37,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
   }
+
+  // Notification history is only for conserje users
+  if (pathname.startsWith("/notifications")) {
+    if (token.role !== "conserje") {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    }
+  }
   
   return NextResponse.next();
 }
