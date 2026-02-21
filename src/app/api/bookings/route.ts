@@ -5,7 +5,8 @@ import { authOptions } from "@/lib/auth";
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import ActivityLog from '@/models/ActivityLog';
-import User from '@/models/User'; 
+import User from '@/models/User';
+import { sendPushToConserje } from '@/lib/push-service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -217,7 +218,23 @@ export async function POST(req: NextRequest) {
       userId: currentUser.id,
       details: `${user ? user.name : 'Usuario'}${userRole} ha reservado para Apto. #${body.apartmentNumber} las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
     });
-    
+
+    // Notify conserje via push if the no-cleaning-service flag is set
+    if (noCleaningService) {
+      const fechaStr = new Date(body.date).toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      });
+      const mealLabel = body.mealType === 'lunch' ? 'comida' : 'cena';
+      const motivo = isConciergeRestDay ? 'día de descanso' : 'antelación insuficiente';
+      sendPushToConserje({
+        title: 'Sin servicio de conserjería',
+        body: `Apto #${body.apartmentNumber} · ${mealLabel} · ${fechaStr} (${motivo})`,
+        tag: 'no-cleaning',
+      }).catch(console.error);
+    }
+
     return NextResponse.json(newBooking, { status: 201 });
 
   } catch (error: any) {

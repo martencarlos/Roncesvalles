@@ -6,6 +6,7 @@ import connectDB from "@/lib/mongodb";
 import Booking from "@/models/Booking";
 import ActivityLog from "@/models/ActivityLog";
 import User from "@/models/User";
+import { sendPushToConserje } from "@/lib/push-service";
 
 export async function GET(
   req: NextRequest,
@@ -283,6 +284,29 @@ export async function PUT(
         updateData.apartmentNumber
       }: ${new Date(updateData.date).toLocaleDateString()} ${details}`,
     });
+
+    // Notify conserje via push if the no-cleaning-service flag changed state
+    if (noCleaningService !== originalBooking.noCleaningService) {
+      const fechaStr = new Date(updateData.date).toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      });
+      const mealLabel = checkMealType === 'lunch' ? 'comida' : 'cena';
+      if (noCleaningService) {
+        sendPushToConserje({
+          title: 'Sin servicio de conserjería',
+          body: `Apto #${updateData.apartmentNumber} · ${mealLabel} · ${fechaStr} (reserva modificada)`,
+          tag: 'no-cleaning',
+        }).catch(console.error);
+      } else {
+        sendPushToConserje({
+          title: 'Conserjería restaurada',
+          body: `Apto #${updateData.apartmentNumber} · ${mealLabel} · ${fechaStr}`,
+          tag: 'no-cleaning',
+        }).catch(console.error);
+      }
+    }
 
     return NextResponse.json(updatedBooking);
   } catch (error: any) {
