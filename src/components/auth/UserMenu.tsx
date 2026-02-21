@@ -8,11 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { usePushSubscription } from "@/hooks/usePushSubscription";
+import PushNotificationManager from "@/components/auth/PushNotificationManager";
 
 export default function UserMenu() {
   const { data: session } = useSession();
-  usePushSubscription();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -83,6 +82,8 @@ export default function UserMenu() {
   };
 
   return (
+    <div className="flex items-center gap-2">
+      <PushNotificationManager />
     <div ref={menuRef} className="relative z-10">
       {/* User Button */}
       <Button
@@ -152,6 +153,7 @@ export default function UserMenu() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
