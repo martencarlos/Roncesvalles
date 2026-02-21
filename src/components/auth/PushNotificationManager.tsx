@@ -115,7 +115,7 @@ export default function PushNotificationManager() {
       return {
         title: 'Notificaciones activas',
         description:
-          'Recibirás una notificación cada vez que una reserva tenga o deje de tener el aviso de "Sin servicio de conserjería". ¿Quieres desactivarlas?',
+          'Recibirás una notificación cada vez que se cree o modifique una reserva con servicio de conserjería. ¿Quieres desactivarlas?',
         actions: (
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -137,7 +137,7 @@ export default function PushNotificationManager() {
     return {
       title: 'Activar notificaciones',
       description:
-        'Recibirás una notificación del navegador cada vez que una reserva tenga el aviso de "Sin servicio de conserjería" o cuando dicho aviso sea eliminado. ¿Quieres activarlas?',
+        'Recibirás una notificación del navegador cada vez que se cree o modifique una reserva que requiera servicio de conserjería. ¿Quieres activarlas?',
       actions: (
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="outline" onClick={() => setDialogOpen(false)}>

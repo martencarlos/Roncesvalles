@@ -285,27 +285,40 @@ export async function PUT(
       }: ${new Date(updateData.date).toLocaleDateString()} ${details}`,
     });
 
-    // Notify conserje via push if the no-cleaning-service flag changed state
-    if (noCleaningService !== originalBooking.noCleaningService) {
+    // Notify conserje when a booking with concierge service has relevant changes
+    const fireHasChanged = prepararFuego !== originalBooking.prepararFuego;
+    const conciergeServiceLost = noCleaningService && !originalBooking.noCleaningService;
+    const conciergeServiceGained = !noCleaningService && originalBooking.noCleaningService;
+    const relevantFieldChanged = dateHasChanged || mealTypeHasChanged || fireHasChanged;
+
+    if (!noCleaningService && relevantFieldChanged) {
+      // Booking has concierge service and something relevant changed
       const fechaStr = new Date(updateData.date).toLocaleDateString('es-ES', {
-        weekday: 'long',
         day: 'numeric',
-        month: 'long',
+        month: 'numeric',
+        year: 'numeric',
       });
       const mealLabel = checkMealType === 'lunch' ? 'comida' : 'cena';
-      if (noCleaningService) {
-        sendPushToConserje({
-          title: 'Sin servicio de conserjería',
-          body: `Apto #${updateData.apartmentNumber} · ${mealLabel} · ${fechaStr} (reserva modificada)`,
-          tag: 'no-cleaning',
-        }).catch(console.error);
-      } else {
-        sendPushToConserje({
-          title: 'Conserjería restaurada',
-          body: `Apto #${updateData.apartmentNumber} · ${mealLabel} · ${fechaStr}`,
-          tag: 'no-cleaning',
-        }).catch(console.error);
-      }
+      const fuegoLabel = prepararFuego ? ' · con fuego' : '';
+      sendPushToConserje({
+        title: '✏️ Reserva modificada con conserjería',
+        body: `Apto #${updateData.apartmentNumber} · ${mealLabel} · ${fechaStr}${fuegoLabel}`,
+        tag: 'concierge-service',
+      }).catch(console.error);
+    } else if (conciergeServiceGained) {
+      // Booking previously had no concierge service and now it does
+      const fechaStr = new Date(updateData.date).toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric',
+      });
+      const mealLabel = checkMealType === 'lunch' ? 'comida' : 'cena';
+      const fuegoLabel = prepararFuego ? ' · con fuego' : '';
+      sendPushToConserje({
+        title: '✏️ Reserva modificada con conserjería',
+        body: `Apto #${updateData.apartmentNumber} · ${mealLabel} · ${fechaStr}${fuegoLabel}`,
+        tag: 'concierge-service',
+      }).catch(console.error);
     }
 
     return NextResponse.json(updatedBooking);

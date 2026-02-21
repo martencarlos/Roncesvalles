@@ -219,19 +219,19 @@ export async function POST(req: NextRequest) {
       details: `${user ? user.name : 'Usuario'}${userRole} ha reservado para Apto. #${body.apartmentNumber} las mesas ${body.tables.join(', ')} para ${body.mealType === 'lunch' ? 'comida' : 'cena'} el ${new Date(body.date).toLocaleDateString('es-ES')}${additionalDetails}`,
     });
 
-    // Notify conserje via push if the no-cleaning-service flag is set
-    if (noCleaningService) {
+    // Notify conserje via push when a booking requires concierge service
+    if (!noCleaningService) {
       const fechaStr = new Date(body.date).toLocaleDateString('es-ES', {
-        weekday: 'long',
         day: 'numeric',
-        month: 'long',
+        month: 'numeric',
+        year: 'numeric',
       });
       const mealLabel = body.mealType === 'lunch' ? 'comida' : 'cena';
-      const motivo = isConciergeRestDay ? 'día de descanso' : 'antelación insuficiente';
+      const fuegoLabel = prepararFuego ? ' · con fuego' : '';
       sendPushToConserje({
-        title: 'Sin servicio de conserjería',
-        body: `Apto #${body.apartmentNumber} · ${mealLabel} · ${fechaStr} (${motivo})`,
-        tag: 'no-cleaning',
+        title: '🔔 Nueva reserva con conserjería',
+        body: `Apto #${body.apartmentNumber} · ${mealLabel} · ${fechaStr}${fuegoLabel}`,
+        tag: 'concierge-service',
       }).catch(console.error);
     }
 
