@@ -12,7 +12,7 @@ export interface PushPayload {
 }
 
 /**
- * Send a push notification to all active subscriptions of the conserje user.
+ * Send a push notification to all active subscriptions of all conserje users.
  * Automatically removes subscriptions that have expired (HTTP 410/404 from push relay).
  * Never throws — push failures are logged silently so booking routes are never affected.
  */
@@ -33,20 +33,22 @@ export async function sendPushToConserje(payload: PushPayload): Promise<void> {
 
     await connectDB();
 
-    // Find the single conserje user
-    const conserje = await User.findOne({ role: 'conserje' }).select('_id');
-    if (!conserje) {
-      console.warn('[push-service] No conserje user found in DB');
+    // Find all conserje users
+    const conserjes = await User.find({ role: 'conserje' }).select('_id');
+    if (conserjes.length === 0) {
+      console.warn('[push-service] No conserje users found in DB');
       return;
     }
 
-    // Find all push subscriptions for that user (supports multi-device)
+    const conserjeIds = conserjes.map((c: any) => c._id.toString());
+
+    // Find all push subscriptions for all conserje users (supports multiple users + multi-device)
     const subscriptions = await PushSubscription.find({
-      userId: conserje._id.toString(),
+      userId: { $in: conserjeIds },
     });
 
     if (subscriptions.length === 0) {
-      console.log('[push-service] Conserje has no active push subscriptions');
+      console.log('[push-service] No active push subscriptions for conserje users');
       return;
     }
 
