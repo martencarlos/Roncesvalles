@@ -3,13 +3,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
-
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
+function getVapidKey(): string {
+  const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (!key || key === 'undefined') {
+    throw new Error('[push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set');
+  }
+  return key;
 }
 
 export type PushPermissionState = 'unknown' | 'granted' | 'denied' | 'unsupported';
@@ -68,7 +74,7 @@ export function usePushSubscription(): PushSubscriptionState {
             try {
               sub = await registrationRef.current!.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                applicationServerKey: urlBase64ToUint8Array(getVapidKey()),
               });
               const subJson = sub.toJSON();
               await fetch('/api/push/subscribe', {
@@ -119,7 +125,7 @@ export function usePushSubscription(): PushSubscriptionState {
       if (!sub) {
         sub = await registrationRef.current.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+          applicationServerKey: urlBase64ToUint8Array(getVapidKey()),
         });
       }
 

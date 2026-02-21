@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/api/dashboard/login-stats/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
