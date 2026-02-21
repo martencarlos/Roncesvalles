@@ -71,7 +71,7 @@ export default function PushNotificationManager() {
       );
     }
 
-    if (permission === 'granted' && isSubscribed) {
+    if (permission === 'granted') {
       return (
         <button
           onClick={() => setDialogOpen(true)}
@@ -83,18 +83,6 @@ export default function PushNotificationManager() {
         </button>
       );
     }
-
-    // granted but not yet subscribed (edge case)
-    return (
-      <button
-        onClick={() => setDialogOpen(true)}
-        title="Activar notificaciones"
-        className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
-      >
-        <Bell className="h-3.5 w-3.5 shrink-0" />
-        <span className="hidden sm:inline">Notificaciones desactivadas</span>
-      </button>
-    );
   })();
 
   // ── Dialog ──────────────────────────────────────────────────────────────────
@@ -123,7 +111,7 @@ export default function PushNotificationManager() {
       };
     }
 
-    if (isSubscribed) {
+    if (permission === 'granted') {
       return {
         title: 'Notificaciones activas',
         description:

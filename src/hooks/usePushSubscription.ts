@@ -63,7 +63,24 @@ export function usePushSubscription(): PushSubscriptionState {
         const currentPermission = Notification.permission;
         if (currentPermission === 'granted') {
           setPermission('granted');
-          const sub = await reg.pushManager.getSubscription();
+          let sub = await reg.pushManager.getSubscription();
+          if (!sub) {
+            // Permission granted but no subscription — re-subscribe silently
+            try {
+              sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+              });
+              const subJson = sub.toJSON();
+              await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ endpoint: subJson.endpoint, keys: subJson.keys }),
+              });
+            } catch (e) {
+              console.warn('[push] Could not re-subscribe silently:', e);
+            }
+          }
           setIsSubscribed(!!sub);
         } else if (currentPermission === 'denied') {
           setPermission('denied');
