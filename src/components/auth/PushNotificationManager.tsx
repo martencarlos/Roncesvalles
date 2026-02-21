@@ -37,11 +37,12 @@ export default function PushNotificationManager() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Auto-open once on first visit when permission unknown
+  // Auto-open once on first visit when permission unknown and user hasn't opted out
   useEffect(() => {
     if (!isConserje) return;
     if (permission !== 'unknown') return;
     if (hasPrompted) return;
+    if (localStorage.getItem('push-opted-out') === 'true') return;
     const timer = setTimeout(() => {
       setOpen(true);
       setHasPrompted(true);
@@ -145,7 +146,7 @@ export default function PushNotificationManager() {
       {/* Footer: subscription toggle */}
       <div className="px-4 py-3">
         {permission === 'unknown' && (
-          <Button size="sm" className="w-full" onClick={() => subscribe()} disabled={isLoading}>
+          <Button size="sm" className="w-full" onClick={() => subscribe().then(() => setOpen(false))} disabled={isLoading}>
             {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Activar notificaciones
           </Button>
@@ -155,7 +156,7 @@ export default function PushNotificationManager() {
             variant="outline"
             size="sm"
             className="w-full text-destructive border-destructive hover:bg-destructive/10"
-            onClick={() => unsubscribe()}
+            onClick={() => unsubscribe().then(() => setOpen(false))}
             disabled={isLoading}
           >
             {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
