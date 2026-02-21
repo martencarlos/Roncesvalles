@@ -24,13 +24,18 @@ export interface PushSubscriptionState {
   unsubscribe: () => Promise<void>;
 }
 
+function isPushSupported(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window
+  );
+}
+
 export function usePushSubscription(): PushSubscriptionState {
   const { data: session, status } = useSession();
   const isConserje = session?.user?.role === 'conserje';
-  const isSupported =
-    typeof window !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    'PushManager' in window;
 
   const [permission, setPermission] = useState<PushPermissionState>('unknown');
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -42,7 +47,7 @@ export function usePushSubscription(): PushSubscriptionState {
   useEffect(() => {
     if (status !== 'authenticated') return;
     if (!isConserje) return;
-    if (!isSupported) {
+    if (!isPushSupported()) {
       setPermission('unsupported');
       return;
     }
@@ -74,10 +79,10 @@ export function usePushSubscription(): PushSubscriptionState {
     }
 
     init();
-  }, [status, isConserje, isSupported]);
+  }, [status, isConserje]);
 
   const subscribe = useCallback(async () => {
-    if (!isSupported) return;
+    if (!isPushSupported()) return;
     setIsLoading(true);
     try {
       // Ensure service worker is registered even if init() hasn't finished yet
@@ -116,7 +121,7 @@ export function usePushSubscription(): PushSubscriptionState {
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported]);
+  }, []);
 
   const unsubscribe = useCallback(async () => {
     if (!registrationRef.current) return;
