@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Bell, BellOff, BellRing, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Bell, BellOff, BellRing, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -18,28 +18,48 @@ import { INotificationLog } from '@/models/NotificationLog';
 
 export default function PushNotificationManager() {
   const { data: session } = useSession();
-  const { permission, isLoading, subscribe, unsubscribe } =
-    usePushSubscription();
+  const { permission, isLoading, subscribe, unsubscribe } = usePushSubscription();
 
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [hasPrompted, setHasPrompted] = useState(false);
   const [notifications, setNotifications] = useState<INotificationLog[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
   const isConserje = session?.user?.role === 'conserje';
 
-  // Auto-open popover once when permission is still unknown (first visit)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Auto-open once on first visit when permission unknown
   useEffect(() => {
     if (!isConserje) return;
     if (permission !== 'unknown') return;
     if (hasPrompted) return;
-
     const timer = setTimeout(() => {
-      setPopoverOpen(true);
+      setOpen(true);
       setHasPrompted(true);
     }, 1200);
-
     return () => clearTimeout(timer);
   }, [isConserje, permission, hasPrompted]);
+
+  // Close mobile panel when clicking outside
+  useEffect(() => {
+    if (!isMobile || !open) return;
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isMobile, open]);
 
   if (!isConserje) return null;
   if (permission === 'unsupported') return null;
@@ -57,122 +77,135 @@ export default function PushNotificationManager() {
     }
   };
 
-  const handlePopoverOpenChange = (open: boolean) => {
-    setPopoverOpen(open);
-    if (open) fetchRecentNotifications();
-  };
-
-  const handleEnable = async () => {
-    await subscribe();
-  };
-
-  const handleDisable = async () => {
-    await unsubscribe();
+  const handleOpen = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) fetchRecentNotifications();
   };
 
   const bellIcon = (() => {
-    if (permission === 'granted') {
-      return <BellRing className="h-5 w-5 text-green-600" />;
-    }
-    if (permission === 'denied') {
-      return <BellOff className="h-5 w-5 text-red-500" />;
-    }
+    if (permission === 'granted') return <BellRing className="h-5 w-5 text-green-600" />;
+    if (permission === 'denied') return <BellOff className="h-5 w-5 text-red-500" />;
     return <Bell className="h-5 w-5 text-amber-500" />;
   })();
 
-  return (
-    <Popover open={popoverOpen} onOpenChange={handlePopoverOpenChange}>
-      <PopoverTrigger asChild>
-        <button
-          title="Notificaciones"
-          className="relative p-1.5 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
-        >
-          {bellIcon}
-        </button>
-      </PopoverTrigger>
-
-      <PopoverContent
-        align="end"
-        avoidCollisions={false}
-        className="notification-panel p-0 sm:w-96"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <h3 className="font-semibold text-sm">Notificaciones</h3>
+  const panelContent = (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <h3 className="font-semibold text-sm">Notificaciones</h3>
+        <div className="flex items-center gap-1">
           <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-            <Link href="/notifications" onClick={() => setPopoverOpen(false)}>
+            <Link href="/notifications" onClick={() => setOpen(false)}>
               Ver todas →
             </Link>
           </Button>
+          {isMobile && (
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <X className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
         </div>
+      </div>
 
-        <Separator />
+      <Separator />
 
-        {/* Notification list */}
-        <div className="max-h-72 overflow-y-auto">
-          {notifLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : notifications.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm py-8">
-              Sin notificaciones recientes
-            </p>
-          ) : (
-            notifications.map((n) => (
-              <div
-                key={n._id}
-                className="px-4 py-3 border-b last:border-0 hover:bg-muted/40 transition-colors"
-              >
-                <div className="flex justify-between items-start gap-2">
-                  <p className="text-sm font-medium leading-snug">{n.title}</p>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                    {formatDistanceToNow(new Date(n.sentAt), {
-                      addSuffix: true,
-                      locale: es,
-                    })}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{n.body}</p>
+      {/* Notification list */}
+      <div className="max-h-72 overflow-y-auto">
+        {notifLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : notifications.length === 0 ? (
+          <p className="text-center text-muted-foreground text-sm py-8">
+            Sin notificaciones recientes
+          </p>
+        ) : (
+          notifications.map((n) => (
+            <div
+              key={n._id}
+              className="px-4 py-3 border-b last:border-0 hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex justify-between items-start gap-2">
+                <p className="text-sm font-medium leading-snug">{n.title}</p>
+                <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                  {formatDistanceToNow(new Date(n.sentAt), { addSuffix: true, locale: es })}
+                </span>
               </div>
-            ))
-          )}
-        </div>
+              <p className="text-xs text-muted-foreground mt-0.5">{n.body}</p>
+            </div>
+          ))
+        )}
+      </div>
 
-        <Separator />
+      <Separator />
 
-        {/* Footer: subscription toggle */}
-        <div className="px-4 py-3">
-          {permission === 'unknown' && (
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={handleEnable}
-              disabled={isLoading}
-            >
-              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Activar notificaciones
-            </Button>
-          )}
-          {permission === 'granted' && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-destructive border-destructive hover:bg-destructive/10"
-              onClick={handleDisable}
-              disabled={isLoading}
-            >
-              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Desactivar notificaciones
-            </Button>
-          )}
-          {permission === 'denied' && (
-            <p className="text-xs text-muted-foreground text-center">
-              Notificaciones bloqueadas por el navegador. Actívalas en la
-              configuración del sitio.
-            </p>
-          )}
-        </div>
+      {/* Footer: subscription toggle */}
+      <div className="px-4 py-3">
+        {permission === 'unknown' && (
+          <Button size="sm" className="w-full" onClick={() => subscribe()} disabled={isLoading}>
+            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Activar notificaciones
+          </Button>
+        )}
+        {permission === 'granted' && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-destructive border-destructive hover:bg-destructive/10"
+            onClick={() => unsubscribe()}
+            disabled={isLoading}
+          >
+            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Desactivar notificaciones
+          </Button>
+        )}
+        {permission === 'denied' && (
+          <p className="text-xs text-muted-foreground text-center">
+            Notificaciones bloqueadas por el navegador. Actívalas en la configuración del sitio.
+          </p>
+        )}
+      </div>
+    </>
+  );
+
+  const triggerButton = (
+    <button
+      title="Notificaciones"
+      className="relative p-1.5 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+      onClick={isMobile ? () => handleOpen(!open) : undefined}
+    >
+      {bellIcon}
+    </button>
+  );
+
+  // Mobile: fixed full-width overlay, no Radix portal involved
+  if (isMobile) {
+    return (
+      <div>
+        {triggerButton}
+        {open && (
+          <div
+            ref={panelRef}
+            className="fixed top-14 left-0 right-0 z-50 bg-popover border-b shadow-md"
+          >
+            {panelContent}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Desktop: normal Radix Popover
+  return (
+    <Popover open={open} onOpenChange={handleOpen}>
+      <PopoverTrigger asChild>
+        {triggerButton}
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-96 p-0">
+        {panelContent}
       </PopoverContent>
     </Popover>
   );

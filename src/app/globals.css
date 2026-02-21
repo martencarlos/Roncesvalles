@@ -133,15 +133,6 @@
   }
 }
 
-@media (max-width: 639px) {
-  [data-slot="popover-content"].notification-panel {
-    left: 0 !important;
-    right: 0 !important;
-    width: 100vw !important;
-    transform: none !important;
-    border-radius: 0 !important;
-  }
-}
 
 @layer utilities {
 
