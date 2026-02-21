@@ -150,12 +150,13 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
 
     // Logic for "No Cleaning Service" flag and warnings
-    if (
-      !initialData?._id ||
-      (initialData?._id &&
-        initialData.date &&
-        new Date(initialData.date).getTime() !== date.getTime())
-    ) {
+    const mealTypeHasChanged =
+      initialData?.mealType !== undefined && initialData.mealType !== mealType;
+    const dateHasChanged =
+      initialData?.date !== undefined &&
+      new Date(initialData.date).getTime() !== date.getTime();
+
+    if (!initialData?._id || (initialData?._id && (dateHasChanged || mealTypeHasChanged))) {
       if (restDay) {
         setNoCleaningService(true);
         setCleaningWarningReason(
@@ -182,7 +183,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         );
       }
     }
-  }, [date, initialData]);
+  }, [date, mealType, initialData]);
 
   useEffect(() => {
     const fetchAllBookings = async () => {

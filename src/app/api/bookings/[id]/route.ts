@@ -139,12 +139,13 @@ export async function PUT(
     );
     const isShortNotice = daysDifference <= 4;
 
-    // Check if the date actually changed
+    // Check if the date or meal type actually changed
     const dateHasChanged = body.date && new Date(body.date).getTime() !== new Date(originalBooking.date).getTime();
+    const mealTypeHasChanged = body.mealType && body.mealType !== originalBooking.mealType;
 
-    // Recalculate if date changed OR enforce strict rules on existing date
-    if (dateHasChanged) {
-      // If date changed, re-evaluate short notice based on *today*
+    // Recalculate if date OR meal type changed OR enforce strict rules on existing date
+    if (dateHasChanged || mealTypeHasChanged) {
+      // If date or meal type changed, re-evaluate short notice based on *today*
       noCleaningService = isShortNotice || isConciergeRestDay;
     } else {
       // If date remains the same, PRESERVE original short-notice status
@@ -157,13 +158,13 @@ export async function PUT(
       }
     }
 
-    // Force disable FIRE on rest days OR short notice (if date changed)
-    // If date didn't change, fire logic should also respect original timing context unless it's a rest day
+    // Force disable FIRE on rest days OR short notice (if date or meal type changed)
+    // If neither changed, fire logic should also respect original timing context unless it's a rest day
     if (isConciergeRestDay) {
       prepararFuego = false;
-    } else if (dateHasChanged && isShortNotice) {
+    } else if ((dateHasChanged || mealTypeHasChanged) && isShortNotice) {
       prepararFuego = false;
-    } 
+    }
     // Note: If date didn't change, we allow 'prepararFuego' to stay true if it was originally allowed
     // ----------------------------------
 
