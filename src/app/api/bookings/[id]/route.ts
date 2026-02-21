@@ -382,6 +382,21 @@ export async function DELETE(
 
     await Booking.findByIdAndDelete(bookingId);
 
+    if (!booking.noCleaningService) {
+      const fechaStr = new Date(booking.date).toLocaleDateString("es-ES", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      });
+      const mealLabel = booking.mealType === "lunch" ? "comida" : "cena";
+      const fuegoLabel = booking.prepararFuego ? " · con fuego" : "";
+      sendPushToConserje({
+        title: "❌ Reserva cancelada con conserjería",
+        body: `Apto #${booking.apartmentNumber} · ${mealLabel} · ${fechaStr}${fuegoLabel}`,
+        tag: "concierge-service",
+      }).catch(console.error);
+    }
+
     await ActivityLog.create({
       action: "delete",
       apartmentNumber: booking.apartmentNumber,
