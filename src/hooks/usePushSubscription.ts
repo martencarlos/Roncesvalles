@@ -62,11 +62,11 @@ export function usePushSubscription(): PushSubscriptionState {
         const currentPermission = Notification.permission;
         if (currentPermission === 'granted') {
           setPermission('granted');
-          let sub = await reg.pushManager.getSubscription();
+          let sub = await registrationRef.current!.pushManager.getSubscription();
           if (!sub) {
             // Permission granted but no subscription — re-subscribe silently
             try {
-              sub = await reg.pushManager.subscribe({
+              sub = await registrationRef.current!.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
               });
