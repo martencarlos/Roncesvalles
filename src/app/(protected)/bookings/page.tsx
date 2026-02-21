@@ -683,7 +683,11 @@ export default function BookingsPage() {
   }
 
   if (status === "unauthenticated") {
-    return <p>You must be signed in to view this page</p>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
   }
 
   return (
