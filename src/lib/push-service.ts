@@ -4,13 +4,6 @@ import connectDB from '@/lib/mongodb';
 import PushSubscription from '@/models/PushSubscription';
 import User from '@/models/User';
 
-// Configure VAPID credentials once at module load
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
-
 export interface PushPayload {
   title: string;
   body: string;
@@ -25,6 +18,19 @@ export interface PushPayload {
  */
 export async function sendPushToConserje(payload: PushPayload): Promise<void> {
   try {
+    // Guard: skip if VAPID env vars are not configured
+    if (!process.env.VAPID_SUBJECT || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      console.warn('[push-service] VAPID env vars not configured, skipping push');
+      return;
+    }
+
+    // Initialize VAPID credentials lazily (inside the function, not at module load)
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT,
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+
     await connectDB();
 
     // Find the single conserje user
