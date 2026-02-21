@@ -141,9 +141,15 @@ export function usePushSubscription(): PushSubscriptionState {
   }, []);
 
   const unsubscribe = useCallback(async () => {
-    if (!registrationRef.current) return;
     setIsLoading(true);
     try {
+      // Ensure registration is available even if init() hasn't finished
+      if (!registrationRef.current) {
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        await navigator.serviceWorker.ready;
+        registrationRef.current = reg;
+      }
+
       const sub = await registrationRef.current.pushManager.getSubscription();
       if (sub) {
         await fetch('/api/push/subscribe', {
@@ -154,6 +160,7 @@ export function usePushSubscription(): PushSubscriptionState {
         await sub.unsubscribe();
       }
       setIsSubscribed(false);
+      setPermission('unknown');
     } catch (err) {
       console.error('[push] Unsubscribe error:', err);
     } finally {
