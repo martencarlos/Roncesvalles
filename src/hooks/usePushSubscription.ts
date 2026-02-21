@@ -56,9 +56,8 @@ export function usePushSubscription(): PushSubscriptionState {
 
     async function init() {
       try {
-        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        await navigator.serviceWorker.ready;
-        registrationRef.current = reg;
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        registrationRef.current = await navigator.serviceWorker.ready;
 
         const currentPermission = Notification.permission;
         if (currentPermission === 'granted') {
@@ -104,9 +103,8 @@ export function usePushSubscription(): PushSubscriptionState {
     try {
       // Ensure service worker is registered even if init() hasn't finished yet
       if (!registrationRef.current) {
-        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        await navigator.serviceWorker.ready;
-        registrationRef.current = reg;
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        registrationRef.current = await navigator.serviceWorker.ready;
       }
 
       const result = await Notification.requestPermission();
@@ -145,9 +143,8 @@ export function usePushSubscription(): PushSubscriptionState {
     try {
       // Ensure registration is available even if init() hasn't finished
       if (!registrationRef.current) {
-        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        await navigator.serviceWorker.ready;
-        registrationRef.current = reg;
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        registrationRef.current = await navigator.serviceWorker.ready;
       }
 
       const sub = await registrationRef.current.pushManager.getSubscription();

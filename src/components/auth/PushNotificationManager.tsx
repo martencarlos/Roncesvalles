@@ -92,7 +92,11 @@ export default function PushNotificationManager() {
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-[calc(100vw-2rem)] sm:w-96 p-0">
+      <PopoverContent
+        align="end"
+        avoidCollisions={false}
+        className="p-0 !left-0 !right-0 !w-screen sm:!left-auto sm:!w-96"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
           <h3 className="font-semibold text-sm">Notificaciones</h3>
