@@ -41,12 +41,12 @@ self.addEventListener('notificationclick', function (event) {
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then(function (clientList) {
         for (const client of clientList) {
-          if (client.url.includes('/bookings') && 'focus' in client) {
+          if (client.url.includes('/notifications') && 'focus' in client) {
             return client.focus();
           }
         }
         if (clients.openWindow) {
-          return clients.openWindow('/bookings');
+          return clients.openWindow('/notifications');
         }
       })
   );

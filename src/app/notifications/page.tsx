@@ -90,21 +90,21 @@ export default function NotificationsPage() {
               <div>
                 {notifications.map((n, idx) => (
                   <div key={n._id}>
-                    <div className="py-4 grid grid-cols-[auto_1fr_auto] gap-3 items-start">
-                      <div className="p-2 rounded-full bg-blue-50 self-center">
-                        <Bell className="h-4 w-4 text-blue-600 shrink-0" />
+                    <div className="py-4 flex gap-3 items-start">
+                      <div className="p-2 rounded-full bg-blue-50 self-center shrink-0">
+                        <Bell className="h-4 w-4 text-blue-600" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">{n.title}</p>
                         <p className="text-sm text-muted-foreground">{n.body}</p>
-                      </div>
-                      <div className="text-xs text-muted-foreground whitespace-nowrap self-center text-right">
-                        <span className="hidden sm:block">
-                          {format(new Date(n.sentAt), "d MMM yyyy · HH:mm", { locale: es })}
-                        </span>
-                        <span className="sm:hidden">
-                          {formatDistanceToNow(new Date(n.sentAt), { addSuffix: true, locale: es })}
-                        </span>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          <span className="hidden sm:inline">
+                            {format(new Date(n.sentAt), "d MMM yyyy · HH:mm", { locale: es })}
+                          </span>
+                          <span className="sm:hidden">
+                            {format(new Date(n.sentAt), "d MMM · HH:mm", { locale: es })}
+                          </span>
+                        </p>
                       </div>
                     </div>
                     {idx < notifications.length - 1 && <Separator />}
