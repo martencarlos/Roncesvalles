@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background circle with deep teal color that looks great on both light and dark -->
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+
+  <!-- House body -->
+  <path d="M256 120 L380 230 L380 400 L132 400 L132 230 Z" fill="#f0fdfa" opacity="0.15"/>
+
+  <!-- Roof -->
+  <polygon points="256,108 392,238 120,238" fill="#ccfbf1"/>
+
+  <!-- House walls -->
+  <rect x="148" y="238" width="216" height="164" rx="4" fill="#ccfbf1"/>
+
+  <!-- Door -->
+  <rect x="222" y="310" width="68" height="92" rx="6" fill="#0f766e"/>
+
+  <!-- Door knob -->
+  <circle cx="280" cy="358" r="5" fill="#ccfbf1"/>
+
+  <!-- Left window -->
+  <rect x="168" y="268" width="52" height="48" rx="4" fill="#0f766e"/>
+  <!-- Left window cross -->
+  <line x1="194" y1="268" x2="194" y2="316" stroke="#ccfbf1" stroke-width="3"/>
+  <line x1="168" y1="292" x2="220" y2="292" stroke="#ccfbf1" stroke-width="3"/>
+
+  <!-- Right window -->
+  <rect x="292" y="268" width="52" height="48" rx="4" fill="#0f766e"/>
+  <!-- Right window cross -->
+  <line x1="318" y1="268" x2="318" y2="316" stroke="#ccfbf1" stroke-width="3"/>
+  <line x1="292" y1="292" x2="344" y2="292" stroke="#ccfbf1" stroke-width="3"/>
+
+  <!-- Chimney -->
+  <rect x="300" y="138" width="32" height="60" rx="4" fill="#ccfbf1"/>
+
+  <!-- Roof ridge cap -->
+  <polygon points="256,108 392,238 120,238" fill="none" stroke="#99f6e4" stroke-width="4" stroke-linejoin="round"/>
+</svg>
