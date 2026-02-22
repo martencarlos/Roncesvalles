@@ -30,13 +30,35 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
     }
   }, [status, pathname]);
   
+  // Safety valve: if loading gets stuck (e.g. Android Chrome tab resume),
+  // force-clear after 8 seconds and on next visibility restore.
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const maxWait = setTimeout(() => {
+      setIsLoading(false);
+    }, 8000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        setIsLoading(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearTimeout(maxWait);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isLoading]);
+
   if (isLoading) {
     return (
-      <Loading 
-        fullScreen 
-        size="lg" 
-        message="Cargando su sesión" 
-        submessage="Por favor espere..." 
+      <Loading
+        fullScreen
+        size="lg"
+        message="Cargando su sesión"
+        submessage="Por favor espere..."
       />
     );
   }
