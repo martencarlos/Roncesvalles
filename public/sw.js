@@ -24,6 +24,8 @@ self.addEventListener('push', function (event) {
     badge: payload.badge || '/favicon.ico',
     tag: payload.tag || 'booking-notification',
     data: payload.data || {},
+    requireInteraction: true,
+    renotify: true,
   };
 
   event.waitUntil(

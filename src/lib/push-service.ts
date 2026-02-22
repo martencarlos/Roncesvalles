@@ -74,7 +74,10 @@ export async function sendPushToConserje(payload: PushPayload): Promise<void> {
         };
 
         try {
-          await webpush.sendNotification(pushSub, payloadString);
+          await webpush.sendNotification(pushSub, payloadString, {
+            urgency: 'high',
+            TTL: 60,
+          });
         } catch (err: any) {
           // 410 Gone or 404 Not Found = subscription expired/unsubscribed
           if (err.statusCode === 410 || err.statusCode === 404) {
