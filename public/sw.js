@@ -20,8 +20,8 @@ self.addEventListener('push', function (event) {
 
   const options = {
     body: payload.body || '',
-    icon: payload.icon || '/favicon.ico',
-    badge: payload.badge || '/favicon.ico',
+    icon: payload.icon || '/icon-192x192.png',
+    badge: payload.badge || '/badge-96x96.png',
     tag: payload.tag || 'booking-notification',
     data: payload.data || {},
     requireInteraction: true,
