@@ -1,6 +1,6 @@
 // public/sw.js
 
-self.addEventListener('install', function (event) {
+self.addEventListener('install', function () {
   self.skipWaiting();
 });
 
@@ -15,13 +15,13 @@ self.addEventListener('push', function (event) {
   try {
     payload = event.data.json();
   } catch (e) {
-    payload = { title: 'Notificación', body: event.data.text() };
+    payload = { title: 'Notificación', body: event.data.text()+e };
   }
 
   const options = {
     body: payload.body || '',
-    icon: payload.icon || '/icon-192x192.png',
-    badge: payload.badge || '/badge-transparent.png',
+    // icon: payload.icon || '/icon-192x192.png',
+    badge: payload.badge || '/badge-96x96.png',
     tag: payload.tag || 'booking-notification',
     data: payload.data || {},
     requireInteraction: true,
