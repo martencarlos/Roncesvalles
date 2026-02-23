@@ -306,6 +306,19 @@ export async function PUT(
         body: `Apto #${updateData.apartmentNumber} · ${mealLabel} · ${fechaStr}${fuegoLabel}`,
         tag: 'concierge-service',
       }).catch(console.error);
+    } else if (conciergeServiceLost) {
+      // Booking previously had concierge service and now it doesn't
+      const fechaStr = new Date(updateData.date).toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric',
+      });
+      const mealLabel = checkMealType === 'lunch' ? 'comida' : 'cena';
+      sendPushToConserje({
+        title: '❌ Reserva sin conserjería',
+        body: `Apto #${updateData.apartmentNumber} · ${mealLabel} · ${fechaStr}`,
+        tag: 'concierge-service',
+      }).catch(console.error);
     } else if (conciergeServiceGained) {
       // Booking previously had no concierge service and now it does
       const fechaStr = new Date(updateData.date).toLocaleDateString('es-ES', {
@@ -391,7 +404,7 @@ export async function DELETE(
       const mealLabel = booking.mealType === "lunch" ? "comida" : "cena";
       const fuegoLabel = booking.prepararFuego ? " · con fuego" : "";
       sendPushToConserje({
-        title: "❌ Reserva cancelada con conserjería",
+        title: "❌ Reserva con conserjería cancelada",
         body: `Apto #${booking.apartmentNumber} · ${mealLabel} · ${fechaStr}${fuegoLabel}`,
         tag: "concierge-service",
       }).catch(console.error);
