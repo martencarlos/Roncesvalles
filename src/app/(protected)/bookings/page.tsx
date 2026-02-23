@@ -50,6 +50,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import { useSession } from "next-auth/react";
 import UserMenu from "@/components/auth/UserMenu";
+import { useSessionReady } from "@/components/auth/auth-components";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -89,6 +90,7 @@ type ViewMode = "card" | "list" | undefined;
 
 export default function BookingsPage() {
   const { data: session, status } = useSession();
+  const sessionReady = useSessionReady(status);
   const router = useRouter();
 
   const [bookings, setBookings] = useState<IBooking[]>([]);
@@ -674,7 +676,7 @@ export default function BookingsPage() {
   };
 
   // Handle loading state during authentication check
-  if (status === "loading") {
+  if (!sessionReady) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -683,11 +685,8 @@ export default function BookingsPage() {
   }
 
   if (status === "unauthenticated") {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+    router.push("/auth/signin?callbackUrl=/bookings");
+    return null;
   }
 
   return (

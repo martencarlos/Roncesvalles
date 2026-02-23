@@ -76,7 +76,7 @@ export async function sendPushToConserje(payload: PushPayload): Promise<void> {
         try {
           await webpush.sendNotification(pushSub, payloadString, {
             urgency: 'high',
-            TTL: 60,
+            TTL: 86400, // 24 hours — gives Android time to wake up and deliver
           });
         } catch (err: any) {
           // 410 Gone or 404 Not Found = subscription expired/unsubscribed
