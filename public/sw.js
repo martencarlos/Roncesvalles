@@ -21,7 +21,7 @@ self.addEventListener('push', function (event) {
   const options = {
     body: payload.body || '',
     icon: payload.icon || '/icon-192x192.png',
-    badge: payload.badge || '/badge-96x96.png',
+    badge: payload.badge || '/badge-transparent.png',
     tag: payload.tag || 'booking-notification',
     data: payload.data || {},
     requireInteraction: true,
