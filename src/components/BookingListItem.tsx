@@ -172,6 +172,13 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
           </div>
         )}
 
+        {!booking.noCleaningService && isConserje && (
+          <div className="flex items-start gap-1 text-sm text-green-700">
+            <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <p className="text-xs">Con servicio de conserjería</p>
+          </div>
+        )}
+
         {isConfirmed && booking.notes && (
           <div className="text-xs text-muted-foreground">
             <span className="font-medium">Notas:</span> {booking.notes}
