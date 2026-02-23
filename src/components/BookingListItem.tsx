@@ -356,6 +356,13 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                 <span className="text-xs">Sin conserjería</span>
               </div>
             )}
+
+            {!booking.noCleaningService && isConserje && (
+              <div className="flex items-center gap-1 text-green-700">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span className="text-xs">Con conserjería</span>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
