@@ -620,19 +620,17 @@ export default function BookingsPage() {
     );
   };
 
-  // Handle loading state during authentication check
-  if (!sessionReady) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
+  // Once the session is confirmed unauthenticated, redirect once via effect.
+  // Doing it inline during render causes router.push() to fire on every render
+  // cycle when status bounces, producing an infinite flash loop.
+  useEffect(() => {
+    if (sessionReady && status === "unauthenticated") {
+      router.push("/auth/signin?callbackUrl=/bookings");
+    }
+  }, [sessionReady, status, router]);
 
-  if (status === "unauthenticated") {
-    router.push("/auth/signin?callbackUrl=/bookings");
-    // Keep showing spinner while the redirect is in flight — returning null
-    // causes a permanent white screen if the redirect is slow or cancelled.
+  // Show spinner while session is loading or while redirect is in flight.
+  if (!sessionReady || status === "unauthenticated") {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
