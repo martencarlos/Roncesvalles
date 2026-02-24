@@ -232,7 +232,7 @@ export async function POST(req: NextRequest) {
       sendPushToConserje({
         title: '🔔 Nueva reserva con conserjería',
         body: `Apto #${body.apartmentNumber} · ${mealLabel} · ${fechaStr}${fuegoLabel}`,
-        tag: 'concierge-service',
+        tag: `concierge-service-${Date.now()}`,
       }).catch(console.error);
     }
 
