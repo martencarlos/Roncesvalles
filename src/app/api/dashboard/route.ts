@@ -377,7 +377,7 @@ async function getUserStats() {
 async function getBookingStats() {
   // Existing code for basic stats
   const totalBookings = await Booking.countDocuments();
-  const totalConfirmed = await Booking.countDocuments({ status: "confirmed" });
+  const totalConfirmed = await Booking.countDocuments({ status: "completed" });
   const totalPending = await Booking.countDocuments({ status: "pending" });
   
   // For cancelled bookings, get both the ones with cancelled status and count from activity logs
@@ -424,12 +424,12 @@ async function getBookingStats() {
   // Get average attendees
   const attendeesData = await Booking.aggregate([
     {
-      $match: { status: "confirmed", finalAttendees: { $exists: true } }
+      $match: { status: "completed" }
     },
     {
       $group: {
         _id: null,
-        totalAttendees: { $sum: "$finalAttendees" },
+        totalAttendees: { $sum: "$numberOfPeople" },
         count: { $sum: 1 }
       }
     }

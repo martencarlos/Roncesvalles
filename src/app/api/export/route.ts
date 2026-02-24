@@ -23,13 +23,13 @@ export async function GET(req: NextRequest) {
     const startDate = new Date(`${year}-01-01`);
     const endDate = new Date(`${year}-12-31T23:59:59.999Z`);
     
-    // Get all confirmed bookings for the year
+    // Get all completed bookings for the year
     const bookings = await Booking.find({
       date: {
         $gte: startDate,
         $lte: endDate
       },
-      status: 'confirmed'
+      status: 'completed'
     }).sort({ apartmentNumber: 1, date: 1 });
     
     // Aggregate bookings by apartment
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     
     bookings.forEach(booking => {
       const apartmentNumber = booking.apartmentNumber;
-      const attendees = booking.finalAttendees || booking.numberOfPeople;
+      const attendees = booking.numberOfPeople;
       
       // --- Billing Logic Update ---
       const bookingDate = new Date(booking.date);

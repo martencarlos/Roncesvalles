@@ -22,10 +22,8 @@ import {
   Download,
   PlusCircle,
   History,
-  AlertCircle,
   UtensilsCrossed,
   CalendarIcon,
-  CheckCircle2,
   LayoutGrid,
   List,
   InfoIcon,
@@ -41,7 +39,6 @@ import { toast } from "sonner";
 import BookingCard from "@/components/BookingCard";
 import BookingListItem from "@/components/BookingListItem";
 import BookingFormModal from "@/components/BookingFormModal";
-import BookingConfirmationDialog from "@/components/BookingConfirmationDialog";
 import ExportDialog from "@/components/ExportDialog";
 import { IBooking, MealType } from "@/models/Booking";
 import DatePicker from "react-datepicker";
@@ -84,7 +81,6 @@ type DateFilter =
   | "today"
   | "future"
   | "past"
-  | "pending-confirmation"
   | "specific";
 type ViewMode = "card" | "list" | undefined;
 
@@ -97,16 +93,12 @@ export default function BookingsPage() {
   const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingBooking, setEditingBooking] = useState<IBooking | null>(null);
-  const [confirmingBooking, setConfirmingBooking] = useState<IBooking | null>(
-    null
-  );
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedMealType, setSelectedMealType] = useState<MealType>("lunch");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [datesWithBookings, setDatesWithBookings] = useState<Date[]>([]);
-  const [pendingConfirmations, setPendingConfirmations] = useState<number>(0);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
@@ -203,16 +195,6 @@ export default function BookingsPage() {
 
       setDatesWithBookings(uniqueDates);
       setBookingsByDate(bookingsByDateMap);
-
-      // Count pending confirmations
-      const pendingCount = sortedData.filter(
-        (booking) =>
-          booking.status === "pending" &&
-          isPast(new Date(booking.date)) &&
-          !isToday(new Date(booking.date))
-      ).length;
-
-      setPendingConfirmations(pendingCount);
 
       // Now fetch ALL bookings for the selected date to check availability
       updateAvailableTables(selectedDate);
@@ -328,14 +310,6 @@ export default function BookingsPage() {
         filtered = userBookings.filter(
           (booking) =>
             isPast(new Date(booking.date)) && !isToday(new Date(booking.date))
-        );
-        break;
-      case "pending-confirmation":
-        filtered = userBookings.filter(
-          (booking) =>
-            booking.status === "pending" &&
-            isPast(new Date(booking.date)) &&
-            !isToday(new Date(booking.date))
         );
         break;
       case "specific":
@@ -530,38 +504,6 @@ export default function BookingsPage() {
       setIsSubmitting(false);
       setShowDeleteDialog(false);
       setDeletingBooking(null);
-    }
-  };
-
-  // Handle booking confirmation
-  const handleConfirmBooking = async (
-    id: string,
-    data: { finalAttendees: number; notes: string }
-  ) => {
-
-    try {
-      const res = await fetch(`/api/bookings/${id}/confirm`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al confirmar la reserva");
-      }
-
-      // Update bookings
-      fetchBookings();
-      toast.success("Reserva Confirmada", {
-        description: `Reserva confirmada con ${data.finalAttendees} asistentes finales`,
-      });
-    } catch (err: any) {
-      setError(err.message);
-      console.error(err);
-      throw err;
     }
   };
 
@@ -835,20 +777,6 @@ export default function BookingsPage() {
               </div>
             </div>
 
-            {/* Display pending confirmations button if needed */}
-            {pendingConfirmations > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDateFilterChange("pending-confirmation")}
-                className="cursor-pointer text-amber-700 border-amber-500 w-full sm:w-auto"
-              >
-                <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
-                <span>
-                  {pendingConfirmations} reservas pendientes por confirmar
-                </span>
-              </Button>
-            )}
           </div>
 
           {/* Tabs for meal type selection */}
@@ -967,16 +895,6 @@ export default function BookingsPage() {
         />
       )}
 
-      {/* Booking Confirmation Modal */}
-      {confirmingBooking && (
-        <BookingConfirmationDialog
-          isOpen={!!confirmingBooking}
-          onClose={() => setConfirmingBooking(null)}
-          booking={confirmingBooking}
-          onConfirm={handleConfirmBooking}
-        />
-      )}
-
       {/* Export Dialog */}
       <ExportDialog
         isOpen={showExportDialog}
@@ -1047,8 +965,6 @@ export default function BookingsPage() {
               {dateFilter === "today" && "Reservas de Hoy"}
               {dateFilter === "future" && "Próximas Reservas"}
               {dateFilter === "past" && "Reservas Pasadas"}
-              {dateFilter === "pending-confirmation" &&
-                "Pendientes de Confirmación"}
               {dateFilter === "specific" &&
                 `Reservas del ${formatDateEs(selectedDate, "d MMMM, yyyy")}`}
               {dateFilter === "all" && "Todas las Reservas"}
@@ -1077,8 +993,7 @@ export default function BookingsPage() {
             </Button>
           </div>
 
-          {filteredBookings.length === 0 &&
-            dateFilter !== "pending-confirmation" && (
+          {filteredBookings.length === 0 && (
               <Button
                 variant="outline"
                 onClick={() => setDateFilter("future")}
@@ -1087,13 +1002,6 @@ export default function BookingsPage() {
               >
                 Ver Próximas Reservas
               </Button>
-            )}
-          {dateFilter === "pending-confirmation" &&
-            filteredBookings.length === 0 && (
-              <div className="flex items-center text-muted-foreground text-sm">
-                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
-                No hay reservas pendientes de confirmación
-              </div>
             )}
         </div>
 
@@ -1169,11 +1077,6 @@ export default function BookingsPage() {
               );
             }
 
-            // Check if there are any pending confirmations for this date
-            const pendingForDate = bookingsForDate.some(
-              (booking) => booking.status === "pending" && isBookingPast
-            );
-
             // Pre-sorted list for consistent rendering order
             const sortedBookingsForDate = bookingsForDate.sort((a, b) => {
               if (a.mealType !== b.mealType) {
@@ -1190,14 +1093,6 @@ export default function BookingsPage() {
                   <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
                     <h3 className="text-base sm:text-lg font-medium flex items-center gap-2">
                       {formatDateEs(bookingDate, "EEEE, d MMMM, yyyy")}
-                      {pendingForDate && (
-                        <Badge
-                          variant="outline"
-                          className="bg-amber-50 text-amber-700 border-amber-200 ml-2"
-                        >
-                          Confirmaciones pendientes
-                        </Badge>
-                      )}
                     </h3>
                     {statusBadge}
                   </div>
@@ -1211,8 +1106,7 @@ export default function BookingsPage() {
                       booking={booking}
                       onEdit={() => setEditingBooking(booking)}
                       onDelete={() => handleDeleteBooking(booking)}
-                      onConfirm={() => setConfirmingBooking(booking)}
-                      onEditNote={handleOpenNoteDialog}
+                        onEditNote={handleOpenNoteDialog}
                       isPast={isBookingPast}
                       session={session}
                     />
@@ -1230,7 +1124,6 @@ export default function BookingsPage() {
                           booking={booking}
                           onEdit={() => setEditingBooking(booking)}
                           onDelete={() => handleDeleteBooking(booking)}
-                          onConfirm={() => setConfirmingBooking(booking)}
                           onEditNote={handleOpenNoteDialog}
                           isPast={isBookingPast}
                           session={session}
@@ -1246,7 +1139,6 @@ export default function BookingsPage() {
                           booking={booking}
                           onEdit={() => setEditingBooking(booking)}
                           onDelete={() => handleDeleteBooking(booking)}
-                          onConfirm={() => setConfirmingBooking(booking)}
                           onEditNote={handleOpenNoteDialog}
                           isPast={isBookingPast}
                           session={session}
@@ -1264,8 +1156,6 @@ export default function BookingsPage() {
           {dateFilter === "today" && "No hay reservas para hoy."}
           {dateFilter === "future" && "No hay próximas reservas."}
           {dateFilter === "past" && "No hay reservas pasadas."}
-          {dateFilter === "pending-confirmation" &&
-            "No hay reservas pendientes de confirmación."}
           {dateFilter === "specific" &&
             `No hay reservas para ${formatDateEs(
               selectedDate,

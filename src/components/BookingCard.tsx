@@ -27,7 +27,6 @@ interface BookingCardProps {
   booking: IBooking;
   onEdit: () => void;
   onDelete: (booking: IBooking) => void;
-  onConfirm: () => void;
   onEditNote?: (booking: IBooking) => void;
   isPast?: boolean;
   session: Session | null;
@@ -37,18 +36,16 @@ const BookingCard: React.FC<BookingCardProps> = ({
   booking,
   onEdit,
   onDelete,
-  onConfirm,
   onEditNote,
   isPast = false,
   session,
 }) => {
-  const isConfirmed = booking.status === "confirmed";
+  const isCompleted = booking.status === "completed";
   const isPending = booking.status === "pending";
   const isCancelled = booking.status === "cancelled";
 
   const userRole = session?.user?.role || "user";
   const isOwner = session?.user?.apartmentNumber === booking.apartmentNumber;
-  const isAdmin = userRole === "admin";
   const isITAdmin = userRole === "it_admin";
   const isConserje = userRole === "conserje";
 
@@ -56,21 +53,15 @@ const BookingCard: React.FC<BookingCardProps> = ({
   const isRegularUser = userRole === "user";
 
   const canEdit =
-    isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === "user");
+    isITAdmin || (isOwner && !isCompleted && userRole === "user");
   const canDelete =
-    isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === "user");
-  
-  // Allow admins to confirm any past/pending booking
-  const canConfirm =
-    isITAdmin || isAdmin || (isOwner && isPending && isPast && userRole === "user");
+    isITAdmin || (isOwner && !isCompleted && userRole === "user");
 
   return (
     <Card
       className={`overflow-hidden group ${
-        isPast && !isConfirmed && !isCancelled ? "border-amber-300" : ""
-      } ${isConfirmed ? "border-green-300" : ""} ${
-        isCancelled ? "border-red-300 opacity-75" : ""
-      }`}
+        isCompleted ? "border-green-300" : ""
+      } ${isCancelled ? "border-red-300 opacity-75" : ""}`}
     >
       <CardHeader className="pb-2 px-4">
         {isRegularUser ? (
@@ -123,18 +114,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="font-medium">Personas:</span>
           </div>
-          <span className="text-sm">
-            {isConfirmed && booking.finalAttendees !== undefined ? (
-              <>
-                <span className="line-through text-muted-foreground mr-1">
-                  {booking.numberOfPeople}
-                </span>
-                {booking.finalAttendees}
-              </>
-            ) : (
-              booking.numberOfPeople
-            )}
-          </span>
+          <span className="text-sm">{booking.numberOfPeople}</span>
         </div>
 
         <div className="flex items-center justify-between">
@@ -178,28 +158,20 @@ const BookingCard: React.FC<BookingCardProps> = ({
             <span className="font-medium">Estado:</span>
           </div>
           <div>
-            {isConfirmed && (
+            {isCompleted && (
               <Badge
                 variant="outline"
                 className="bg-green-50 text-green-700 border-green-200"
               >
-                Confirmado
+                Completado
               </Badge>
             )}
-            {isPending && !isPast && (
+            {isPending && (
               <Badge
                 variant="outline"
                 className="bg-blue-50 text-blue-700 border-blue-200"
               >
                 Reservado
-              </Badge>
-            )}
-            {isPending && isPast && (
-              <Badge
-                variant="outline"
-                className="bg-amber-50 text-amber-700 border-amber-200"
-              >
-                Por confirmar
               </Badge>
             )}
             {isCancelled && (
@@ -228,15 +200,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
               <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <p className="text-xs">Con servicio de conserjería.</p>
             </div>
-          </div>
-        )}
-
-        {isConfirmed && booking.notes && (
-          <div className="mt-2 pt-2 border-t text-sm">
-            <div className="font-medium mb-1 text-xs">Notas usuario:</div>
-            <p className="text-muted-foreground text-xs italic">
-              {booking.notes}
-            </p>
           </div>
         )}
 
@@ -271,18 +234,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
         )}
 
         <div className="flex gap-2">
-          {canConfirm && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onConfirm}
-              className="cursor-pointer h-7 text-xs px-2 border-amber-500 text-amber-700 hover:bg-amber-50"
-            >
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Confirmar
-            </Button>
-          )}
-
           {canEdit && (
             <Button
               variant="outline"

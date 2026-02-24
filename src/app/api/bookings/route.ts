@@ -67,6 +67,14 @@ export async function GET(req: NextRequest) {
       }
     }
     
+    // Auto-complete past pending bookings before returning results
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    await Booking.updateMany(
+      { status: "pending", date: { $lt: startOfToday } },
+      { $set: { status: "completed" } }
+    );
+
     const bookings = await Booking.find(query).sort({ date: 1, mealType: 1, apartmentNumber: 1 });
     
     // SECURITY FILTER: Hide internalNotes for regular users

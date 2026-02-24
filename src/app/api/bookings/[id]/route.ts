@@ -102,11 +102,31 @@ export async function PUT(
       originalBooking.apartmentNumber !== currentUser.apartmentNumber
     )
       return NextResponse.json({ error: "No permission" }, { status: 403 });
-    if (currentUser.role === "user" && originalBooking.status === "confirmed")
-      return NextResponse.json(
-        { error: "Cannot modify confirmed" },
-        { status: 403 }
+    if (currentUser.role === "user" && originalBooking.status === "completed") {
+      // Users can only update numberOfPeople on completed bookings
+      const allowedKeys = new Set(["numberOfPeople"]);
+      const bodyKeys = Object.keys(body).filter(k => body[k] !== undefined);
+      const hasDisallowedKeys = bodyKeys.some(k => !allowedKeys.has(k));
+      if (hasDisallowedKeys) {
+        return NextResponse.json(
+          { error: "Cannot modify completed booking except numberOfPeople" },
+          { status: 403 }
+        );
+      }
+      const updatedBooking = await Booking.findByIdAndUpdate(
+        bookingId,
+        { numberOfPeople: body.numberOfPeople },
+        { new: true, runValidators: true }
       );
+      const user = await User.findById(currentUser.id).select("name");
+      await ActivityLog.create({
+        action: "update",
+        apartmentNumber: originalBooking.apartmentNumber,
+        userId: currentUser.id,
+        details: `${user ? user.name : "Usuario"} actualizó asistentes de reserva Apto #${originalBooking.apartmentNumber} a ${body.numberOfPeople}`,
+      });
+      return NextResponse.json(updatedBooking);
+    }
 
     // Determine Effective Values (New or Keep Original)
     const effectiveDate = body.date
@@ -391,9 +411,9 @@ export async function DELETE(
       return NextResponse.json({ error: "No permission" }, { status: 403 });
     }
 
-    if (currentUser.role === "user" && booking.status === "confirmed") {
+    if (currentUser.role === "user" && booking.status === "completed") {
       return NextResponse.json(
-        { error: "Cannot delete confirmed" },
+        { error: "Cannot delete completed" },
         { status: 403 }
       );
     }

@@ -13,7 +13,6 @@ import {
   X,
   Edit,
   Trash2,
-  CheckCircle2,
   StickyNote,
   Save,
   Users,
@@ -21,7 +20,6 @@ import {
   Flame,
   Utensils,
   AlertTriangle,
-  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -38,7 +36,6 @@ import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import BookingFormModal from "@/components/BookingFormModal";
-import BookingConfirmationDialog from "@/components/BookingConfirmationDialog";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import {
   Dialog,
@@ -79,9 +76,6 @@ export default function BookingsManagement({
   // Modals state
   const [showForm, setShowForm] = useState(false);
   const [editingBooking, setEditingBooking] = useState<IBooking | null>(null);
-  const [confirmingBooking, setConfirmingBooking] = useState<IBooking | null>(
-    null
-  );
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -267,33 +261,6 @@ export default function BookingsManagement({
     }
   };
 
-  const handleConfirmBooking = async (
-    id: string,
-    data: { finalAttendees: number; notes: string }
-  ) => {
-    try {
-      const res = await fetch(`/api/bookings/${id}/confirm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al confirmar la reserva");
-      }
-      const updatedBooking = await res.json();
-      setBookings((prev) =>
-        prev.map((b) => (b._id === id ? updatedBooking : b))
-      );
-      setConfirmingBooking(null);
-      toast.success("Reserva Confirmada");
-    } catch (err: any) {
-      setError(err.message);
-      toast.error(err.message);
-      throw err;
-    }
-  };
-
   // Internal Notes Handlers
   const openNoteDialog = (booking: IBooking) => {
     setNoteBooking(booking);
@@ -404,7 +371,7 @@ export default function BookingsManagement({
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="pending">Pendientes</SelectItem>
-              <SelectItem value="confirmed">Confirmadas</SelectItem>
+              <SelectItem value="completed">Completadas</SelectItem>
               <SelectItem value="cancelled">Canceladas</SelectItem>
             </SelectContent>
           </Select>
@@ -439,7 +406,7 @@ export default function BookingsManagement({
       ) : filteredBookings.length > 0 ? (
         <div className="space-y-3">
           {filteredBookings.map((booking) => {
-            const isConfirmed = booking.status === "confirmed";
+            const isCompleted = booking.status === "completed";
             const isPending = booking.status === "pending";
             const isCancelled = booking.status === "cancelled";
             const isPastBooking =
@@ -448,22 +415,16 @@ export default function BookingsManagement({
 
             // Status Badge Logic
             let statusBadge = null;
-            if (isConfirmed) {
+            if (isCompleted) {
               statusBadge = (
                 <Badge className="bg-green-100 text-green-700 border-green-200 shadow-none hover:bg-green-100">
-                  Confirmada
+                  Completada
                 </Badge>
               );
             } else if (isCancelled) {
               statusBadge = (
                 <Badge className="bg-red-100 text-red-700 border-red-200 shadow-none hover:bg-red-100">
                   Cancelada
-                </Badge>
-              );
-            } else if (isPending && isPastBooking) {
-              statusBadge = (
-                <Badge className="bg-amber-100 text-amber-700 border-amber-200 shadow-none hover:bg-amber-100">
-                  Por confirmar
                 </Badge>
               );
             } else {
@@ -478,12 +439,8 @@ export default function BookingsManagement({
               <Card
                 key={booking._id as string}
                 className={`py-0 transition-colors hover:bg-gray-50/50 ${
-                  isPastBooking && !isConfirmed && !isCancelled
-                    ? "border-amber-300"
-                    : ""
-                } ${isConfirmed ? "border-green-300" : ""} ${
-                  isCancelled ? "border-red-300 opacity-75" : ""
-                }`}
+                  isCompleted ? "border-green-300" : ""
+                } ${isCancelled ? "border-red-300 opacity-75" : ""}`}
               >
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 lg:items-center">
@@ -555,21 +512,9 @@ export default function BookingsManagement({
                         >
                           <Users className="h-4 w-4" />
                           <span>
-                            {isConfirmed &&
-                            booking.finalAttendees !== undefined ? (
-                              <>
-                                <span className="line-through mr-1 opacity-70">
-                                  {booking.numberOfPeople}
-                                </span>
-                                <span className="font-medium text-gray-700">
-                                  {booking.finalAttendees}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="font-medium text-gray-700">
-                                {booking.numberOfPeople}
-                              </span>
-                            )}{" "}
+                            <span className="font-medium text-gray-700">
+                              {booking.numberOfPeople}
+                            </span>{" "}
                             pax
                           </span>
                         </div>
@@ -611,18 +556,6 @@ export default function BookingsManagement({
                       {/* Admin Actions */}
                       {isITAdmin && (
                         <>
-                          {isPending && isPastBooking && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setConfirmingBooking(booking)}
-                              className="h-8 text-xs border-green-500 text-green-700 hover:bg-green-50 hover:text-green-800"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                              Confirmar
-                            </Button>
-                          )}
-
                           <Button
                             variant="outline"
                             size="sm"
@@ -650,26 +583,14 @@ export default function BookingsManagement({
                   </div>
 
                   {/* Notes Display Section */}
-                  {(booking.notes ||
-                    (booking.internalNotes && canManageInternalNotes)) && (
+                  {booking.internalNotes && canManageInternalNotes && (
                     <div className="mt-3 pt-3 border-t border-dashed border-gray-200 flex flex-col gap-2">
-                      {/* User Notes */}
-                      {booking.notes && (
-                        <div className="text-xs flex items-start gap-2 text-gray-600">
-                          <MessageSquare className="h-3.5 w-3.5 mt-0.5 shrink-0 text-gray-400" />
-                          <span className="italic">{booking.notes}</span>
-                        </div>
-                      )}
-
-                      {/* Internal Notes */}
-                      {booking.internalNotes && canManageInternalNotes && (
-                        <div className="text-xs bg-amber-50/50 p-2 rounded border border-amber-100/50 flex items-start gap-2">
-                          <StickyNote className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
-                          <span className="text-amber-900 whitespace-pre-wrap">
-                            {booking.internalNotes}
-                          </span>
-                        </div>
-                      )}
+                      <div className="text-xs bg-amber-50/50 p-2 rounded border border-amber-100/50 flex items-start gap-2">
+                        <StickyNote className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
+                        <span className="text-amber-900 whitespace-pre-wrap">
+                          {booking.internalNotes}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -745,15 +666,6 @@ export default function BookingsManagement({
           onSubmit={handleUpdateBooking}
           initialData={editingBooking}
           isEditing={true}
-        />
-      )}
-
-      {confirmingBooking && (
-        <BookingConfirmationDialog
-          isOpen={!!confirmingBooking}
-          onClose={() => setConfirmingBooking(null)}
-          booking={confirmingBooking}
-          onConfirm={handleConfirmBooking}
         />
       )}
 
