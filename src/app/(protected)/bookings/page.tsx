@@ -287,6 +287,9 @@ export default function BookingsPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
+      if (session?.user?.role === "user") {
+        setDateFilter("future");
+      }
       fetchBookings();
     }
   }, [status]);
@@ -1081,14 +1084,16 @@ export default function BookingsPage() {
 
         {/* DATE FILTER BUTTONS */}
         <div className="flex gap-2 flex-wrap">
-          <Button
-            variant={dateFilter === "today" ? "default" : "outline"}
-            onClick={() => handleDateFilterChange("today")}
-            className="cursor-pointer"
-            size="sm"
-          >
-            Hoy
-          </Button>
+          {session?.user?.role !== "user" && (
+            <Button
+              variant={dateFilter === "today" ? "default" : "outline"}
+              onClick={() => handleDateFilterChange("today")}
+              className="cursor-pointer"
+              size="sm"
+            >
+              Hoy
+            </Button>
+          )}
           <Button
             variant={dateFilter === "future" ? "default" : "outline"}
             onClick={() => handleDateFilterChange("future")}
@@ -1162,22 +1167,26 @@ export default function BookingsPage() {
               return a.apartmentNumber - b.apartmentNumber;
             });
 
+            const isRegularUser = session?.user?.role === "user";
+
             return (
               <div key={dateKey}>
-                <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
-                  <h3 className="text-base sm:text-lg font-medium flex items-center gap-2">
-                    {formatDateEs(bookingDate, "EEEE, d MMMM, yyyy")}
-                    {pendingForDate && (
-                      <Badge
-                        variant="outline"
-                        className="bg-amber-50 text-amber-700 border-amber-200 ml-2"
-                      >
-                        Confirmaciones pendientes
-                      </Badge>
-                    )}
-                  </h3>
-                  {statusBadge}
-                </div>
+                {!isRegularUser && (
+                  <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
+                    <h3 className="text-base sm:text-lg font-medium flex items-center gap-2">
+                      {formatDateEs(bookingDate, "EEEE, d MMMM, yyyy")}
+                      {pendingForDate && (
+                        <Badge
+                          variant="outline"
+                          className="bg-amber-50 text-amber-700 border-amber-200 ml-2"
+                        >
+                          Confirmaciones pendientes
+                        </Badge>
+                      )}
+                    </h3>
+                    {statusBadge}
+                  </div>
+                )}
 
                 {/* Mobile View: Always List View */}
                 <div className="sm:hidden flex flex-col gap-3">

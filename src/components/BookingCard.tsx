@@ -53,6 +53,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
   const isConserje = userRole === "conserje";
 
   const canManageNotes = isITAdmin || isConserje;
+  const isRegularUser = userRole === "user";
 
   const canEdit =
     isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === "user");
@@ -72,25 +73,50 @@ const BookingCard: React.FC<BookingCardProps> = ({
       }`}
     >
       <CardHeader className="pb-2 px-4">
-        <div className="flex justify-between items-center">
-          <h3 className="font-bold text-base sm:text-lg">
-            Apto. #{getApartmentLabel(booking.apartmentNumber)}
-          </h3>
-          <div className="text-xs sm:text-sm text-muted-foreground">
-            {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
+        {isRegularUser ? (
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-bold text-base sm:text-lg">
+                {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
+              </h3>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Apto. #{getApartmentLabel(booking.apartmentNumber)}
+              </div>
+            </div>
+            <Badge
+              className={`text-sm px-3 py-1 ${
+                booking.mealType === "lunch"
+                  ? "bg-orange-100 text-orange-800 border-orange-300"
+                  : "bg-indigo-100 text-indigo-800 border-indigo-300"
+              }`}
+              variant="outline"
+            >
+              {booking.mealType === "lunch" ? "Comida" : "Cena"}
+            </Badge>
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-base sm:text-lg">
+              Apto. #{getApartmentLabel(booking.apartmentNumber)}
+            </h3>
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="pb-2 px-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="font-medium text-sm">Comida:</span>
-          <Badge
-            variant={booking.mealType === "lunch" ? "secondary" : "default"}
-            className="capitalize"
-          >
-            {booking.mealType === "lunch" ? "Comida" : "Cena"}
-          </Badge>
-        </div>
+        {!isRegularUser && (
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">Comida:</span>
+            <Badge
+              variant={booking.mealType === "lunch" ? "secondary" : "default"}
+              className="capitalize"
+            >
+              {booking.mealType === "lunch" ? "Comida" : "Cena"}
+            </Badge>
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-sm">
@@ -165,7 +191,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
                 variant="outline"
                 className="bg-blue-50 text-blue-700 border-blue-200"
               >
-                Pendiente
+                Reservado
               </Badge>
             )}
             {isPending && isPast && (

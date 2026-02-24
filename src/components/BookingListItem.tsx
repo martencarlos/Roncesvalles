@@ -49,6 +49,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   const isConserje = userRole === "conserje";
 
   const canManageNotes = isITAdmin || isConserje;
+  const isRegularUser = userRole === "user";
 
   const canEdit =
     isITAdmin || (isOwner && (!isConfirmed || !isPast) && userRole === "user");
@@ -71,13 +72,27 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
       <div className="flex flex-col gap-3 sm:hidden">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-bold">
-              Apto. #{getApartmentLabel(booking.apartmentNumber)}
-            </h3>
-            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <CalendarDays className="h-3 w-3" />
-              {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
-            </div>
+            {isRegularUser ? (
+              <>
+                <h3 className="font-bold flex items-center gap-1.5">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                  {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
+                </h3>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Apto. #{getApartmentLabel(booking.apartmentNumber)}
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="font-bold">
+                  Apto. #{getApartmentLabel(booking.apartmentNumber)}
+                </h3>
+                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <CalendarDays className="h-3 w-3" />
+                  {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
+                </div>
+              </>
+            )}
           </div>
           <div>
             {isConfirmed && (
@@ -93,7 +108,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                 variant="outline"
                 className="bg-blue-100 text-blue-700 border-blue-200"
               >
-                Pendiente
+                Reservado
               </Badge>
             )}
             {isPending && isPast && (
@@ -118,7 +133,20 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-1">
             <UtensilsCrossed className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{booking.mealType === "lunch" ? "Comida" : "Cena"}</span>
+            {isRegularUser ? (
+              <Badge
+                variant="outline"
+                className={`text-xs px-2 ${
+                  booking.mealType === "lunch"
+                    ? "bg-orange-100 text-orange-800 border-orange-300"
+                    : "bg-indigo-100 text-indigo-800 border-indigo-300"
+                }`}
+              >
+                {booking.mealType === "lunch" ? "Comida" : "Cena"}
+              </Badge>
+            ) : (
+              <span>{booking.mealType === "lunch" ? "Comida" : "Cena"}</span>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
@@ -260,7 +288,9 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             <div className="flex flex-col min-w-[120px]">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold">
-                  Apto. #{getApartmentLabel(booking.apartmentNumber)}
+                  {isRegularUser
+                    ? format(new Date(booking.date), "d MMM, yyyy", { locale: es })
+                    : `Apto. #${getApartmentLabel(booking.apartmentNumber)}`}
                 </h3>
                 <div>
                   {isConfirmed && (
@@ -276,7 +306,7 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                       variant="outline"
                       className="bg-blue-100 text-blue-700 border-blue-200"
                     >
-                      Pendiente
+                      Reservado
                     </Badge>
                   )}
                   {isPending && isPast && (
@@ -297,13 +327,31 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                   )}
                 </div>
               </div>
-              <div className="text-muted-foreground text-xs mt-1">
-                {booking.mealType === "lunch" ? "Comida" : "Cena"} ·{" "}
-                {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
-              </div>
+              {isRegularUser ? (
+                <div className="text-muted-foreground text-xs mt-1">
+                  Apto. #{getApartmentLabel(booking.apartmentNumber)}
+                </div>
+              ) : (
+                <div className="text-muted-foreground text-xs mt-1">
+                  {booking.mealType === "lunch" ? "Comida" : "Cena"} ·{" "}
+                  {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-row gap-6 items-center">
+              {isRegularUser && (
+                <Badge
+                  variant="outline"
+                  className={`text-xs px-2 ${
+                    booking.mealType === "lunch"
+                      ? "bg-orange-100 text-orange-800 border-orange-300"
+                      : "bg-indigo-100 text-indigo-800 border-indigo-300"
+                  }`}
+                >
+                  {booking.mealType === "lunch" ? "Comida" : "Cena"}
+                </Badge>
+              )}
               <div className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-sm">
