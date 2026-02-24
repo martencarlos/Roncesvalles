@@ -253,23 +253,28 @@ export async function PUT(
 
     // Logging
     const user = await User.findById(currentUser.id).select("name");
-    let details = "";
-    if (prepararFuego) details += " with fire";
-    if (updateData.reservaHorno) details += " and oven";
+    const changeParts: string[] = [];
 
-    if (
-      noCleaningService !== originalBooking.noCleaningService ||
-      (noCleaningService && body.date)
-    ) {
-      details += noCleaningService ? " (sin conserje)" : " (con conserje)";
+    if (dateHasChanged) {
+      changeParts.push(`fecha: ${new Date(originalBooking.date).toLocaleDateString('es-ES')} → ${new Date(updateData.date).toLocaleDateString('es-ES')}`);
     }
-
-    if (
-      body.internalNotes &&
-      body.internalNotes !== originalBooking.internalNotes
-    ) {
-      details += " (nota interna actualizada)";
+    if (mealTypeHasChanged) {
+      const fromMeal = originalBooking.mealType === 'lunch' ? 'comida' : 'cena';
+      const toMeal = checkMealType === 'lunch' ? 'comida' : 'cena';
+      changeParts.push(`turno: ${fromMeal} → ${toMeal}`);
     }
+    const fireHasChangedLog = prepararFuego !== originalBooking.prepararFuego;
+    if (fireHasChangedLog) {
+      changeParts.push(prepararFuego ? '+fuego' : '-fuego');
+    }
+    const ovenHasChanged = wantsOven !== originalBooking.reservaHorno;
+    if (ovenHasChanged) {
+      changeParts.push(wantsOven ? '+horno' : '-horno');
+    }
+    if (noCleaningService !== originalBooking.noCleaningService || (noCleaningService && body.date)) {
+      changeParts.push(noCleaningService ? 'sin conserje' : 'con conserje');
+    }
+    const changesSummary = changeParts.length > 0 ? ` [${changeParts.join(', ')}]` : '';
 
     const userRole =
       currentUser.role !== "user"
@@ -283,7 +288,7 @@ export async function PUT(
         user ? user.name : "Usuario"
       }${userRole} modificó reserva Apto #${
         updateData.apartmentNumber
-      }: ${new Date(updateData.date).toLocaleDateString()} ${details}`,
+      }: ${new Date(updateData.date).toLocaleDateString('es-ES')}${changesSummary}`,
     });
 
     // Notify conserje when a booking with concierge service has relevant changes
