@@ -43,9 +43,10 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
   }, [status, pathname]);
 
   // Safety valve: if loading gets stuck (e.g. Android Chrome tab resume),
-  // force-clear after 8 seconds and on next visibility restore.
-  // Sets suppressedRef so the main effect cannot re-enable the spinner while
-  // status is still 'loading' (e.g. slow network on Android resume).
+  // force-clear after 8 seconds.
+  // Do NOT suppress on visibilitychange — on Android resume the session
+  // fetch may still be in-flight, and clearing the loader early causes pages
+  // to briefly see status='unauthenticated' and redirect to sign-in.
   useEffect(() => {
     if (!isLoading) return;
 
@@ -56,16 +57,8 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
 
     const maxWait = setTimeout(suppress, 8000);
 
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        suppress();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
     return () => {
       clearTimeout(maxWait);
-      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [isLoading]);
 

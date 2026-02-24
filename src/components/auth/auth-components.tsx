@@ -22,7 +22,10 @@ export function useSessionReady(status: string): boolean {
 
     if (suppressedRef.current) return;
 
-    // Safety valve: force-ready after 8 s or when the tab becomes visible again.
+    // Safety valve: force-ready after 8 s.
+    // Do NOT suppress on visibilitychange — on Android resume the session
+    // fetch may still be in-flight, and marking ready too early causes the
+    // page to see status='unauthenticated' momentarily and redirect to sign-in.
     const suppress = () => {
       suppressedRef.current = true;
       setReady(true);
@@ -30,14 +33,8 @@ export function useSessionReady(status: string): boolean {
 
     const maxWait = setTimeout(suppress, 8000);
 
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") suppress();
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-
     return () => {
       clearTimeout(maxWait);
-      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [status]);
 

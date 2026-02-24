@@ -89,19 +89,29 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                var removed = false;
                 function removeSplash() {
+                  if (removed) return;
+                  removed = true;
                   var el = document.getElementById('splash-screen');
                   if (el) {
                     el.style.transition = 'opacity 0.3s ease';
                     el.style.opacity = '0';
-                    setTimeout(function() { el.remove(); }, 300);
+                    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
                   }
                 }
+                // Fire on load, pageshow (back/forward cache), and visibilitychange (Android resume)
                 if (document.readyState === 'complete') {
                   removeSplash();
                 } else {
                   window.addEventListener('load', removeSplash);
                 }
+                window.addEventListener('pageshow', removeSplash);
+                document.addEventListener('visibilitychange', function() {
+                  if (document.visibilityState === 'visible') removeSplash();
+                });
+                // Fallback: force-remove after 3 seconds no matter what
+                setTimeout(removeSplash, 3000);
               })();
             `,
           }}
