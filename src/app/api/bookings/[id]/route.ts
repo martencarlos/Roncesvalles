@@ -319,7 +319,7 @@ export async function PUT(
       sendPushToConserje({
         title: '✏️ Reserva modificada con conserjería',
         body: parts.join(' · '),
-        tag: 'concierge-service',
+        tag: `concierge-service-${Date.now()}`,
       }).catch(console.error);
     } else if (conciergeServiceLost) {
       const originalMealLabel = fmtMeal(originalBooking.mealType);
@@ -328,7 +328,7 @@ export async function PUT(
       sendPushToConserje({
         title: '❌ Reserva pierde conserjería',
         body: `Apto #${updateData.apartmentNumber} · ${originalMealLabel} · ${originalDateStr} → ${fmtDate(updateData.date)}${fuegoLostLabel}`,
-        tag: 'concierge-service',
+        tag: `concierge-service-${Date.now()}`,
       }).catch(console.error);
     } else if (conciergeServiceGained) {
       const parts: string[] = [`Apto #${updateData.apartmentNumber}`];
@@ -348,7 +348,7 @@ export async function PUT(
       sendPushToConserje({
         title: '✅ Reserva gana conserjería',
         body: parts.join(' · '),
-        tag: 'concierge-service',
+        tag: `concierge-service-${Date.now()}`,
       }).catch(console.error);
     }
 
@@ -423,7 +423,7 @@ export async function DELETE(
       sendPushToConserje({
         title: "❌ Reserva con conserjería cancelada",
         body: `Apto #${booking.apartmentNumber} · ${mealLabel} · ${fechaStr}${fuegoLabel}`,
-        tag: "concierge-service",
+        tag: `concierge-service-${Date.now()}`,
       }).catch(console.error);
     }
 
