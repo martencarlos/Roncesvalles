@@ -5,36 +5,59 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-// Returns true once the session status is no longer 'loading',
-// exported so other pages can use the same safety valve.
-// with a safety valve for Android Chrome tab resume (where useSession
-// can stay 'loading' indefinitely after the app is backgrounded).
+// Returns true once the session status has durably resolved.
+//
+// Problem this solves: on Android Chrome, locking and unlocking the phone
+// causes useSession to cycle through loading → unauthenticated → loading →
+// authenticated (or similar) as the browser re-validates the session cookie.
+// Treating a transient "unauthenticated" as ready causes immediate redirects
+// to sign-in and/or an infinite flash loop.
+//
+// Strategy:
+// - Once we see "authenticated", latch that fact. If status later goes back
+//   to "loading" or transiently "unauthenticated", keep ready=false and wait
+//   for it to settle — the session is still being re-validated.
+// - If status was never "authenticated" and reaches "unauthenticated", that
+//   is a genuine logged-out state → ready=true so the page can redirect.
+// - Safety valve: if status stays "loading" for 8 s, force ready=true.
 export function useSessionReady(status: string): boolean {
-  const [ready, setReady] = useState(status !== "loading");
-  const suppressedRef = useRef(false);
+  const [ready, setReady] = useState(status === "authenticated");
+  const wasAuthenticatedRef = useRef(status === "authenticated");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (status !== "loading") {
+    if (status === "authenticated") {
+      wasAuthenticatedRef.current = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
       setReady(true);
-      suppressedRef.current = false;
       return;
     }
 
-    if (suppressedRef.current) return;
+    if (status === "unauthenticated") {
+      if (wasAuthenticatedRef.current) {
+        // Transient unauthenticated after being authenticated = still re-validating.
+        // Stay not-ready and let the loading branch below handle the timeout.
+        // Reset the latch so that if it truly logs out the next cycle works.
+        wasAuthenticatedRef.current = false;
+        setReady(false);
+        // Start safety-valve timeout in case it never comes back
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setReady(true), 8000);
+      } else {
+        // Genuinely unauthenticated from the start → ready to redirect.
+        if (timerRef.current) clearTimeout(timerRef.current);
+        setReady(true);
+      }
+      return;
+    }
 
-    // Safety valve: force-ready after 8 s.
-    // Do NOT suppress on visibilitychange — on Android resume the session
-    // fetch may still be in-flight, and marking ready too early causes the
-    // page to see status='unauthenticated' momentarily and redirect to sign-in.
-    const suppress = () => {
-      suppressedRef.current = true;
-      setReady(true);
-    };
-
-    const maxWait = setTimeout(suppress, 8000);
+    // status === "loading"
+    setReady(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setReady(true), 8000);
 
     return () => {
-      clearTimeout(maxWait);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [status]);
 
