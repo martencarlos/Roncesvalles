@@ -719,6 +719,35 @@ export default function BookingsPage() {
 
         <br />
 
+        {/* Activity and Export buttons for admin/conserje/it_admin */}
+        {(session?.user?.role === "admin" ||
+          session?.user?.role === "it_admin" ||
+          session?.user?.role === "conserje") && (
+          <div className="flex gap-2 mb-4">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="cursor-pointer flex-1 sm:flex-none"
+            >
+              <Link href="/activity">
+                <History className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Ver Actividad</span>
+                <span className="sm:hidden">Actividad</span>
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExportDialog(true)}
+              className="cursor-pointer flex-1 sm:flex-none"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+          </div>
+        )}
+
         {/* New Booking Section - Clearly marked and separated */}
         <div className="mb-6 p-4 border rounded-lg bg-slate-50 shadow-sm">
           {/* Title and action buttons in a column on mobile, row on desktop */}
@@ -821,35 +850,6 @@ export default function BookingsPage() {
               </Button>
             )}
           </div>
-
-          {/* Activity and Export buttons for admin/conserje/it_admin */}
-          {(session?.user?.role === "admin" ||
-            session?.user?.role === "it_admin" ||
-            session?.user?.role === "conserje") && (
-            <div className="flex gap-2 mb-4">
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="cursor-pointer flex-1 sm:flex-none"
-              >
-                <Link href="/activity">
-                  <History className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Ver Actividad</span>
-                  <span className="sm:hidden">Actividad</span>
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowExportDialog(true)}
-                className="cursor-pointer flex-1 sm:flex-none"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-            </div>
-          )}
 
           {/* Tabs for meal type selection */}
           <Tabs
