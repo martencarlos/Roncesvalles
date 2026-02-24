@@ -18,7 +18,6 @@ import {
   Calendar,
   Users,
   Table,
-  CheckCircle2,
   PlusCircle,
   Edit,
   Trash2,
@@ -148,14 +147,6 @@ export default function HowToUsePage() {
                       className="text-blue-600 hover:underline"
                     >
                       3.2 Gestionar reservas existentes
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="#confirmar-reservas"
-                      className="text-blue-600 hover:underline"
-                    >
-                      3.3 Confirmar reservas pasadas
                     </Link>
                   </li>
                 </ul>
@@ -545,65 +536,10 @@ export default function HowToUsePage() {
               </ol>
 
               <div className="bg-amber-50 p-3 rounded-md text-sm text-amber-700 mt-2">
-                <span className="font-medium">Importante:</span> Las reservas ya
-                confirmadas no se pueden editar ni eliminar por usuarios
-                regulares. Si necesita modificar una reserva confirmada,
+                <span className="font-medium">Importante:</span> Las reservas
+                completadas no se pueden editar ni eliminar por usuarios
+                regulares. Si necesita modificar una reserva completada,
                 contacte con el administrador del sistema.
-              </div>
-            </div>
-
-            <Separator className="my-6" />
-
-            {/* Confirm Bookings Subsection */}
-            <div id="confirmar-reservas">
-              <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-amber-500" />
-                3.3 Confirmar reservas pasadas
-              </h3>
-              <p className="text-muted-foreground mb-3">
-                Después de cada evento, es importante confirmar sus reservas
-                pasadas con el número real de asistentes. Esto es necesario para
-                la facturación correcta y la gestión del espacio:
-              </p>
-              <ol className="list-decimal pl-5 space-y-2 mb-4">
-                <li>
-                  Las reservas pendientes de confirmación tendrán una etiqueta{" "}
-                  <span className="font-medium">Por confirmar</span>.
-                </li>
-                <li>
-                  También puede ver todas las reservas pendientes haciendo clic
-                  en el botón{" "}
-                  <span className="font-medium">X por confirmar</span> en la
-                  página principal.
-                </li>
-                <li>
-                  Para confirmar una reserva:
-                  <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
-                    <li>Localice la reserva pasada que necesita confirmar.</li>
-                    <li>
-                      Haga clic en el botón{" "}
-                      <span className="font-medium">Confirmar</span>.
-                    </li>
-                    <li>
-                      En el diálogo de confirmación, ingrese el número final de
-                      asistentes.
-                    </li>
-                    <li>
-                      Opcionalmente, añada notas relevantes sobre la reserva.
-                    </li>
-                    <li>
-                      Haga clic en{" "}
-                      <span className="font-medium">Confirmar Reserva</span>{" "}
-                      para finalizar.
-                    </li>
-                  </ul>
-                </li>
-              </ol>
-              <div className="bg-red-50 p-3 rounded-md text-sm text-red-700 mt-2">
-                <span className="font-medium">Importante:</span> La confirmación
-                de reservas es obligatoria para la correcta facturación. Las
-                reservas no confirmadas serán facturadas según el número de
-                asistentes previsto inicialmente.
               </div>
             </div>
           </CardContent>
@@ -635,10 +571,6 @@ export default function HowToUsePage() {
               <li>
                 <span className="font-medium">Pasadas:</span> Muestra las
                 reservas de fechas anteriores.
-              </li>
-              <li>
-                <span className="font-medium">Por confirmar:</span> Muestra las
-                reservas pasadas que aún no han sido confirmadas.
               </li>
               <li>
                 <span className="font-medium">Fecha específica:</span> Al
@@ -766,7 +698,6 @@ export default function HowToUsePage() {
               <li>Creación de nuevas reservas</li>
               <li>Modificaciones de reservas existentes</li>
               <li>Cancelaciones de reservas</li>
-              <li>Confirmaciones de reservas pasadas</li>
             </ul>
 
             <p className="text-muted-foreground mt-3">
