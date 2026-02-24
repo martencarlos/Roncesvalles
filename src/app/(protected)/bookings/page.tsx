@@ -631,7 +631,13 @@ export default function BookingsPage() {
 
   if (status === "unauthenticated") {
     router.push("/auth/signin?callbackUrl=/bookings");
-    return null;
+    // Keep showing spinner while the redirect is in flight — returning null
+    // causes a permanent white screen if the redirect is slow or cancelled.
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
   }
 
   return (
