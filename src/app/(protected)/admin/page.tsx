@@ -96,6 +96,19 @@ export default async function AdminPage() {
             <Link href="/admin/export">Exportar Datos</Link>
           </Button>
         </div>
+
+        {/* Blocked Dates Card */}
+        <div className="bg-white rounded-lg border shadow-sm p-6">
+          <h2 className="text-xl font-semibold mb-4">Bloqueos de Fecha</h2>
+          <p className="text-muted-foreground mb-4">
+            Bloquee todas las mesas para una fecha por motivo de Junta General
+            Ordinaria o Extraordinaria. Los usuarios no podrán realizar reservas
+            en los turnos bloqueados.
+          </p>
+          <Button asChild className="w-full">
+            <Link href="/admin/blocked-dates">Gestionar Bloqueos</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

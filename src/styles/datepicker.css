@@ -116,6 +116,10 @@
   background-color: #14b8a6; /* teal-500 */
 }
 
+.booking-dot-blocked {
+  background-color: #e11d48; /* rose-600 */
+}
+
 /* DatePicker legend container */
 .datepicker-legend {
   display: flex;

@@ -30,6 +30,7 @@ import {
   BookOpen,
   StickyNote,
   Save,
+  ShieldAlert,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,7 @@ import BookingListItem from "@/components/BookingListItem";
 import BookingFormModal from "@/components/BookingFormModal";
 import ExportDialog from "@/components/ExportDialog";
 import { IBooking, MealType } from "@/models/Booking";
+import { IBlockedDate } from "@/models/BlockedDate";
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -116,13 +118,15 @@ export default function BookingsPage() {
   const [availableTablesDinner, setAvailableTablesDinner] = useState<number[]>(
     []
   );
+  const [blockedLunch, setBlockedLunch] = useState<IBlockedDate | null>(null);
+  const [blockedDinner, setBlockedDinner] = useState<IBlockedDate | null>(null);
 
   // Add view mode state
   const [viewMode, setViewMode] = useState<ViewMode>(undefined);
 
-  // Add state for bookings by date and meal type
+  // Add state for bookings by date and meal type (including block indicators)
   const [bookingsByDate, setBookingsByDate] = useState<{
-    [key: string]: { lunch: boolean; dinner: boolean };
+    [key: string]: { lunch: boolean; dinner: boolean; blockedLunch?: boolean; blockedDinner?: boolean };
   }>({});
 
   const fetchBookings = async () => {
@@ -163,11 +167,14 @@ export default function BookingsPage() {
 
       // Create a map of dates with booking info for lunch and dinner
       const bookingsByDateMap: {
-        [key: string]: { lunch: boolean; dinner: boolean };
+        [key: string]: { lunch: boolean; dinner: boolean; blockedLunch?: boolean; blockedDinner?: boolean };
       } = {};
 
-      // Now fetch ALL bookings for calendar indicators (not just the user's bookings)
-      const calendarRes = await fetch("/api/bookings?forCalendar=true");
+      // Fetch all bookings and blocked dates for calendar indicators in parallel
+      const [calendarRes, blocksCalRes] = await Promise.all([
+        fetch("/api/bookings?forCalendar=true"),
+        fetch("/api/blocked-dates"),
+      ]);
 
       if (calendarRes.ok) {
         const allBookings = await calendarRes.json();
@@ -184,6 +191,25 @@ export default function BookingsPage() {
             bookingsByDateMap[dateKey].lunch = true;
           } else {
             bookingsByDateMap[dateKey].dinner = true;
+          }
+        });
+      }
+
+      // Add blocked date indicators to calendar map
+      if (blocksCalRes.ok) {
+        const allBlocks: IBlockedDate[] = await blocksCalRes.json();
+        allBlocks.forEach((block) => {
+          const dateKey = format(new Date(block.date), "yyyy-MM-dd");
+          if (!bookingsByDateMap[dateKey]) {
+            bookingsByDateMap[dateKey] = { lunch: false, dinner: false };
+          }
+          if (block.mealType === "both") {
+            bookingsByDateMap[dateKey].blockedLunch = true;
+            bookingsByDateMap[dateKey].blockedDinner = true;
+          } else if (block.mealType === "lunch") {
+            bookingsByDateMap[dateKey].blockedLunch = true;
+          } else {
+            bookingsByDateMap[dateKey].blockedDinner = true;
           }
         });
       }
@@ -214,13 +240,13 @@ export default function BookingsPage() {
 
       const selectedDateString = date.toISOString().split("T")[0];
 
-      // Make two separate requests for lunch and dinner availability
-      const lunchRes = await fetch(
-        `/api/bookings?date=${selectedDateString}&mealType=lunch&availabilityCheck=true`
-      );
-      const dinnerRes = await fetch(
-        `/api/bookings?date=${selectedDateString}&mealType=dinner&availabilityCheck=true`
-      );
+      // Make two separate requests for lunch and dinner availability,
+      // plus a request to check for blocked dates
+      const [lunchRes, dinnerRes, blockRes] = await Promise.all([
+        fetch(`/api/bookings?date=${selectedDateString}&mealType=lunch&availabilityCheck=true`),
+        fetch(`/api/bookings?date=${selectedDateString}&mealType=dinner&availabilityCheck=true`),
+        fetch(`/api/blocked-dates?date=${selectedDateString}`),
+      ]);
 
       if (lunchRes.ok && dinnerRes.ok) {
         const lunchBookings = await lunchRes.json();
@@ -246,6 +272,22 @@ export default function BookingsPage() {
         // Update state with available tables
         setAvailableTablesLunch(availableLunch);
         setAvailableTablesDinner(availableDinner);
+      }
+
+      // Check for blocked dates
+      if (blockRes.ok) {
+        const blocks: IBlockedDate[] = await blockRes.json();
+        const lunchBlock = blocks.find(
+          (b) => b.mealType === "lunch" || b.mealType === "both"
+        ) || null;
+        const dinnerBlock = blocks.find(
+          (b) => b.mealType === "dinner" || b.mealType === "both"
+        ) || null;
+        setBlockedLunch(lunchBlock);
+        setBlockedDinner(dinnerBlock);
+      } else {
+        setBlockedLunch(null);
+        setBlockedDinner(null);
       }
     } catch (err) {
       console.error("Error fetching available tables:", err);
@@ -614,6 +656,19 @@ export default function BookingsPage() {
                 title="Reservas para cena"
               />
             )}
+            {(bookingInfo.blockedLunch || bookingInfo.blockedDinner) && (
+              <div
+                className="booking-indicator booking-dot-blocked"
+                style={{ bottom: "-6px" }}
+                title={
+                  bookingInfo.blockedLunch && bookingInfo.blockedDinner
+                    ? "Fecha bloqueada (Comida y Cena)"
+                    : bookingInfo.blockedLunch
+                    ? "Comida bloqueada"
+                    : "Cena bloqueada"
+                }
+              />
+            )}
           </>
         )}
       </div>
@@ -708,7 +763,11 @@ export default function BookingsPage() {
                 <Button
                   onClick={handleNewBooking}
                   size="sm"
-                  className="cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 px-4 w-full sm:w-auto"
+                  disabled={
+                    (selectedMealType === "lunch" && !!blockedLunch) ||
+                    (selectedMealType === "dinner" && !!blockedDinner)
+                  }
+                  className="cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 px-4 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusCircle className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Nueva Reserva</span>
@@ -774,6 +833,10 @@ export default function BookingsPage() {
                   <div className="datepicker-legend-dot booking-dot-both"></div>
                   <span>Ambas</span>
                 </div>
+                <div className="datepicker-legend-item">
+                  <div className="datepicker-legend-dot booking-dot-blocked"></div>
+                  <span>Bloqueada</span>
+                </div>
                 <div className="flex items-center gap-1 text-muted-foreground ml-auto">
                   <InfoIcon className="h-3 w-3" />
                   <span>Fechas con reservas</span>
@@ -809,6 +872,20 @@ export default function BookingsPage() {
                 <CardContent className="px-4">
                   {loadingTables ? (
                     <TablesSkeleton />
+                  ) : blockedLunch ? (
+                    <div className="flex items-start gap-2 p-3 rounded-md bg-rose-50 border border-rose-200">
+                      <ShieldAlert className="h-4 w-4 text-rose-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-rose-700 text-sm font-medium">
+                          Fecha no disponible
+                        </p>
+                        <p className="text-rose-600 text-sm">
+                          Esta fecha está reservada para{" "}
+                          <span className="font-semibold">{blockedLunch.reason}</span>.
+                          No es posible realizar reservas de comida en esta fecha.
+                        </p>
+                      </div>
+                    </div>
                   ) : availableTablesLunch.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {availableTablesLunch.map((table) => (
@@ -842,6 +919,20 @@ export default function BookingsPage() {
                 <CardContent className="px-4">
                   {loadingTables ? (
                     <TablesSkeleton />
+                  ) : blockedDinner ? (
+                    <div className="flex items-start gap-2 p-3 rounded-md bg-rose-50 border border-rose-200">
+                      <ShieldAlert className="h-4 w-4 text-rose-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-rose-700 text-sm font-medium">
+                          Fecha no disponible
+                        </p>
+                        <p className="text-rose-600 text-sm">
+                          Esta fecha está reservada para{" "}
+                          <span className="font-semibold">{blockedDinner.reason}</span>.
+                          No es posible realizar reservas de cena en esta fecha.
+                        </p>
+                      </div>
+                    </div>
                   ) : availableTablesDinner.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {availableTablesDinner.map((table) => (

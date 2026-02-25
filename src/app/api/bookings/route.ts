@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
+import BlockedDate from '@/models/BlockedDate';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
 import { sendPushToConserje } from '@/lib/push-service';
@@ -124,7 +125,23 @@ export async function POST(req: NextRequest) {
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(bookingDate);
     endOfDay.setHours(23, 59, 59, 999);
-    
+
+    // --- BLOCKED DATE CHECK ---
+    const dateBlock = await BlockedDate.findOne({
+      date: { $gte: startOfDay, $lte: endOfDay },
+      $or: [{ mealType: body.mealType }, { mealType: "both" }],
+    });
+    if (dateBlock) {
+      return NextResponse.json(
+        {
+          error: "Fecha bloqueada",
+          message: `Esta fecha está reservada para ${dateBlock.reason}. No es posible realizar reservas de ${body.mealType === "lunch" ? "comida" : "cena"} en esta fecha.`,
+        },
+        { status: 409 }
+      );
+    }
+    // --- END BLOCKED DATE CHECK ---
+
     // Fetch Existing Bookings for conflict check
     const existingBookings = await Booking.find({
       date: {

@@ -1,6 +1,7 @@
 // src/components/BookingForm.tsx
 import React, { useState, useEffect } from "react";
 import { IBooking, MealType } from "@/models/Booking";
+import { IBlockedDate } from "@/models/BlockedDate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ import { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
 import { format, differenceInDays } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
-import { CalendarIcon, LockIcon, InfoIcon, AlertTriangle } from "lucide-react";
+import { CalendarIcon, LockIcon, InfoIcon, AlertTriangle, ShieldAlert } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { getApartmentLabel } from "@/lib/utils";
 
@@ -31,6 +32,8 @@ interface BookingsForDate {
   [date: string]: {
     lunch: boolean;
     dinner: boolean;
+    blockedLunch?: boolean;
+    blockedDinner?: boolean;
   };
 }
 
@@ -103,6 +106,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [isConciergeRestDay, setIsConciergeRestDay] = useState<boolean>(false);
   const [isShortNotice, setIsShortNotice] = useState<boolean>(false);
   const [isOvenBooked, setIsOvenBooked] = useState<boolean>(false);
+  const [dateBlock, setDateBlock] = useState<IBlockedDate | null>(null);
 
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
 
@@ -188,7 +192,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
   useEffect(() => {
     const fetchAllBookings = async () => {
       try {
-        const res = await fetch("/api/bookings?forCalendar=true");
+        const [res, blocksRes] = await Promise.all([
+          fetch("/api/bookings?forCalendar=true"),
+          fetch("/api/blocked-dates"),
+        ]);
         if (!res.ok) throw new Error("Error al obtener reservas");
         const bookings: IBooking[] = await res.json();
         const bookingMap: BookingsForDate = {};
@@ -204,6 +211,26 @@ const BookingForm: React.FC<BookingFormProps> = ({
             bookingMap[dateKey].dinner = true;
           }
         });
+
+        // Add blocked date indicators
+        if (blocksRes.ok) {
+          const allBlocks: IBlockedDate[] = await blocksRes.json();
+          allBlocks.forEach((block) => {
+            const dateKey = format(new Date(block.date), "yyyy-MM-dd");
+            if (!bookingMap[dateKey]) {
+              bookingMap[dateKey] = { lunch: false, dinner: false };
+            }
+            if (block.mealType === "both") {
+              bookingMap[dateKey].blockedLunch = true;
+              bookingMap[dateKey].blockedDinner = true;
+            } else if (block.mealType === "lunch") {
+              bookingMap[dateKey].blockedLunch = true;
+            } else {
+              bookingMap[dateKey].blockedDinner = true;
+            }
+          });
+        }
+
         setBookingsForDates(bookingMap);
       } catch (err) {
         console.error("Error fetching all bookings:", err);
@@ -255,6 +282,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 "Algunas mesas que había seleccionado ya no están disponibles.",
             });
           }
+        }
+
+        // Check if this date+mealType is blocked
+        const blockRes = await fetch(`/api/blocked-dates?date=${dateString}`);
+        if (blockRes.ok) {
+          const blocks: IBlockedDate[] = await blockRes.json();
+          const activeBlock =
+            blocks.find((b) => b.mealType === mealType || b.mealType === "both") ||
+            null;
+          setDateBlock(activeBlock);
+        } else {
+          setDateBlock(null);
         }
       } catch (err) {
         console.error("Error fetching booked resources:", err);
@@ -355,6 +394,19 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 title="Reservas para cena"
               />
             )}
+            {(bookingInfo.blockedLunch || bookingInfo.blockedDinner) && (
+              <div
+                className="booking-indicator booking-dot-blocked"
+                style={{ bottom: "-6px" }}
+                title={
+                  bookingInfo.blockedLunch && bookingInfo.blockedDinner
+                    ? "Fecha bloqueada (Comida y Cena)"
+                    : bookingInfo.blockedLunch
+                    ? "Comida bloqueada"
+                    : "Cena bloqueada"
+                }
+              />
+            )}
           </>
         )}
       </div>
@@ -364,6 +416,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Block check guard
+    if (dateBlock) {
+      setError(
+        `Esta fecha está bloqueada por ${dateBlock.reason}. No puede realizar reservas.`
+      );
+      return;
+    }
 
     const effectiveApartmentNumber = isRegularUser
       ? session?.user.apartmentNumber
@@ -487,6 +547,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
             <div className="datepicker-legend-item">
               <div className="datepicker-legend-dot booking-dot-both"></div>
               <span>Ambas</span>
+            </div>
+            <div className="datepicker-legend-item">
+              <div className="datepicker-legend-dot booking-dot-blocked"></div>
+              <span>Bloqueada</span>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground ml-auto">
               <InfoIcon className="h-3 w-3" />
@@ -783,6 +847,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </Alert>
       )}
 
+      {dateBlock && (
+        <Alert className="bg-rose-50 border-rose-200 mt-4 mb-2">
+          <ShieldAlert className="h-4 w-4 text-rose-600" />
+          <AlertDescription className="text-rose-800">
+            <strong>Fecha no disponible:</strong> Esta fecha está reservada para{" "}
+            <span className="font-semibold">{dateBlock.reason}</span>. No es
+            posible realizar reservas de{" "}
+            {mealType === "lunch" ? "comida" : "cena"} en esta fecha.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">
         <Button
           variant="outline"
@@ -794,7 +870,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !!dateBlock}
           className={`cursor-pointer w-full sm:w-auto active:scale-95 transition-all duration-150 ${
             initialData?._id
               ? ""
