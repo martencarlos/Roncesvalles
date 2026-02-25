@@ -50,7 +50,6 @@ import "react-datepicker/dist/react-datepicker.css";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import { useSession } from "next-auth/react";
 import UserMenu from "@/components/auth/UserMenu";
-import { useSessionReady } from "@/components/auth/auth-components";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -89,7 +88,6 @@ type ViewMode = "card" | "list" | undefined;
 
 export default function BookingsPage() {
   const { data: session, status } = useSession();
-  const sessionReady = useSessionReady(status);
   const router = useRouter();
 
   const [bookings, setBookings] = useState<IBooking[]>([]);
@@ -753,28 +751,20 @@ export default function BookingsPage() {
     );
   };
 
-  // Once the session is confirmed unauthenticated, redirect once via effect.
-  // Only redirect when online — if offline, the NetworkError from NextAuth is
-  // not a real logout, so we just show a spinner and wait for reconnection.
+  // AuthLoader in NextAuthProvider already blocks rendering until the session
+  // has durably settled, so by the time this page renders, status is either
+  // "authenticated" or genuinely "unauthenticated". No bounce handling needed here.
   useEffect(() => {
-    if (sessionReady && status === "unauthenticated" && navigator.onLine) {
+    if (status === "unauthenticated") {
       router.push("/auth/signin?callbackUrl=/bookings");
     }
-  }, [sessionReady, status, router]);
+  }, [status, router]);
 
-  // Overlay a spinner without unmounting the page component tree.
-  // Returning a different JSX tree (early return) causes React to unmount and
-  // remount everything — including useSessionReady — which resets wasAuthenticatedRef
-  // and breaks the latch, producing an infinite flash loop on app resume.
-  const showSpinner = !sessionReady || status === "unauthenticated";
+  if (status === "loading" || status === "unauthenticated") {
+    return null;
+  }
 
   return (
-    <>
-    {showSpinner && (
-      <div className="fixed inset-0 z-50 flex justify-center items-center bg-white">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    )}
     <div className="max-w-6xl mb-32 mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6 sm:mb-8">
         {/* Top header with title, user guide, and user menu */}
@@ -1467,6 +1457,5 @@ export default function BookingsPage() {
         </p>
       )}
     </div>
-    </>
   );
 }
