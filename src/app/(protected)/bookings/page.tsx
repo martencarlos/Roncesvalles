@@ -762,17 +762,19 @@ export default function BookingsPage() {
     }
   }, [sessionReady, status, router]);
 
-  // Show spinner while session is loading or while redirect is in flight.
-  // If offline and unauthenticated, show spinner too (waiting for reconnection).
-  if (!sessionReady || status === "unauthenticated") {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
+  // Overlay a spinner without unmounting the page component tree.
+  // Returning a different JSX tree (early return) causes React to unmount and
+  // remount everything — including useSessionReady — which resets wasAuthenticatedRef
+  // and breaks the latch, producing an infinite flash loop on app resume.
+  const showSpinner = !sessionReady || status === "unauthenticated";
 
   return (
+    <>
+    {showSpinner && (
+      <div className="fixed inset-0 z-50 flex justify-center items-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    )}
     <div className="max-w-6xl mb-32 mx-auto px-4 py-3 sm:p-4 min-h-screen">
       <header className="mb-6 sm:mb-8">
         {/* Top header with title, user guide, and user menu */}
@@ -1465,5 +1467,6 @@ export default function BookingsPage() {
         </p>
       )}
     </div>
+    </>
   );
 }
