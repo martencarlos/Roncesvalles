@@ -20,6 +20,7 @@ import {
   Flame,
   Utensils,
   AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -46,6 +47,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { IBooking } from "@/models/Booking";
+import { IBlockedDate, BlockedMealType } from "@/models/BlockedDate";
 import { getApartmentLabel } from "@/lib/utils";
 
 registerLocale("es", es);
@@ -63,6 +65,8 @@ export default function BookingsManagement({
 
   const [bookings, setBookings] = useState<IBooking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
+  const [blocks, setBlocks] = useState<IBlockedDate[]>([]);
+  const [filteredBlocks, setFilteredBlocks] = useState<IBlockedDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -85,15 +89,18 @@ export default function BookingsManagement({
   const [noteBooking, setNoteBooking] = useState<IBooking | null>(null);
   const [internalNoteText, setInternalNoteText] = useState("");
 
-  // Fetch bookings
+  // Fetch bookings and blocks
   useEffect(() => {
     const fetchBookings = async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch("/api/bookings");
-        if (!res.ok) throw new Error("Error al obtener reservas");
-        const data = await res.json();
+        const [bookingsRes, blocksRes] = await Promise.all([
+          fetch("/api/bookings"),
+          fetch("/api/blocked-dates"),
+        ]);
+        if (!bookingsRes.ok) throw new Error("Error al obtener reservas");
+        const data = await bookingsRes.json();
         const sortedData = [...data].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
@@ -106,6 +113,12 @@ export default function BookingsManagement({
           selectedDate,
           mealTypeFilter
         );
+
+        if (blocksRes.ok) {
+          const blocksData: IBlockedDate[] = await blocksRes.json();
+          setBlocks(blocksData);
+          applyBlockFilters(blocksData, dateFilter, statusFilter, selectedDate, mealTypeFilter);
+        }
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -156,6 +169,50 @@ export default function BookingsManagement({
     setFilteredBookings(filtered);
   };
 
+  // Filter logic for blocks — blocks don't have status or apartment search,
+  // but they do respect date and mealType filters
+  const applyBlockFilters = (
+    list: IBlockedDate[],
+    date: string,
+    status: string,
+    specificDate: Date | null,
+    meal: string
+  ) => {
+    // Blocks are never "completed" or "cancelled" — hide them when status filter is set
+    if (status !== "all") {
+      setFilteredBlocks([]);
+      return;
+    }
+    let filtered = [...list];
+    if (date === "today")
+      filtered = filtered.filter((b) => isToday(new Date(b.date)));
+    else if (date === "future")
+      filtered = filtered.filter(
+        (b) => isToday(new Date(b.date)) || new Date(b.date) > new Date()
+      );
+    else if (date === "past")
+      filtered = filtered.filter(
+        (b) => !isToday(new Date(b.date)) && new Date(b.date) < new Date()
+      );
+    else if (date === "specific" && specificDate) {
+      filtered = filtered.filter((b) => {
+        const d = new Date(b.date);
+        return (
+          d.getDate() === specificDate.getDate() &&
+          d.getMonth() === specificDate.getMonth() &&
+          d.getFullYear() === specificDate.getFullYear()
+        );
+      });
+    }
+    // mealType filter: block "both" matches any meal filter
+    if (meal !== "all") {
+      filtered = filtered.filter(
+        (b) => b.mealType === meal || b.mealType === "both"
+      );
+    }
+    setFilteredBlocks(filtered);
+  };
+
   useEffect(() => {
     applyFilters(
       bookings,
@@ -165,8 +222,10 @@ export default function BookingsManagement({
       selectedDate,
       mealTypeFilter
     );
+    applyBlockFilters(blocks, dateFilter, statusFilter, selectedDate, mealTypeFilter);
   }, [
     bookings,
+    blocks,
     searchQuery,
     dateFilter,
     statusFilter,
@@ -302,6 +361,30 @@ export default function BookingsManagement({
   const formatDate = (date: string | Date) =>
     format(new Date(date), "d MMM, yyyy", { locale: es });
 
+  // Merge filtered bookings and blocks into a single chronologically-sorted list
+  const MEAL_LABELS: Record<string, string> = {
+    lunch: "Comida",
+    dinner: "Cena",
+    both: "Comida y Cena",
+  };
+  const MEAL_BADGE_CLASSES: Record<string, string> = {
+    lunch: "bg-orange-50 text-orange-700 border-orange-200",
+    dinner: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    both: "bg-teal-50 text-teal-700 border-teal-200",
+  };
+
+  type MergedItem =
+    | { kind: "booking"; item: IBooking }
+    | { kind: "block"; item: IBlockedDate };
+
+  const mergedList: MergedItem[] = [
+    ...filteredBookings.map((b): MergedItem => ({ kind: "booking", item: b })),
+    ...filteredBlocks.map((b): MergedItem => ({ kind: "block", item: b })),
+  ].sort(
+    (a, b) =>
+      new Date(b.item.date).getTime() - new Date(a.item.date).getTime()
+  );
+
   return (
     <div>
       {error && (
@@ -403,9 +486,68 @@ export default function BookingsManagement({
         <div className="flex justify-center p-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
         </div>
-      ) : filteredBookings.length > 0 ? (
+      ) : mergedList.length > 0 ? (
         <div className="space-y-3">
-          {filteredBookings.map((booking) => {
+          {mergedList.map((entry) => {
+            if (entry.kind === "block") {
+              const block = entry.item;
+              return (
+              <Card
+                key={`block-${block._id}`}
+                className="py-0 border-rose-300 bg-rose-50/30"
+              >
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 lg:items-center">
+                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-12 gap-y-2 gap-x-4 items-center">
+                      {/* Date & label */}
+                      <div className="col-span-2 sm:col-span-4 lg:col-span-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0" />
+                          <Badge className="bg-rose-100 text-rose-700 border-rose-200 shadow-none hover:bg-rose-100">
+                            Bloqueo
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span>{formatDate(block.date)}</span>
+                        </div>
+                      </div>
+
+                      {/* Meal type & fire */}
+                      <div className="col-span-1 sm:col-span-4 lg:col-span-3 flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2">
+                        <Badge
+                          variant="outline"
+                          className={MEAL_BADGE_CLASSES[block.mealType]}
+                        >
+                          {MEAL_LABELS[block.mealType]}
+                        </Badge>
+                        {block.prepararFuego && (
+                          <Badge
+                            variant="outline"
+                            className="bg-rose-50 text-rose-700 border-rose-200 px-1.5 py-0 h-5 text-[10px] gap-1 w-fit"
+                          >
+                            <Flame className="h-3 w-3" /> Fuego
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Reason */}
+                      <div className="col-span-1 sm:col-span-4 lg:col-span-6 text-sm">
+                        <Badge
+                          variant="outline"
+                          className="bg-violet-50 text-violet-700 border-violet-200"
+                        >
+                          {block.reason}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              );
+            }
+
+            const booking = entry.item;
             const isCompleted = booking.status === "completed";
             const isPending = booking.status === "pending";
             const isCancelled = booking.status === "cancelled";

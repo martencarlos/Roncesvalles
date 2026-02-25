@@ -31,6 +31,7 @@ import {
   StickyNote,
   Save,
   ShieldAlert,
+  Flame,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +43,7 @@ import BookingListItem from "@/components/BookingListItem";
 import BookingFormModal from "@/components/BookingFormModal";
 import ExportDialog from "@/components/ExportDialog";
 import { IBooking, MealType } from "@/models/Booking";
-import { IBlockedDate } from "@/models/BlockedDate";
+import { IBlockedDate, BlockedMealType } from "@/models/BlockedDate";
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -121,6 +122,10 @@ export default function BookingsPage() {
   const [blockedLunch, setBlockedLunch] = useState<IBlockedDate | null>(null);
   const [blockedDinner, setBlockedDinner] = useState<IBlockedDate | null>(null);
 
+  // Blocks list for admin/conserje list view
+  const [blocks, setBlocks] = useState<IBlockedDate[]>([]);
+  const [filteredBlocks, setFilteredBlocks] = useState<IBlockedDate[]>([]);
+
   // Add view mode state
   const [viewMode, setViewMode] = useState<ViewMode>(undefined);
 
@@ -198,6 +203,8 @@ export default function BookingsPage() {
       // Add blocked date indicators to calendar map
       if (blocksCalRes.ok) {
         const allBlocks: IBlockedDate[] = await blocksCalRes.json();
+        setBlocks(allBlocks);
+        applyBlockFilters(allBlocks, dateFilter, selectedDate);
         allBlocks.forEach((block) => {
           const dateKey = format(new Date(block.date), "yyyy-MM-dd");
           if (!bookingsByDateMap[dateKey]) {
@@ -374,10 +381,54 @@ export default function BookingsPage() {
     setFilteredBookings(filtered);
   };
 
+  // Apply date filters to blocks (for admin/conserje list view)
+  const applyBlockFilters = (
+    allBlocks: IBlockedDate[],
+    filter: DateFilter,
+    date: Date
+  ) => {
+    const today = startOfDay(new Date());
+    let filtered: IBlockedDate[] = [];
+
+    switch (filter) {
+      case "today":
+        filtered = allBlocks.filter((block) => isToday(new Date(block.date)));
+        break;
+      case "future":
+        filtered = allBlocks.filter(
+          (block) =>
+            isFuture(new Date(block.date)) || isToday(new Date(block.date))
+        );
+        break;
+      case "past":
+        filtered = allBlocks.filter(
+          (block) =>
+            isPast(new Date(block.date)) && !isToday(new Date(block.date))
+        );
+        break;
+      case "specific": {
+        const selectedDateStart = startOfDay(date);
+        const selectedDateEnd = endOfDay(date);
+        filtered = allBlocks.filter((block) => {
+          const blockDate = new Date(block.date);
+          return blockDate >= selectedDateStart && blockDate <= selectedDateEnd;
+        });
+        break;
+      }
+      case "all":
+      default:
+        filtered = allBlocks;
+        break;
+    }
+
+    setFilteredBlocks(filtered);
+  };
+
   // Update filters when date filter or selected date changes
   useEffect(() => {
     applyFilters(bookings, dateFilter, selectedDate);
-  }, [dateFilter, selectedDate, bookings]);
+    applyBlockFilters(blocks, dateFilter, selectedDate);
+  }, [dateFilter, selectedDate, bookings, blocks]);
 
   // When you need to check for booked tables and update the available tables:
   useEffect(() => {
@@ -608,6 +659,33 @@ export default function BookingsPage() {
 
   // Sort date keys chronologically
   const sortedDateKeys = Object.keys(groupedBookings).sort();
+
+  // Merged list of bookings + blocks for admin/conserje list view
+  const isAdminOrConserje =
+    session?.user?.role === "admin" || session?.user?.role === "conserje";
+
+  type MergedItem =
+    | { kind: "booking"; item: IBooking }
+    | { kind: "block"; item: IBlockedDate };
+
+  const MEAL_LABELS: Record<BlockedMealType, string> = {
+    lunch: "Comida",
+    dinner: "Cena",
+    both: "Comida y Cena",
+  };
+
+  const MEAL_BADGE_CLASSES: Record<BlockedMealType, string> = {
+    lunch: "bg-orange-50 text-orange-700 border-orange-200",
+    dinner: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    both: "bg-teal-50 text-teal-700 border-teal-200",
+  };
+
+  const mergedList: MergedItem[] = isAdminOrConserje
+    ? [
+        ...filteredBookings.map((b): MergedItem => ({ kind: "booking", item: b })),
+        ...filteredBlocks.map((b): MergedItem => ({ kind: "block", item: b })),
+      ].sort((a, b) => new Date(a.item.date).getTime() - new Date(b.item.date).getTime())
+    : [];
 
   // Toggle view mode
   const toggleViewMode = () => {
@@ -1088,7 +1166,7 @@ export default function BookingsPage() {
             </Button>
           </div>
 
-          {filteredBookings.length === 0 && (
+          {(isAdminOrConserje ? mergedList.length === 0 : filteredBookings.length === 0) && (
               <Button
                 variant="outline"
                 onClick={() => setDateFilter("future")}
@@ -1141,7 +1219,133 @@ export default function BookingsPage() {
             <BookingsDateSkeleton />
           )}
         </div>
+      ) : isAdminOrConserje ? (
+        /* Admin / Conserje: merged list of bookings + blocks */
+        mergedList.length > 0 ? (
+          <div className="space-y-3">
+            {mergedList.map((entry) => {
+              if (entry.kind === "block") {
+                const block = entry.item;
+                const blockDate = new Date(block.date);
+                const isBlockToday = isToday(blockDate);
+                const isBlockFuture = isFuture(blockDate);
+                const isBlockPast = isPast(blockDate) && !isToday(blockDate);
+
+                let statusBadge = null;
+                if (isBlockToday) {
+                  statusBadge = (
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">Hoy</Badge>
+                  );
+                } else if (isBlockFuture) {
+                  statusBadge = (
+                    <Badge className="bg-green-100 text-green-800 border-green-200">Próxima</Badge>
+                  );
+                } else if (isBlockPast) {
+                  statusBadge = (
+                    <Badge className="bg-gray-100 text-gray-800 border-gray-200">Pasada</Badge>
+                  );
+                }
+
+                return (
+                  <div
+                    key={`block-${block._id}`}
+                    className="border border-rose-200 bg-rose-50 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0" />
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <Badge className="bg-rose-100 text-rose-700 border-rose-200 shrink-0">
+                          Bloqueo
+                        </Badge>
+                        <span className="text-sm font-medium text-rose-900 shrink-0">
+                          {formatDateEs(blockDate, "EEEE, d MMM yyyy")}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`${MEAL_BADGE_CLASSES[block.mealType]} shrink-0`}
+                        >
+                          {MEAL_LABELS[block.mealType]}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="bg-violet-50 text-violet-700 border-violet-200 shrink-0"
+                        >
+                          {block.reason}
+                        </Badge>
+                        {block.prepararFuego && (
+                          <Badge
+                            variant="outline"
+                            className="bg-amber-50 text-amber-700 border-amber-200 shrink-0"
+                          >
+                            <Flame className="h-3 w-3 mr-1" />
+                            Fuego
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0">{statusBadge}</div>
+                  </div>
+                );
+              }
+
+              // Regular booking entry
+              const booking = entry.item;
+              const bookingDate = new Date(booking.date);
+              const isBookingToday = isToday(bookingDate);
+              const isBookingFuture = isFuture(bookingDate);
+              const isBookingPast = isPast(bookingDate) && !isToday(bookingDate);
+
+              return (
+                <div key={`booking-${booking._id}`}>
+                  {/* Mobile */}
+                  <div className="sm:hidden">
+                    <BookingListItem
+                      booking={booking}
+                      onEdit={() => setEditingBooking(booking)}
+                      onDelete={() => handleDeleteBooking(booking)}
+                      onEditNote={handleOpenNoteDialog}
+                      isPast={isBookingPast}
+                      session={session}
+                    />
+                  </div>
+                  {/* Desktop */}
+                  <div className="hidden sm:block">
+                    {viewMode === "card" ? (
+                      <BookingCard
+                        booking={booking}
+                        onEdit={() => setEditingBooking(booking)}
+                        onDelete={() => handleDeleteBooking(booking)}
+                        onEditNote={handleOpenNoteDialog}
+                        isPast={isBookingPast}
+                        session={session}
+                      />
+                    ) : (
+                      <BookingListItem
+                        booking={booking}
+                        onEdit={() => setEditingBooking(booking)}
+                        onDelete={() => handleDeleteBooking(booking)}
+                        onEditNote={handleOpenNoteDialog}
+                        isPast={isBookingPast}
+                        session={session}
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-muted-foreground py-6 sm:py-8 text-center">
+            {dateFilter === "today" && "No hay reservas ni bloqueos para hoy."}
+            {dateFilter === "future" && "No hay próximas reservas ni bloqueos."}
+            {dateFilter === "past" && "No hay reservas ni bloqueos pasados."}
+            {dateFilter === "specific" &&
+              `No hay reservas ni bloqueos para ${formatDateEs(selectedDate, "d MMMM, yyyy")}.`}
+            {dateFilter === "all" && "No hay reservas ni bloqueos disponibles."}
+          </p>
+        )
       ) : filteredBookings.length > 0 ? (
+        /* Regular user or other roles: original grouped by date view */
         <div className="space-y-6 sm:space-y-8">
           {sortedDateKeys.map((dateKey) => {
             const bookingsForDate = groupedBookings[dateKey];
@@ -1201,7 +1405,7 @@ export default function BookingsPage() {
                       booking={booking}
                       onEdit={() => setEditingBooking(booking)}
                       onDelete={() => handleDeleteBooking(booking)}
-                        onEditNote={handleOpenNoteDialog}
+                      onEditNote={handleOpenNoteDialog}
                       isPast={isBookingPast}
                       session={session}
                     />
