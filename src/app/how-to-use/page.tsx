@@ -31,6 +31,7 @@ import {
   Eye,
   Download,
   MessageSquare,
+  ShieldAlert,
 } from "lucide-react";
 import FeedbackForm from "@/components/FeedbackForm";
 
@@ -177,10 +178,18 @@ export default function HowToUsePage() {
               </li>
               <li>
                 <Link
+                  href="#fechas-bloqueadas"
+                  className="text-blue-600 hover:underline"
+                >
+                  7. Fechas Bloqueadas
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="#feedback"
                   className="text-blue-600 hover:underline"
                 >
-                  7. Enviar Feedback
+                  8. Enviar Feedback
                 </Link>
               </li>
             </ul>
@@ -476,8 +485,8 @@ export default function HowToUsePage() {
               </ol>
               <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
                 <span className="font-medium">Nota:</span> El calendario muestra
-                indicadores para fechas con reservas existentes:
-                <div className="flex gap-3 mt-2">
+                indicadores de colores bajo cada fecha:
+                <div className="flex flex-wrap gap-3 mt-2">
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-full bg-orange-400"></div>
                     <span>Comida</span>
@@ -489,6 +498,10 @@ export default function HowToUsePage() {
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-full bg-teal-500"></div>
                     <span>Ambas</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-rose-600"></div>
+                    <span>Bloqueada (Junta General)</span>
                   </div>
                 </div>
               </div>
@@ -728,12 +741,69 @@ export default function HowToUsePage() {
             </div>
           </CardContent>
         </Card>
+        {/* Blocked Dates Section */}
+        <Card id="fechas-bloqueadas">
+          <CardHeader className="px-4 pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-rose-500" />
+              7. Fechas Bloqueadas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 space-y-4">
+            <p className="text-muted-foreground">
+              En ocasiones, determinadas fechas pueden estar bloqueadas para
+              reservas debido a la celebración de una{" "}
+              <span className="font-medium">Junta General Ordinaria</span> o{" "}
+              <span className="font-medium">Junta General Extraordinaria</span>.
+              Durante estos eventos, el espacio comunitario es utilizado por la
+              sociedad y no está disponible para reservas individuales.
+            </p>
+
+            <div className="bg-rose-50 border border-rose-200 rounded-md p-3">
+              <h3 className="font-medium text-rose-800 mb-2 flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-rose-600" />
+                ¿Cómo sé si una fecha está bloqueada?
+              </h3>
+              <ul className="list-disc pl-5 space-y-2 text-sm text-rose-700">
+                <li>
+                  En el <span className="font-medium">calendario</span>, las
+                  fechas bloqueadas muestran un punto rojo (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+                    <span>Bloqueada</span>
+                  </span>
+                  ) en la leyenda inferior.
+                </li>
+                <li>
+                  Al seleccionar una fecha bloqueada, la sección de
+                  disponibilidad mostrará un aviso en rojo indicando el motivo
+                  (nombre de la junta) en lugar de las mesas disponibles.
+                </li>
+                <li>
+                  El botón <span className="font-medium">Nueva Reserva</span>{" "}
+                  estará desactivado para los turnos bloqueados.
+                </li>
+                <li>
+                  Si intenta crear una reserva para un turno bloqueado, el
+                  sistema no lo permitirá y mostrará el motivo del bloqueo.
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+              <span className="font-medium">Nota:</span> Los bloqueos son
+              gestionados por la administración de la sociedad. Si tiene alguna
+              duda sobre una fecha bloqueada, contacte con el administrador.
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Add a new feedback section at the end */}
         <Card id="feedback">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-blue-500" />
-              7. Enviar Feedback
+              8. Enviar Feedback
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4">
