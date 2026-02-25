@@ -36,16 +36,21 @@ export function useSessionReady(status: string): boolean {
     if (status === "unauthenticated") {
       if (wasAuthenticatedRef.current) {
         // Transient unauthenticated after being authenticated = still re-validating.
-        // Stay not-ready and let the loading branch below handle the timeout.
-        // Reset the latch so that if it truly logs out the next cycle works.
-        wasAuthenticatedRef.current = false;
+        // Do NOT reset the latch — if the cycle repeats (loading→unauth→loading→unauth)
+        // we still want to wait rather than redirect. The safety-valve timeout will
+        // fire if it never comes back authenticated.
         setReady(false);
-        // Start safety-valve timeout in case it never comes back
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(() => setReady(true), 8000);
+        // Only start the safety-valve if one isn't already running
+        if (!timerRef.current) {
+          timerRef.current = setTimeout(() => {
+            timerRef.current = null;
+            setReady(true);
+          }, 8000);
+        }
       } else {
         // Genuinely unauthenticated from the start → ready to redirect.
         if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = null;
         setReady(true);
       }
       return;
@@ -53,8 +58,13 @@ export function useSessionReady(status: string): boolean {
 
     // status === "loading"
     setReady(false);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setReady(true), 8000);
+    // Only start the safety-valve if one isn't already running
+    if (!timerRef.current) {
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        setReady(true);
+      }, 8000);
+    }
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
