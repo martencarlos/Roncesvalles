@@ -7,19 +7,19 @@ import { useEffect, useRef, useState } from "react";
 
 // Returns true once the session status has durably resolved.
 //
-// Problem this solves: on Android Chrome, locking and unlocking the phone
-// causes useSession to cycle through loading → unauthenticated → loading →
-// authenticated (or similar) as the browser re-validates the session cookie.
-// Treating a transient "unauthenticated" as ready causes immediate redirects
-// to sign-in and/or an infinite flash loop.
+// Problem this solves: on Android Chrome, locking/unlocking the phone or
+// losing network causes useSession to cycle through loading → unauthenticated
+// → loading → authenticated as the browser re-validates the session cookie, or
+// to get stuck at unauthenticated due to a NetworkError (not a real logout).
 //
 // Strategy:
 // - Once we see "authenticated", latch that fact. If status later goes back
-//   to "loading" or transiently "unauthenticated", keep ready=false and wait
-//   for it to settle — the session is still being re-validated.
-// - If status was never "authenticated" and reaches "unauthenticated", that
-//   is a genuine logged-out state → ready=true so the page can redirect.
-// - Safety valve: if status stays "loading" for 8 s, force ready=true.
+//   to "loading" or transiently "unauthenticated", keep ready=false and wait.
+// - If the device is offline and we were previously authenticated, never treat
+//   "unauthenticated" as real — just keep waiting (no safety-valve redirect).
+// - If status was never "authenticated" and reaches "unauthenticated" while
+//   online, that is a genuine logged-out state → ready=true so page can redirect.
+// - Safety valve: if status stays "loading" for 8 s while online, force ready=true.
 export function useSessionReady(status: string): boolean {
   const [ready, setReady] = useState(status === "authenticated");
   const wasAuthenticatedRef = useRef(status === "authenticated");
@@ -29,37 +29,42 @@ export function useSessionReady(status: string): boolean {
     if (status === "authenticated") {
       wasAuthenticatedRef.current = true;
       if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = null;
       setReady(true);
       return;
     }
 
     if (status === "unauthenticated") {
       if (wasAuthenticatedRef.current) {
-        // Transient unauthenticated after being authenticated = still re-validating.
-        // Do NOT reset the latch — if the cycle repeats (loading→unauth→loading→unauth)
-        // we still want to wait rather than redirect. The safety-valve timeout will
-        // fire if it never comes back authenticated.
+        // Transient unauthenticated after being authenticated.
+        // Could be: phone unlock re-validation, or a NetworkError while offline.
+        // Either way: stay not-ready and wait. Only start the safety-valve if
+        // we're actually online (offline = keep waiting indefinitely).
         setReady(false);
-        // Only start the safety-valve if one isn't already running
-        if (!timerRef.current) {
+        if (!timerRef.current && navigator.onLine) {
           timerRef.current = setTimeout(() => {
             timerRef.current = null;
             setReady(true);
           }, 8000);
         }
       } else {
-        // Genuinely unauthenticated from the start → ready to redirect.
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = null;
-        setReady(true);
+        // Never authenticated this session + online = genuine logout → redirect.
+        // Never authenticated + offline = can't verify, keep waiting.
+        if (navigator.onLine) {
+          if (timerRef.current) clearTimeout(timerRef.current);
+          timerRef.current = null;
+          setReady(true);
+        } else {
+          setReady(false);
+        }
       }
       return;
     }
 
     // status === "loading"
     setReady(false);
-    // Only start the safety-valve if one isn't already running
-    if (!timerRef.current) {
+    // Only start the safety-valve if online and none is already running
+    if (!timerRef.current && navigator.onLine) {
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
         setReady(true);
@@ -70,6 +75,22 @@ export function useSessionReady(status: string): boolean {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [status]);
+
+  // When coming back online, re-evaluate: if we were stuck waiting due to
+  // being offline, the online event will trigger NextAuth to re-fetch, but
+  // also restart the safety-valve timer in case it doesn't.
+  useEffect(() => {
+    const handleOnline = () => {
+      if (!ready && !timerRef.current) {
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          setReady(true);
+        }, 8000);
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [ready]);
 
   return ready;
 }
