@@ -23,13 +23,16 @@ import { useEffect, useRef, useState } from "react";
 export function useSessionReady(status: string): boolean {
   const [ready, setReady] = useState(status === "authenticated");
   const wasAuthenticatedRef = useRef(status === "authenticated");
+  const statusRef = useRef(status);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep statusRef in sync so timer callbacks can read the current value
+  statusRef.current = status;
 
   useEffect(() => {
     if (status === "authenticated") {
       wasAuthenticatedRef.current = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = null;
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
       setReady(true);
       return;
     }
@@ -38,21 +41,23 @@ export function useSessionReady(status: string): boolean {
       if (wasAuthenticatedRef.current) {
         // Transient unauthenticated after being authenticated.
         // Could be: phone unlock re-validation, or a NetworkError while offline.
-        // Either way: stay not-ready and wait. Only start the safety-valve if
-        // we're actually online (offline = keep waiting indefinitely).
+        // Stay not-ready. Only start a safety-valve if online and none running.
+        // The safety-valve only fires ready=true if status is still unauthenticated
+        // (not loading) at fire time AND we're still online — avoids false redirects.
         setReady(false);
         if (!timerRef.current && navigator.onLine) {
           timerRef.current = setTimeout(() => {
             timerRef.current = null;
-            setReady(true);
+            if (statusRef.current === "unauthenticated" && navigator.onLine) {
+              setReady(true);
+            }
           }, 8000);
         }
       } else {
         // Never authenticated this session + online = genuine logout → redirect.
-        // Never authenticated + offline = can't verify, keep waiting.
+        // Never authenticated + offline = can't verify, keep spinner showing.
         if (navigator.onLine) {
-          if (timerRef.current) clearTimeout(timerRef.current);
-          timerRef.current = null;
+          if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
           setReady(true);
         } else {
           setReady(false);
@@ -63,28 +68,33 @@ export function useSessionReady(status: string): boolean {
 
     // status === "loading"
     setReady(false);
-    // Only start the safety-valve if online and none is already running
+    // Only start the safety-valve if online and none is already running.
+    // At fire time, re-check: if status resolved to authenticated in the meantime
+    // the authenticated branch above already cleared the timer and set ready=true.
     if (!timerRef.current && navigator.onLine) {
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        setReady(true);
+        if (statusRef.current !== "authenticated") {
+          setReady(true);
+        }
       }, 8000);
     }
 
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     };
   }, [status]);
 
-  // When coming back online, re-evaluate: if we were stuck waiting due to
-  // being offline, the online event will trigger NextAuth to re-fetch, but
-  // also restart the safety-valve timer in case it doesn't.
+  // When coming back online after being offline, restart the safety-valve
+  // so the page eventually unblocks if NextAuth doesn't re-fetch on its own.
   useEffect(() => {
     const handleOnline = () => {
       if (!ready && !timerRef.current) {
         timerRef.current = setTimeout(() => {
           timerRef.current = null;
-          setReady(true);
+          if (statusRef.current !== "authenticated") {
+            setReady(true);
+          }
         }, 8000);
       }
     };

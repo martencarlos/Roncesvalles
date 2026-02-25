@@ -754,15 +754,16 @@ export default function BookingsPage() {
   };
 
   // Once the session is confirmed unauthenticated, redirect once via effect.
-  // Doing it inline during render causes router.push() to fire on every render
-  // cycle when status bounces, producing an infinite flash loop.
+  // Only redirect when online — if offline, the NetworkError from NextAuth is
+  // not a real logout, so we just show a spinner and wait for reconnection.
   useEffect(() => {
-    if (sessionReady && status === "unauthenticated") {
+    if (sessionReady && status === "unauthenticated" && navigator.onLine) {
       router.push("/auth/signin?callbackUrl=/bookings");
     }
   }, [sessionReady, status, router]);
 
   // Show spinner while session is loading or while redirect is in flight.
+  // If offline and unauthenticated, show spinner too (waiting for reconnection).
   if (!sessionReady || status === "unauthenticated") {
     return (
       <div className="flex justify-center items-center min-h-screen">
