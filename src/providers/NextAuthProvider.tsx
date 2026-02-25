@@ -2,7 +2,7 @@
 "use client";
 
 import { SessionProvider, useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Loading } from "@/components/ui/loading";
 
@@ -14,37 +14,73 @@ const AUTH_SENSITIVE_PATHS = ['/bookings', '/admin', '/profile', '/activity', '/
 // and unlocked, NextAuth re-validates the session cookie and status cycles
 // through loading → unauthenticated → loading → authenticated before settling.
 // Without this guard, pages render during the transient "unauthenticated" moment
-// and fire redirect loops that flash the spinner indefinitely.
+// and fire redirect loops.
 //
 // Rules:
-// 1. Once status reaches "authenticated", latch it. Never block again for this session.
-// 2. On a protected path: if status is "loading" or transiently "unauthenticated"
-//    (after having been authenticated), block and show the full-screen loader.
-// 3. "unauthenticated" with no prior authenticated state = genuine logout → unblock
-//    immediately so the page's own redirect logic can send to /signin.
+// 1. Once status reaches "authenticated", latch it permanently. Never block again.
+// 2. On a protected path: block while status is "loading" or transiently
+//    "unauthenticated" (after having been authenticated).
+// 3. "unauthenticated" with no prior authenticated state = genuine logout →
+//    unblock immediately so the page's redirect logic can send to /signin.
 // 4. Safety valve: if blocked for more than 10s, unblock unconditionally.
 function AuthLoader({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
   const pathname = usePathname();
-  const router = useRouter();
 
   const wasAuthenticatedRef = useRef(status === "authenticated");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [blocked, setBlocked] = useState(() => {
-    // Block on protected paths until session resolves
-    const isProtected = AUTH_SENSITIVE_PATHS.some(p => pathname.startsWith(p));
-    return isProtected && status !== "authenticated";
-  });
+
+  const isProtected = AUTH_SENSITIVE_PATHS.some(p => pathname.startsWith(p));
+
+  const [blocked, setBlocked] = useState(
+    // Start blocked only on protected paths when session not yet known
+    isProtected && status !== "authenticated"
+  );
+
+  // Track pathname in a ref so the status effect doesn't depend on it
+  // (pathname changes must not cancel an active safety-valve timer)
+  const isProtectedRef = useRef(isProtected);
+  useEffect(() => {
+    isProtectedRef.current = isProtected;
+  }, [isProtected]);
 
   useEffect(() => {
-    const isProtected = AUTH_SENSITIVE_PATHS.some(p => pathname.startsWith(p));
-
-    const unblock = () => {
+    if (status === "authenticated") {
+      wasAuthenticatedRef.current = true;
       if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
       setBlocked(false);
-    };
+      return;
+    }
 
-    const block = () => {
+    if (!isProtectedRef.current) {
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      setBlocked(false);
+      return;
+    }
+
+    // Protected path + not authenticated
+    if (status === "unauthenticated" && !wasAuthenticatedRef.current) {
+      // Never authenticated this session → genuine logout, unblock for redirect
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      setBlocked(false);
+      return;
+    }
+
+    // status === "loading", or transient "unauthenticated" after being authenticated
+    // → block children and wait, with a 10s safety valve
+    setBlocked(true);
+    if (!timerRef.current) {
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        setBlocked(false);
+      }, 10000);
+    }
+  }, [status]); // intentionally only status — pathname changes must not reset the timer
+
+  // When navigating to a protected path while unblocked and not authenticated,
+  // re-block so the new page doesn't flash before the session settles.
+  useEffect(() => {
+    if (isProtected && status === "loading") {
       setBlocked(true);
       if (!timerRef.current) {
         timerRef.current = setTimeout(() => {
@@ -52,34 +88,15 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
           setBlocked(false);
         }, 10000);
       }
-    };
-
-    if (status === "authenticated") {
-      wasAuthenticatedRef.current = true;
-      unblock();
-      return;
     }
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!isProtected) {
-      unblock();
-      return;
-    }
-
-    // Protected path + not authenticated
-    if (status === "unauthenticated" && !wasAuthenticatedRef.current) {
-      // Genuinely never authenticated → unblock so the page can redirect to signin
-      unblock();
-      return;
-    }
-
-    // status === "loading", or transient "unauthenticated" after having been
-    // authenticated (phone unlock / network hiccup) → block and wait
-    block();
-
+  // Cleanup on unmount only
+  useEffect(() => {
     return () => {
       if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     };
-  }, [status, pathname]);
+  }, []);
 
   if (blocked) {
     return (
