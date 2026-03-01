@@ -80,7 +80,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [mealType, setMealType] = useState<MealType>(
     initialData?.mealType || "lunch"
   );
-  const [numberOfPeople, setNumberOfPeople] = useState<number>(
+  const [numberOfPeople, setNumberOfPeople] = useState<number | "">(
     initialData?.numberOfPeople || 4
   );
   const [selectedTables, setSelectedTables] = useState<number[]>(
@@ -310,7 +310,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
   };
 
   useEffect(() => {
-    if (selectedTables.length > 0 && numberOfPeople > maxPeopleAllowed) {
+    if (
+      selectedTables.length > 0 &&
+      typeof numberOfPeople === "number" &&
+      numberOfPeople > maxPeopleAllowed
+    ) {
       setNumberOfPeople(maxPeopleAllowed);
       toast.info("Número de personas ajustado", {
         description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`,
@@ -328,7 +332,13 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const handleNumberOfPeopleChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const value = parseInt(e.target.value);
+    const rawValue = e.target.value;
+    if (rawValue === "") {
+      setNumberOfPeople("");
+      return;
+    }
+
+    const value = parseInt(rawValue, 10);
     if (isNaN(value) || value < 1) {
       setNumberOfPeople(1);
       return;
@@ -352,7 +362,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
         : [...prev, tableNumber];
 
       const newMaxCapacity = newTables.length * MAX_PEOPLE_PER_TABLE;
-      if (newTables.length > 0 && numberOfPeople > newMaxCapacity) {
+      if (
+        newTables.length > 0 &&
+        typeof numberOfPeople === "number" &&
+        numberOfPeople > newMaxCapacity
+      ) {
         setNumberOfPeople(newMaxCapacity);
         toast.info("Número de personas ajustado", {
           description: `El máximo de personas permitidas para ${newTables.length} mesa(s) es ${newMaxCapacity}.`,
@@ -443,6 +457,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
       setError("Por favor, seleccione al menos una mesa");
       toast.error("Error de Validación", {
         description: "Por favor, seleccione al menos una mesa",
+      });
+      return;
+    }
+
+    if (numberOfPeople === "" || numberOfPeople < 1) {
+      setError("Por favor, indique un número de personas válido");
+      toast.error("Error de Validación", {
+        description: "Por favor, indique un número de personas válido",
       });
       return;
     }

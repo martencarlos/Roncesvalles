@@ -10,6 +10,8 @@ import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
 import { sendPushToConserje } from '@/lib/push-service';
 
+const MAX_PEOPLE_PER_TABLE = 8;
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -119,6 +121,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Only your own apt" }, { status: 403 });
     }
     
+    const requestedTables = Array.isArray(body.tables) ? body.tables : [];
+    const numberOfPeople = Number(body.numberOfPeople);
+    const maxPeopleAllowed = requestedTables.length * MAX_PEOPLE_PER_TABLE;
+
+    if (requestedTables.length === 0) {
+      return NextResponse.json(
+        { error: "Validación", message: "Debe seleccionar al menos una mesa." },
+        { status: 400 }
+      );
+    }
+
+    if (!Number.isInteger(numberOfPeople) || numberOfPeople < 1) {
+      return NextResponse.json(
+        { error: "Validación", message: "El número de personas debe ser un entero mayor que 0." },
+        { status: 400 }
+      );
+    }
+
+    if (numberOfPeople > maxPeopleAllowed) {
+      return NextResponse.json(
+        {
+          error: "Validación",
+          message: `El máximo permitido es ${maxPeopleAllowed} persona(s) para ${requestedTables.length} mesa(s).`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Date Setup
     const bookingDate = new Date(body.date);
     const startOfDay = new Date(bookingDate);
@@ -153,7 +183,6 @@ export async function POST(req: NextRequest) {
     
     // 1. Table Conflict Check
     const bookedTables = existingBookings.flatMap((booking: any) => booking.tables);
-    const requestedTables = body.tables;
     const conflictingTables = requestedTables.filter((table: any) => bookedTables.includes(table));
     
     if (conflictingTables.length > 0) {
@@ -211,8 +240,8 @@ export async function POST(req: NextRequest) {
       apartmentNumber: body.apartmentNumber,
       date: bookingDate,
       mealType: body.mealType,
-      numberOfPeople: body.numberOfPeople || 1,
-      tables: body.tables || [],
+      numberOfPeople,
+      tables: requestedTables,
       prepararFuego: prepararFuego,
       reservaHorno: reservaHorno,
       status: body.status || 'pending',

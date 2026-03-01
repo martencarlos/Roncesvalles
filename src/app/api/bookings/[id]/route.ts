@@ -9,6 +9,8 @@ import ActivityLog from "@/models/ActivityLog";
 import User from "@/models/User";
 import { sendPushToConserje } from "@/lib/push-service";
 
+const MAX_PEOPLE_PER_TABLE = 8;
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -113,9 +115,28 @@ export async function PUT(
           { status: 403 }
         );
       }
+
+      const updatedPeople = Number(body.numberOfPeople);
+      const maxPeopleAllowed = originalBooking.tables.length * MAX_PEOPLE_PER_TABLE;
+      if (!Number.isInteger(updatedPeople) || updatedPeople < 1) {
+        return NextResponse.json(
+          { error: "Validación", message: "El número de personas debe ser un entero mayor que 0." },
+          { status: 400 }
+        );
+      }
+      if (updatedPeople > maxPeopleAllowed) {
+        return NextResponse.json(
+          {
+            error: "Validación",
+            message: `El máximo permitido es ${maxPeopleAllowed} persona(s) para ${originalBooking.tables.length} mesa(s).`,
+          },
+          { status: 400 }
+        );
+      }
+
       const updatedBooking = await Booking.findByIdAndUpdate(
         bookingId,
-        { numberOfPeople: body.numberOfPeople },
+        { numberOfPeople: updatedPeople },
         { new: true, runValidators: true }
       );
       const user = await User.findById(currentUser.id).select("name");
@@ -134,6 +155,33 @@ export async function PUT(
       : new Date(originalBooking.date);
     const checkMealType = body.mealType || originalBooking.mealType;
     const requestedTables = body.tables || originalBooking.tables;
+    const effectiveNumberOfPeople =
+      body.numberOfPeople !== undefined
+        ? Number(body.numberOfPeople)
+        : Number(originalBooking.numberOfPeople);
+    const maxPeopleAllowed = requestedTables.length * MAX_PEOPLE_PER_TABLE;
+
+    if (!Array.isArray(requestedTables) || requestedTables.length === 0) {
+      return NextResponse.json(
+        { error: "Validación", message: "Debe seleccionar al menos una mesa." },
+        { status: 400 }
+      );
+    }
+    if (!Number.isInteger(effectiveNumberOfPeople) || effectiveNumberOfPeople < 1) {
+      return NextResponse.json(
+        { error: "Validación", message: "El número de personas debe ser un entero mayor que 0." },
+        { status: 400 }
+      );
+    }
+    if (effectiveNumberOfPeople > maxPeopleAllowed) {
+      return NextResponse.json(
+        {
+          error: "Validación",
+          message: `El máximo permitido es ${maxPeopleAllowed} persona(s) para ${requestedTables.length} mesa(s).`,
+        },
+        { status: 400 }
+      );
+    }
     
     // Oven logic: take body value, or original if undefined. 
     // Validation for availability happens in Conflict Check later.
@@ -251,7 +299,7 @@ export async function PUT(
       apartmentNumber: body.apartmentNumber,
       date: effectiveDate,
       mealType: checkMealType,
-      numberOfPeople: body.numberOfPeople || originalBooking.numberOfPeople,
+      numberOfPeople: effectiveNumberOfPeople,
       tables: requestedTables,
       prepararFuego: prepararFuego,
       reservaHorno: wantsOven,
