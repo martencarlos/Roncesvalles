@@ -37,8 +37,7 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
   const activityData = [
     { name: "Creación de Reservas", value: bookingStats.totalBookings - bookingStats.bookingModifications - bookingStats.bookingCancellations, color: "#3b82f6" },
     { name: "Modificaciones", value: bookingStats.bookingModifications, color: "#8b5cf6" },
-    { name: "Cancelaciones", value: bookingStats.bookingCancellations, color: "#ef4444" },
-    { name: "Confirmaciones", value: bookingStats.totalConfirmed, color: "#10b981" }
+    { name: "Cancelaciones", value: bookingStats.bookingCancellations, color: "#ef4444" }
   ];
 
   // Create user vs booking activity data
@@ -95,7 +94,7 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {bookingStats.totalBookings + userStats.totalUsers + bookingStats.totalConfirmed}
+              {bookingStats.totalBookings + userStats.totalUsers}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Registradas en el sistema</p>
           </CardContent>
@@ -318,10 +317,6 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
                   <span className="font-medium">{bookingStats.totalBookings}</span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-green-50 rounded">
-                  <span>Confirmaciones:</span>
-                  <span className="font-medium">{bookingStats.totalConfirmed}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-purple-50 rounded">
                   <span>Modificaciones:</span>
                   <span className="font-medium">{bookingStats.bookingModifications}</span>
                 </div>

@@ -4,11 +4,10 @@ import { UserStats, BookingStats } from "@/components/admin/AdminDashboard";
 import {
   Users,
   CalendarDays,
-  CheckCircle2,
+  AlertCircle,
   UtensilsCrossed,
   UserPlus,
   Clock,
-  CalendarCheck,
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
@@ -36,8 +35,7 @@ export default function SystemSummary({ userStats, bookingStats }: SystemSummary
 
   // Prepare data for Booking status pie chart
   const bookingStatusData = [
-    { name: "Confirmadas", value: bookingStats.totalConfirmed, color: "#10b981" },
-    { name: "Pendientes", value: bookingStats.totalPending, color: "#f59e0b" },
+    { name: "Vigentes", value: Math.max(bookingStats.totalBookings - bookingStats.totalCancelled, 0), color: "#3b82f6" },
     { name: "Canceladas", value: bookingStats.totalCancelled, color: "#ef4444" },
   ];
 
@@ -101,17 +99,19 @@ export default function SystemSummary({ userStats, bookingStats }: SystemSummary
           </CardContent>
         </Card>
 
-        {/* Confirmed Bookings Card */}
+        {/* Cancellations Card */}
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between p-2 sm:p-4 pb-1 sm:pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Confirmadas</CardTitle>
-            <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Canceladas</CardTitle>
+            <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="p-2 sm:p-4 pt-0 sm:pt-0">
-            <div className="text-lg sm:text-2xl font-bold">{bookingStats.totalConfirmed}</div>
+            <div className="text-lg sm:text-2xl font-bold">{bookingStats.totalCancelled}</div>
             <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 flex items-center">
-              <CalendarCheck className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 text-blue-500" />
-              {((bookingStats.totalConfirmed / bookingStats.totalBookings) * 100).toFixed(0)}% del total
+              <AlertCircle className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 text-red-500" />
+              {bookingStats.totalBookings > 0
+                ? `${((bookingStats.totalCancelled / bookingStats.totalBookings) * 100).toFixed(0)}% del total`
+                : "Sin reservas"}
             </p>
           </CardContent>
         </Card>

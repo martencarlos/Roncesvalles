@@ -3,12 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BookingStats } from "@/components/admin/AdminDashboard";
 import {
   CalendarDays,
-  CheckCircle2,
-  ClockIcon,
   AlertCircle,
   UtensilsCrossed,
   Users,
-  Home
+  Home,
 } from "lucide-react";
 import { 
   BarChart, 
@@ -34,8 +32,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
   const COLORS = {
     lunch: "#f97316", // orange
     dinner: "#4f46e5", // indigo
-    confirmed: "#10b981", // green
-    pending: "#f59e0b", // amber
+    active: "#3b82f6", // blue
     cancelled: "#ef4444", // red
     default: "#3b82f6", // blue
   };
@@ -48,8 +45,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
 
   // Prepare booking status data for pie chart
   const bookingStatusData = [
-    { name: "Confirmadas", value: stats.totalConfirmed, color: COLORS.confirmed },
-    { name: "Pendientes", value: stats.totalPending, color: COLORS.pending },
+    { name: "Vigentes", value: Math.max(stats.totalBookings - stats.totalCancelled, 0), color: COLORS.active },
     { name: "Canceladas", value: stats.totalCancelled, color: COLORS.cancelled }
   ];
 
@@ -65,7 +61,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
   return (
     <div className="space-y-6">
       {/* Booking Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Total Bookings Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -78,31 +74,15 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
           </CardContent>
         </Card>
 
-        {/* Confirmed Bookings Card */}
+        {/* Average Attendees Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Reservas Confirmadas</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Asistentes Promedio</CardTitle>
+            <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalConfirmed}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {((stats.totalConfirmed / stats.totalBookings) * 100).toFixed(1)}% del total
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Pending Confirmations Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pendientes de Confirmar</CardTitle>
-            <ClockIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPending}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {((stats.totalPending / stats.totalBookings) * 100).toFixed(1)}% del total
-            </p>
+            <div className="text-2xl font-bold">{stats.averageAttendees.toFixed(1)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Personas por reserva</p>
           </CardContent>
         </Card>
 
@@ -185,8 +165,8 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
         {/* Booking Status Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>Estado de Reservas</CardTitle>
-            <CardDescription>Distribución por estado</CardDescription>
+            <CardTitle>Reservas Vigentes vs Canceladas</CardTitle>
+            <CardDescription>Distribución general del estado</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">

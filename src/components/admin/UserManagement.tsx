@@ -365,7 +365,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-full sm:w-40">
               <div className="flex items-center gap-2">
@@ -383,14 +383,14 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           </Select>
 
           {(searchQuery || roleFilter !== "all") && (
-            <Button variant="ghost" size="sm" onClick={resetFilters}>
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="shrink-0">
               <X className="h-4 w-4 mr-1" />
               Limpiar
             </Button>
           )}
 
           {isITAdmin && (
-            <Button onClick={() => setIsAddUserOpen(true)} className="ml-2">
+            <Button onClick={() => setIsAddUserOpen(true)} className="sm:ml-2 shrink-0">
               <UserPlus className="h-4 w-4 mr-2" />
               Nuevo Usuario
             </Button>

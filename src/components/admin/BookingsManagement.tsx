@@ -640,7 +640,7 @@ export default function BookingsManagement({
                         )}
                       </div>
 
-                      {/* 3. Details (Tables & Pax) */}
+                      {/* 3. Details (Tables & People) */}
                       <div className="col-span-1 sm:col-span-4 lg:col-span-6 flex flex-col sm:flex-row gap-y-1 gap-x-6 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2" title="Mesas">
                           <TableIcon className="h-4 w-4" />
@@ -657,7 +657,7 @@ export default function BookingsManagement({
                             <span className="font-medium text-gray-700">
                               {booking.numberOfPeople}
                             </span>{" "}
-                            pax
+                            pers.
                           </span>
                         </div>
 
