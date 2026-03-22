@@ -31,9 +31,11 @@ export async function middleware(request: NextRequest) {
   
   // Handle role-specific routes access for Admin Panel
   if (pathname.startsWith("/admin")) {
-    // STRICT: Only IT admins can access admin panel
-    // 'conserje' and 'admin' are blocked
-    if (token.role !== "it_admin") {
+    const canAccessExportPage =
+      pathname.startsWith("/admin/export") &&
+      ["admin", "conserje", "it_admin"].includes(String(token.role));
+
+    if (!canAccessExportPage && token.role !== "it_admin") {
       return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
   }

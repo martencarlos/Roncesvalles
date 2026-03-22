@@ -189,7 +189,15 @@ const BookingCard: React.FC<BookingCardProps> = ({
           <div className="mt-2 pt-2 border-t text-sm">
             <div className="flex items-start text-amber-700 gap-1">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-              <p className="text-xs">Sin servicio de conserjería.</p>
+              <div className="space-y-1">
+                <p className="text-xs">Sin servicio de conserjería.</p>
+                {typeof booking.cleaningHours === "number" &&
+                  booking.cleaningHours > 0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Limpieza acordada: {booking.cleaningHours} h
+                    </p>
+                  )}
+              </div>
             </div>
           </div>
         )}

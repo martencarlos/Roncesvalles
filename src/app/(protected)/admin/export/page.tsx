@@ -15,17 +15,17 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminExportPage() {
-  // Check if user is authenticated and has it_admin role
   const session = await getServerSession(authOptions);
 
   if (!session) {
     redirect("/auth/signin?callbackUrl=/admin/export");
   }
 
-  // Only IT admins can access the admin panel
-  if (session.user.role !== "it_admin") {
+  if (!["admin", "conserje", "it_admin"].includes(session.user.role)) {
     redirect("/unauthorized");
   }
+
+  const backHref = session.user.role === "it_admin" ? "/admin" : "/bookings";
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
@@ -38,9 +38,11 @@ export default async function AdminExportPage() {
             size="sm"
             className="h-8 px-2 sm:h-9 sm:px-3"
           >
-            <Link href="/admin">
+            <Link href={backHref}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Volver al Panel</span>
+              <span className="hidden sm:inline">
+                {session.user.role === "it_admin" ? "Volver al Panel" : "Volver a Reservas"}
+              </span>
               <span className="sm:hidden">Volver</span>
             </Link>
           </Button>
@@ -53,7 +55,7 @@ export default async function AdminExportPage() {
         <h1 className="text-2xl sm:text-3xl font-bold">Exportar Datos</h1>
       </header>
 
-      <ExportDataPanel />
+      <ExportDataPanel userRole={session.user.role} />
     </div>
   );
 }

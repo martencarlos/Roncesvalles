@@ -11,6 +11,18 @@ import { sendPushToConserje } from "@/lib/push-service";
 
 const MAX_PEOPLE_PER_TABLE = 8;
 
+function normalizeCleaningHours(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error("Las horas de limpieza deben ser un número igual o mayor que 0.");
+  }
+
+  return parsed;
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -74,22 +86,46 @@ export async function PUT(
 
     // --- SPECIAL LOGIC FOR CONSERJE ---
     if (currentUser.role === "conserje") {
-      // Conserje can ONLY update internalNotes
+      let cleaningHours: number | null | undefined;
+      try {
+        cleaningHours = normalizeCleaningHours(body.cleaningHours);
+      } catch (error: any) {
+        return NextResponse.json(
+          { error: "Validación", message: error.message },
+          { status: 400 }
+        );
+      }
+
+      const conserjeUpdateData: { internalNotes?: string; cleaningHours?: number | null } = {};
+
+      if (body.internalNotes !== undefined) {
+        conserjeUpdateData.internalNotes = body.internalNotes;
+      }
+
+      if (body.cleaningHours !== undefined) {
+        conserjeUpdateData.cleaningHours = originalBooking.noCleaningService
+          ? cleaningHours ?? null
+          : null;
+      }
+
       const updatedBooking = await Booking.findByIdAndUpdate(
         bookingId,
-        { internalNotes: body.internalNotes },
+        conserjeUpdateData,
         { new: true }
       );
 
-      // Logging for note update
       const user = await User.findById(currentUser.id).select("name");
+      const updatedFields: string[] = [];
+      if (body.internalNotes !== undefined) updatedFields.push("nota interna");
+      if (body.cleaningHours !== undefined) updatedFields.push("horas de limpieza");
+
       await ActivityLog.create({
         action: "update",
         apartmentNumber: originalBooking.apartmentNumber,
         userId: currentUser.id,
         details: `Conserje ${
           user ? user.name : "Usuario"
-        } actualizó nota interna en reserva Apto #${
+        } actualizó ${updatedFields.join(" y ") || "reserva"} en reserva Apto #${
           originalBooking.apartmentNumber
         }`,
       });
@@ -295,8 +331,18 @@ export async function PUT(
     if (currentUser.role === "user")
       body.apartmentNumber = currentUser.apartmentNumber;
 
+    let normalizedCleaningHours: number | null | undefined;
+    try {
+      normalizedCleaningHours = normalizeCleaningHours(body.cleaningHours);
+    } catch (error: any) {
+      return NextResponse.json(
+        { error: "Validación", message: error.message },
+        { status: 400 }
+      );
+    }
+
     const updateData: any = {
-      apartmentNumber: body.apartmentNumber,
+      apartmentNumber: body.apartmentNumber ?? originalBooking.apartmentNumber,
       date: effectiveDate,
       mealType: checkMealType,
       numberOfPeople: effectiveNumberOfPeople,
@@ -306,6 +352,11 @@ export async function PUT(
       status: body.status || originalBooking.status,
       userId: currentUser.id,
       noCleaningService: noCleaningService,
+      cleaningHours: noCleaningService
+        ? normalizedCleaningHours !== undefined
+          ? normalizedCleaningHours
+          : originalBooking.cleaningHours ?? null
+        : null,
     };
 
     // Allow IT Admin to update internal notes as well

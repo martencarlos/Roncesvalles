@@ -11,6 +11,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Download, FileSpreadsheetIcon, FileIcon, Users, CalendarDays } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getExportRange,
+  getMonthOptions,
+  type ExportScope,
+} from "@/lib/export-utils";
 
 interface BookingDetail {
   date: string;
@@ -19,6 +24,8 @@ interface BookingDetail {
   amount: number;
   tables: number[];
   services: string[];
+  conciergeStatus: string;
+  cleaningHours: number | null;
 }
 
 interface ApartmentData {
@@ -38,8 +45,15 @@ interface User {
   createdAt: string;
 }
 
-export default function ExportDataPanel() {
+interface ExportDataPanelProps {
+  userRole: string;
+}
+
+export default function ExportDataPanel({ userRole }: ExportDataPanelProps) {
+  const isITAdmin = userRole === "it_admin";
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
+  const [scope, setScope] = useState<ExportScope>("year");
+  const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
   const [format, setFormat] = useState<'excel' | 'pdf'>('excel');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -53,14 +67,22 @@ export default function ExportDataPanel() {
   // Generate year options (last 5 years)
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const monthOptions = getMonthOptions();
   
   const handleExport = async () => {
     setIsLoading(true);
     setError('');
     
     try {
-      // Fetch data from our API
-      const response = await fetch(`/api/export?year=${year}`);
+      const params = new URLSearchParams({
+        year,
+        scope,
+      });
+      if (scope === "month") {
+        params.set("month", month);
+      }
+
+      const response = await fetch(`/api/export?${params.toString()}`);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -70,16 +92,26 @@ export default function ExportDataPanel() {
       const data = await response.json();
       
       if (data.length === 0) {
-        setError('No hay reservas confirmadas en el año seleccionado.');
+        setError(
+          scope === "month"
+            ? "No hay reservas completadas en el periodo mensual seleccionado."
+            : "No hay reservas completadas en el año seleccionado."
+        );
         setIsLoading(false);
         return;
       }
       
       // Generate file based on format
+      const { label, fileLabel } = getExportRange({
+        scope,
+        year: Number(year),
+        month: scope === "month" ? Number(month) : undefined,
+      });
+
       if (format === 'excel') {
-        generateExcel(data, year);
+        generateExcel(data, fileLabel);
       } else {
-        generatePDF(data, year);
+        generatePDF(data, label);
       }
       
     } catch (err: any) {
@@ -108,11 +140,11 @@ export default function ExportDataPanel() {
     // If detailed view is requested, add a breakdown of each booking
     if (includeDetails) {
       csvContent += "\nDETALLE DE RESERVAS\n";
-      csvContent += "Apartamento,Fecha,Servicio,Asistentes,Mesas,Servicios,Importe (€)\n";
+      csvContent += "Apartamento,Fecha,Servicio,Asistentes,Mesas,Conserjería,Horas Limpieza,Servicios,Importe (€)\n";
       
       data.forEach(apartment => {
         apartment.bookingDetails.forEach(booking => {
-          csvContent += `${apartment.apartmentNumber},${booking.date},${booking.mealType},${booking.attendees},"${booking.tables.join(', ')}","${booking.services.join(', ')}",${booking.amount.toFixed(2)}\n`;
+          csvContent += `${apartment.apartmentNumber},${booking.date},${booking.mealType},${booking.attendees},"${booking.tables.join(', ')}","${booking.conciergeStatus}",${booking.cleaningHours ?? ""},"${booking.services.join(', ')}",${booking.amount.toFixed(2)}\n`;
         });
       });
     }
@@ -128,7 +160,7 @@ export default function ExportDataPanel() {
     document.body.removeChild(link);
   };
   
-  const generatePDF = (data: ApartmentData[], year: string) => {
+  const generatePDF = (data: ApartmentData[], label: string) => {
     // Create a new window
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -146,7 +178,7 @@ export default function ExportDataPanel() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Informe de Reservas ${year}</title>
+        <title>Informe de Reservas ${label}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
           h1, h2 { text-align: center; }
@@ -159,7 +191,7 @@ export default function ExportDataPanel() {
         </style>
       </head>
       <body>
-        <h1>Informe de Reservas Confirmadas ${year}</h1>
+        <h1>Informe de Reservas Confirmadas ${label}</h1>
         <p>Fecha de generación: ${new Date().toLocaleDateString()}</p>
         
         <h2>Resumen por Apartamento</h2>
@@ -202,6 +234,8 @@ export default function ExportDataPanel() {
                   <th>Servicio</th>
                   <th>Asistentes</th>
                   <th>Mesas</th>
+                  <th>Conserjería</th>
+                  <th>Horas</th>
                   <th>Servicios</th>
                   <th>Importe (€)</th>
                 </tr>
@@ -213,12 +247,14 @@ export default function ExportDataPanel() {
                     <td>${booking.mealType}</td>
                     <td>${booking.attendees}</td>
                     <td>${booking.tables.join(', ')}</td>
+                    <td>${booking.conciergeStatus}</td>
+                    <td>${booking.cleaningHours ?? ''}</td>
                     <td>${booking.services.join(', ')}</td>
                     <td>${booking.amount.toFixed(2)} €</td>
                   </tr>
                 `).join('')}
                 <tr class="total-row">
-                  <td colspan="5">TOTAL</td>
+                  <td colspan="7">TOTAL</td>
                   <td>${apt.totalAmount.toFixed(2)} €</td>
                 </tr>
               </tbody>
@@ -430,10 +466,12 @@ export default function ExportDataPanel() {
             <CalendarDays className="h-4 w-4" />
             Reservas
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Usuarios
-          </TabsTrigger>
+          {isITAdmin && (
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Usuarios
+            </TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="bookings">
@@ -454,6 +492,24 @@ export default function ExportDataPanel() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
+                    <Label>Periodo</Label>
+                    <RadioGroup value={scope} onValueChange={(v) => setScope(v as ExportScope)} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="year" id="scopeYear" />
+                        <Label htmlFor="scopeYear" className="cursor-pointer">
+                          Año natural
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="month" id="scopeMonth" />
+                        <Label htmlFor="scopeMonth" className="cursor-pointer">
+                          Mes
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="year">Año</Label>
                     <Select value={year} onValueChange={setYear}>
                       <SelectTrigger>
@@ -466,6 +522,27 @@ export default function ExportDataPanel() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {scope === "month" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="month">Mes</Label>
+                      <Select value={month} onValueChange={setMonth}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar mes" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {monthOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Ejemplo: febrero 2026 incluye del 22/01/2026 al 22/02/2026.
+                      </p>
+                    </div>
+                  )}
                   
                   <div className="space-y-2">
                     <Label>Formato</Label>
@@ -506,8 +583,9 @@ export default function ExportDataPanel() {
                     <ul className="list-disc list-inside space-y-1">
                       <li>Resumen de reservas por apartamento</li>
                       <li>Total de reservas, asistentes e importes</li>
+                      <li>Facturación según temporada y conserjería</li>
                       {includeDetails && (
-                        <li>Detalle de cada reserva (fecha, servicio, mesas, etc.)</li>
+                        <li>Detalle de cada reserva con estado de conserjería y horas</li>
                       )}
                     </ul>
                   </div>
@@ -533,7 +611,7 @@ export default function ExportDataPanel() {
           </Card>
         </TabsContent>
         
-        <TabsContent value="users">
+        {isITAdmin && <TabsContent value="users">
           <Card>
             <CardHeader>
               <CardTitle>Exportar Datos de Usuarios</CardTitle>
@@ -624,7 +702,7 @@ export default function ExportDataPanel() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent>}
       </Tabs>
     </div>
   );

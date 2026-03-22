@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -88,6 +89,7 @@ export default function BookingsManagement({
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteBooking, setNoteBooking] = useState<IBooking | null>(null);
   const [internalNoteText, setInternalNoteText] = useState("");
+  const [cleaningHoursText, setCleaningHoursText] = useState("");
 
   // Fetch bookings and blocks
   useEffect(() => {
@@ -324,6 +326,9 @@ export default function BookingsManagement({
   const openNoteDialog = (booking: IBooking) => {
     setNoteBooking(booking);
     setInternalNoteText(booking.internalNotes || "");
+    setCleaningHoursText(
+      typeof booking.cleaningHours === "number" ? String(booking.cleaningHours) : ""
+    );
     setShowNoteDialog(true);
   };
 
@@ -336,14 +341,18 @@ export default function BookingsManagement({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           internalNotes: internalNoteText,
-          apartmentNumber: noteBooking.apartmentNumber,
-          date: noteBooking.date,
-          mealType: noteBooking.mealType,
-          tables: noteBooking.tables,
+          cleaningHours: noteBooking.noCleaningService
+            ? cleaningHoursText.trim() === ""
+              ? null
+              : Number(cleaningHoursText)
+            : null,
         }),
       });
 
-      if (!res.ok) throw new Error("Error al guardar la nota");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Error al guardar la nota");
+      }
 
       const updatedBooking = await res.json();
       setBookings((prev) =>
@@ -662,14 +671,22 @@ export default function BookingsManagement({
                         </div>
 
                         {booking.noCleaningService && (
-                          <div
-                            className="flex items-center gap-1.5 text-amber-600 sm:ml-auto"
-                            title="Sin servicio de conserjería"
-                          >
-                            <AlertTriangle className="h-3.5 w-3.5" />
-                            <span className="text-xs font-medium">
-                              Sin conserje
-                            </span>
+                          <div className="flex flex-col sm:ml-auto gap-1">
+                            <div
+                              className="flex items-center gap-1.5 text-amber-600"
+                              title="Sin servicio de conserjería"
+                            >
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">
+                                Sin conserje
+                              </span>
+                            </div>
+                            {typeof booking.cleaningHours === "number" &&
+                              booking.cleaningHours > 0 && (
+                                <span className="text-[11px] text-muted-foreground">
+                                  Limpieza acordada: {booking.cleaningHours} h
+                                </span>
+                              )}
                           </div>
                         )}
                       </div>
@@ -764,10 +781,10 @@ export default function BookingsManagement({
               Notas Internas (Conserjería)
             </DialogTitle>
             <DialogDescription>
-              Estas notas solo son visibles para conserjes y administradores.
+              Estas notas solo son visibles para conserjes y administradores IT.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
             <Textarea
               value={internalNoteText}
               onChange={(e) => setInternalNoteText(e.target.value)}
@@ -775,6 +792,24 @@ export default function BookingsManagement({
               rows={5}
               className="bg-amber-50 border-amber-200 focus-visible:ring-amber-500"
             />
+            {noteBooking?.noCleaningService && (
+              <div className="space-y-2">
+                <Label htmlFor="cleaningHours">Horas de limpieza</Label>
+                <Input
+                  id="cleaningHours"
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  value={cleaningHoursText}
+                  onChange={(e) => setCleaningHoursText(e.target.value)}
+                  placeholder="Ej. 2.5"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Si hubo acuerdo con el usuario, introduzca aquí las horas
+                  trabajadas para que la exportación aplique la tarifa correcta.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNoteDialog(false)}>

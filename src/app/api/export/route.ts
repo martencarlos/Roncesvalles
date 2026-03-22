@@ -1,16 +1,33 @@
 export const dynamic = 'force-dynamic';
 // src/app/api/export/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
+import {
+  calculateAdministrationCharge,
+  getExportRange,
+  type ExportScope,
+} from "@/lib/export-utils";
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!["admin", "conserje", "it_admin"].includes(session.user.role)) {
+      return NextResponse.json({ error: "No permission" }, { status: 403 });
+    }
+
     await connectDB();
     
-    // Get the year from query parameters
     const url = new URL(req.url);
     const year = url.searchParams.get('year');
+    const scope = (url.searchParams.get("scope") || "year") as ExportScope;
+    const month = url.searchParams.get("month");
     
     if (!year || isNaN(Number(year))) {
       return NextResponse.json(
@@ -18,12 +35,29 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (scope !== "year" && scope !== "month") {
+      return NextResponse.json(
+        { error: "Invalid scope parameter" },
+        { status: 400 }
+      );
+    }
+
+    let startDate: Date;
+    let endDate: Date;
+    try {
+      ({ startDate, endDate } = getExportRange({
+        scope,
+        year: Number(year),
+        month: month ? Number(month) : undefined,
+      }));
+    } catch (error: any) {
+      return NextResponse.json(
+        { error: error.message || "Invalid export range" },
+        { status: 400 }
+      );
+    }
     
-    // Create date range for the specified year
-    const startDate = new Date(`${year}-01-01`);
-    const endDate = new Date(`${year}-12-31T23:59:59.999Z`);
-    
-    // Get all completed bookings for the year
     const bookings = await Booking.find({
       date: {
         $gte: startDate,
@@ -44,63 +78,38 @@ export async function GET(req: NextRequest) {
         amount: number;
         tables: number[];
         services: string[];
+        conciergeStatus: string;
+        cleaningHours: number | null;
       }>;
     }> = {};
     
     bookings.forEach(booking => {
       const apartmentNumber = booking.apartmentNumber;
       const attendees = booking.numberOfPeople;
-      
-      // --- Billing Logic Update ---
       const bookingDate = new Date(booking.date);
-      const month = bookingDate.getMonth(); // 0 = Jan, 11 = Dec
-      
-      // Off-season: May 1st (Index 4) to November 30th (Index 10) included
-      const isOffSeason = month >= 4 && month <= 10;
-      
-      let amount = 0;
-      
-      if (isOffSeason) {
-        // Rule 1: Off-season is 0€
-        amount = 0;
-      } else {
-        // In-season (Dec - Apr)
-        
-        // Check days in advance (Booking Date - Created Date)
-        const createdDate = new Date(booking.createdAt);
-        
-        // Normalize dates to reset time part for accurate day diff
-        const targetDateNormalized = new Date(bookingDate);
-        targetDateNormalized.setHours(0, 0, 0, 0);
-        
-        const createdDateNormalized = new Date(createdDate);
-        createdDateNormalized.setHours(0, 0, 0, 0);
-        
-        const diffTime = targetDateNormalized.getTime() - createdDateNormalized.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        // Rule 2: Short notice (< 5 days) in high season -> Flat 30€
-        if (diffDays < 5) {
-          amount = 30;
-        } else {
-          // Rule 3: Standard In-season logic
-          // 7€ per person, minimum 30€ per booking
-          const pricePerPerson = 7;
-          const minimumBookingPrice = 30;
-          const calculatedPrice = attendees * pricePerPerson;
-          
-          amount = Math.max(minimumBookingPrice, calculatedPrice);
-        }
-      }
-      // -----------------------------
+      const amount = calculateAdministrationCharge({
+        bookingDate,
+        numberOfPeople: attendees,
+        noCleaningService: booking.noCleaningService,
+        cleaningHours:
+          typeof booking.cleaningHours === "number" ? booking.cleaningHours : null,
+      });
 
       const dateStr = bookingDate.toLocaleDateString('es-ES');
       const mealType = booking.mealType === 'lunch' ? 'Comida' : 'Cena';
+      const conciergeStatus = booking.noCleaningService
+        ? "Sin servicio de conserjería"
+        : "Con servicio de conserjería";
+      const cleaningHours =
+        typeof booking.cleaningHours === "number" ? booking.cleaningHours : null;
       
-      // Determine which services were used
       const services: string[] = [];
+      services.push(conciergeStatus);
       if (booking.prepararFuego) services.push('Fuego');
       if (booking.reservaHorno) services.push('Horno');
+      if (booking.noCleaningService && cleaningHours && cleaningHours > 0) {
+        services.push(`Limpieza acordada (${cleaningHours} h)`);
+      }
       
       if (!apartmentData[apartmentNumber]) {
         apartmentData[apartmentNumber] = {
@@ -120,7 +129,9 @@ export async function GET(req: NextRequest) {
         attendees,
         amount,
         tables: booking.tables,
-        services
+        services,
+        conciergeStatus,
+        cleaningHours,
       });
     });
     

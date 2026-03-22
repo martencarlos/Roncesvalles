@@ -42,6 +42,7 @@ import BookingCard from "@/components/BookingCard";
 import BookingListItem from "@/components/BookingListItem";
 import BookingFormModal from "@/components/BookingFormModal";
 import ExportDialog from "@/components/ExportDialog";
+import Pagination from "@/components/Pagination";
 import { IBooking, MealType } from "@/models/Booking";
 import { IBlockedDate, BlockedMealType } from "@/models/BlockedDate";
 import DatePicker from "react-datepicker";
@@ -59,6 +60,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 // Registrar el idioma español para el datepicker
@@ -104,11 +107,14 @@ export default function BookingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // State for Internal Notes (Conserje/IT Admin)
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteBooking, setNoteBooking] = useState<IBooking | null>(null);
   const [internalNoteText, setInternalNoteText] = useState("");
+  const [cleaningHoursText, setCleaningHoursText] = useState("");
 
   const [loadingTables, setLoadingTables] = useState(true);
   const [availableTablesLunch, setAvailableTablesLunch] = useState<number[]>(
@@ -426,6 +432,7 @@ export default function BookingsPage() {
   useEffect(() => {
     applyFilters(bookings, dateFilter, selectedDate);
     applyBlockFilters(blocks, dateFilter, selectedDate);
+    setCurrentPage(1);
   }, [dateFilter, selectedDate, bookings, blocks]);
 
   // When you need to check for booked tables and update the available tables:
@@ -602,6 +609,9 @@ export default function BookingsPage() {
   const handleOpenNoteDialog = (booking: IBooking) => {
     setNoteBooking(booking);
     setInternalNoteText(booking.internalNotes || "");
+    setCleaningHoursText(
+      typeof booking.cleaningHours === "number" ? String(booking.cleaningHours) : ""
+    );
     setShowNoteDialog(true);
   };
 
@@ -614,15 +624,18 @@ export default function BookingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           internalNotes: internalNoteText,
-          // Sending original data to pass potential strict validation in backend if user is IT Admin
-          apartmentNumber: noteBooking.apartmentNumber,
-          date: noteBooking.date,
-          mealType: noteBooking.mealType,
-          tables: noteBooking.tables,
+          cleaningHours: noteBooking.noCleaningService
+            ? cleaningHoursText.trim() === ""
+              ? null
+              : Number(cleaningHoursText)
+            : null,
         }),
       });
 
-      if (!res.ok) throw new Error("Error al guardar la nota");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Error al guardar la nota");
+      }
 
       // Refresh local state
       await fetchBookings();
@@ -682,8 +695,14 @@ export default function BookingsPage() {
     ? [
         ...filteredBookings.map((b): MergedItem => ({ kind: "booking", item: b })),
         ...filteredBlocks.map((b): MergedItem => ({ kind: "block", item: b })),
-      ].sort((a, b) => new Date(a.item.date).getTime() - new Date(b.item.date).getTime())
+      ].sort((a, b) => new Date(b.item.date).getTime() - new Date(a.item.date).getTime())
     : [];
+
+  const totalPages = Math.max(1, Math.ceil(mergedList.length / itemsPerPage));
+  const paginatedMergedList = mergedList.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Toggle view mode
   const toggleViewMode = () => {
@@ -759,6 +778,13 @@ export default function BookingsPage() {
       router.push("/auth/signin?callbackUrl=/bookings");
     }
   }, [status, router]);
+
+  useEffect(() => {
+    if (!isAdminOrConserje) return;
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages, isAdminOrConserje]);
 
   if (status === "loading" || status === "unauthenticated") {
     return null;
@@ -1092,7 +1118,7 @@ export default function BookingsPage() {
               Estas notas solo son visibles para conserjes y administradores.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
             <Textarea
               value={internalNoteText}
               onChange={(e) => setInternalNoteText(e.target.value)}
@@ -1100,6 +1126,24 @@ export default function BookingsPage() {
               rows={5}
               className="bg-amber-50 border-amber-200 focus-visible:ring-amber-500"
             />
+            {noteBooking?.noCleaningService && (
+              <div className="space-y-2">
+                <Label htmlFor="bookingCleaningHours">Horas de limpieza</Label>
+                <Input
+                  id="bookingCleaningHours"
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  value={cleaningHoursText}
+                  onChange={(e) => setCleaningHoursText(e.target.value)}
+                  placeholder="Ej. 2.5"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Si hubo acuerdo con el usuario, introduce aquí las horas
+                  trabajadas para que la exportación calcule el importe correcto.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
@@ -1215,8 +1259,9 @@ export default function BookingsPage() {
       ) : isAdminOrConserje ? (
         /* Admin / Conserje: merged list of bookings + blocks */
         mergedList.length > 0 ? (
+          <>
           <div className="space-y-3">
-            {mergedList.map((entry) => {
+            {paginatedMergedList.map((entry) => {
               if (entry.kind === "block") {
                 const block = entry.item;
                 const blockDate = new Date(block.date);
@@ -1327,6 +1372,21 @@ export default function BookingsPage() {
               );
             })}
           </div>
+          {totalPages > 1 && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                onItemsPerPageChange={(value) => {
+                  setItemsPerPage(value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+          )}
+          </>
         ) : (
           <p className="text-muted-foreground py-6 sm:py-8 text-center">
             {dateFilter === "today" && "No hay reservas ni bloqueos para hoy."}

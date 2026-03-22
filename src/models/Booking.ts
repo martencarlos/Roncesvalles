@@ -18,6 +18,7 @@ export interface IBooking {
   updatedAt: Date;
   userId: string;
   noCleaningService?: boolean;
+  cleaningHours?: number | null;
   _id?: string;
 }
 
@@ -81,6 +82,11 @@ const BookingSchema = new Schema<IBooking>(
     noCleaningService: {
       type: Boolean,
       default: false,
+    },
+    cleaningHours: {
+      type: Number,
+      default: null,
+      min: [0, "Cleaning hours cannot be negative"],
     },
   },
   { timestamps: true }
