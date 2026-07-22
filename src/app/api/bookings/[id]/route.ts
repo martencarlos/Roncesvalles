@@ -8,6 +8,7 @@ import Booking from "@/models/Booking";
 import ActivityLog from "@/models/ActivityLog";
 import User from "@/models/User";
 import { sendPushToConserje } from "@/lib/push-service";
+import { isOffSeason } from "@/lib/export-utils";
 
 const MAX_PEOPLE_PER_TABLE = 8;
 
@@ -244,6 +245,7 @@ export async function PUT(
       (compareDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
     const isShortNotice = daysDifference <= 4;
+    const isOffSeasonDate = isOffSeason(compareDate);
 
     // Check if the date or meal type actually changed
     const dateHasChanged = body.date && new Date(body.date).getTime() !== new Date(originalBooking.date).getTime();
@@ -264,9 +266,14 @@ export async function PUT(
       }
     }
 
-    // Force disable FIRE on rest days OR short notice (if date or meal type changed)
-    // If neither changed, fire logic should also respect original timing context unless it's a rest day
-    if (isConciergeRestDay) {
+    // Off season always forces No Concierge, regardless of the preserve-original logic above
+    if (isOffSeasonDate) {
+      noCleaningService = true;
+    }
+
+    // Force disable FIRE on rest days OR off season OR short notice (if date or meal type changed)
+    // If neither changed, fire logic should also respect original timing context unless it's a rest day or off season
+    if (isConciergeRestDay || isOffSeasonDate) {
       prepararFuego = false;
     } else if ((dateHasChanged || mealTypeHasChanged) && isShortNotice) {
       prepararFuego = false;

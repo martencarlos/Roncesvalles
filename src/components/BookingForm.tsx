@@ -23,6 +23,7 @@ import { es } from "date-fns/locale/es";
 import { format, differenceInDays } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarIcon, LockIcon, InfoIcon, AlertTriangle, ShieldAlert } from "lucide-react";
+import { isOffSeason } from "@/lib/export-utils";
 import { useSession } from "next-auth/react";
 import { getApartmentLabel } from "@/lib/utils";
 
@@ -140,6 +141,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     const dayOfWeek = checkDate.getDay();
     const restDay = dayOfWeek === 2 || dayOfWeek === 3; // 2=Tuesday, 3=Wednesday
     const shortNotice = daysDifference <= 4;
+    const offSeason = isOffSeason(checkDate);
 
     setIsConciergeRestDay(restDay);
     setIsShortNotice(shortNotice);
@@ -147,8 +149,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
     // LOGIC:
     // 1. If Short Notice (< 5 days): Disable Fire (User must do it). Oven allowed.
     // 2. If Rest Day (Tue/Wed): Disable Fire (No Concierge). Oven allowed (not a concierge task).
+    // 3. If Off Season (May-Nov): Disable Fire (No Concierge). Oven allowed.
     
-    if (restDay || shortNotice) {
+    if (restDay || shortNotice || offSeason) {
       setPrepararFuego(false);
       // Removed setReservaHorno(false) so Oven is preserved
     }
@@ -161,7 +164,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
       new Date(initialData.date).getTime() !== date.getTime();
 
     if (!initialData?._id || (initialData?._id && (dateHasChanged || mealTypeHasChanged))) {
-      if (restDay) {
+      if (offSeason) {
+        setNoCleaningService(true);
+        setCleaningWarningReason(
+          "Durante la temporada baja (mayo a noviembre) no se proporciona servicio de conserjería."
+        );
+      } else if (restDay) {
         setNoCleaningService(true);
         setCleaningWarningReason(
           "Los martes y miércoles no hay servicio de conserjería."
@@ -177,7 +185,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
       }
     } else if (initialData?.noCleaningService) {
       // Logic for editing existing bookings with the flag set
-      if (restDay) {
+      if (offSeason) {
+        setCleaningWarningReason(
+          "Durante la temporada baja (mayo a noviembre) no se proporciona servicio de conserjería."
+        );
+      } else if (restDay) {
         setCleaningWarningReason(
           "Los martes y miércoles no hay servicio de conserjería."
         );

@@ -9,6 +9,7 @@ import BlockedDate from '@/models/BlockedDate';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
 import { sendPushToConserje } from '@/lib/push-service';
+import { isOffSeason } from '@/lib/export-utils';
 
 const MAX_PEOPLE_PER_TABLE = 8;
 
@@ -225,11 +226,11 @@ export async function POST(req: NextRequest) {
     const isConciergeRestDay = dayOfWeek === 2 || dayOfWeek === 3;
 
     // C. Determine Flags
-    // No cleaning (No Concierge) if short notice OR rest day OR manually set
-    const noCleaningService = isShortNotice || isConciergeRestDay || Boolean(body.noCleaningService);
+    // No cleaning (No Concierge) if short notice OR rest day OR off season OR manually set
+    const noCleaningService = isShortNotice || isConciergeRestDay || isOffSeason(bookingDate) || Boolean(body.noCleaningService);
     
-    // Fire preparation: Disabled if Short Notice OR Rest Days (User must do it / No Concierge)
-    const prepararFuego = (isConciergeRestDay || isShortNotice) ? false : Boolean(body.prepararFuego);
+    // Fire preparation: Disabled if Short Notice OR Rest Days OR Off Season (User must do it / No Concierge)
+    const prepararFuego = (isConciergeRestDay || isShortNotice || isOffSeason(bookingDate)) ? false : Boolean(body.prepararFuego);
     
     // Oven allowed even on rest days/short notice (unless conflict above caught it)
     const reservaHorno = Boolean(body.reservaHorno);
