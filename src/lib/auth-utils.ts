@@ -22,20 +22,6 @@ declare module "next-auth" {
   }
 }
 
-export async function getSession() {
-  return await getServerSession(authOptions);
-}
-
-export async function getCurrentUser() {
-  const session = await getSession();
-  
-  if (!session?.user?.email) {
-    return null;
-  }
-  
-  return session.user;
-}
-
 // For protecting API routes - updated version
 export async function authenticate(
   req: NextRequest,

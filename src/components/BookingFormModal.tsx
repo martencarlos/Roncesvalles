@@ -1,5 +1,5 @@
 // src/components/BookingFormModal.tsx
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import BookingForm from './BookingForm';
 import { IBooking } from '@/models/Booking';
@@ -19,42 +19,11 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
   initialData,
   isEditing
 }) => {
-  // Create a ref for the dialog content
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  // This effect will run after the dialog is opened
-  useEffect(() => {
-    if (isOpen && dialogRef.current) {
-      // Create a div element that can receive focus but does nothing
-      const focusTrap = document.createElement('div');
-      focusTrap.tabIndex = -1; // Making it not focusable via tab navigation
-      focusTrap.style.outline = 'none'; // Remove outline when focused
-      
-      // Append it as the first child
-      if (dialogRef.current.firstChild) {
-        dialogRef.current.insertBefore(focusTrap, dialogRef.current.firstChild);
-      } else {
-        dialogRef.current.appendChild(focusTrap);
-      }
-      
-      // Focus on this element instead of any input
-      focusTrap.focus();
-      
-      // Cleanup function to remove the element when dialog closes
-      return () => {
-        if (dialogRef.current?.contains(focusTrap)) {
-          dialogRef.current.removeChild(focusTrap);
-        }
-      };
-    }
-  }, [isOpen]);
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        ref={dialogRef}
         className="sm:max-w-[600px] max-h-[90vh] w-[95vw] p-0 flex flex-col overflow-hidden"
-        // Add this prop to prevent focus trap behavior
+        // Radix handles focus trapping; this just opts out of auto-focusing the first input
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogHeader className="shrink-0 px-3 sm:px-6 pt-3 sm:pt-6">
