@@ -8,8 +8,9 @@ import { authenticate } from '@/lib/auth-utils';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   try {
     // Authenticate as IT admin
     const currentUser = await authenticate(req, ["it_admin"]);
@@ -63,8 +64,9 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   try {
     // Authenticate as IT admin
     const currentUser = await authenticate(req, ["it_admin"]);

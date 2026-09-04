@@ -2,7 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +11,6 @@ import { InfoIcon, Loader2, MailIcon, CheckCircle2, AlertCircle } from "lucide-r
 import Link from "next/link";
 
 export default function ResetPasswordForm() {
-  const router = useRouter();
-  
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");

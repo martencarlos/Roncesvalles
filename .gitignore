@@ -43,4 +43,4 @@ next-env.d.ts
 codebase.md
 
 pnpm-lock.yaml
-pnpm-workspace.yaml
+pnpm-workspace.yaml.playwright-mcp/

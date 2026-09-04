@@ -102,7 +102,7 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
-  const [datesWithBookings, setDatesWithBookings] = useState<Date[]>([]);
+  const [, setDatesWithBookings] = useState<Date[]>([]);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
@@ -335,7 +335,6 @@ export default function BookingsPage() {
     filter: DateFilter,
     date: Date
   ) => {
-    const today = startOfDay(new Date());
     let filtered: IBooking[] = [];
 
     // For regular users, only show their own apartment's bookings
@@ -391,7 +390,6 @@ export default function BookingsPage() {
     filter: DateFilter,
     date: Date
   ) => {
-    const today = startOfDay(new Date());
     let filtered: IBlockedDate[] = [];
 
     switch (filter) {
@@ -899,9 +897,11 @@ export default function BookingsPage() {
                 </div>
                 <DatePicker
                   selected={selectedDate}
-                  onChange={(date: Date) => {
-                    setSelectedDate(date);
-                    setDateFilter("specific");
+                  onChange={(date: Date | null) => {
+                    if (date) {
+                      setSelectedDate(date);
+                      setDateFilter("specific");
+                    }
                   }}
                   dateFormat="d MMMM, yyyy"
                   locale="es"
@@ -1329,8 +1329,6 @@ export default function BookingsPage() {
               // Regular booking entry
               const booking = entry.item;
               const bookingDate = new Date(booking.date);
-              const isBookingToday = isToday(bookingDate);
-              const isBookingFuture = isFuture(bookingDate);
               const isBookingPast = isPast(bookingDate) && !isToday(bookingDate);
 
               return (

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const dateParam = url.searchParams.get("date");
 
-    let query: any = {};
+    const query: any = {};
 
     if (dateParam) {
       const targetDate = new Date(dateParam);

@@ -37,7 +37,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
   onEdit,
   onDelete,
   onEditNote,
-  isPast = false,
   session,
 }) => {
   const isCompleted = booking.status === "completed";

@@ -13,18 +13,17 @@ export const metadata: Metadata = {
 export default async function NewPasswordPage({
   searchParams,
 }: {
-  searchParams: { token?: string; email?: string };
+  searchParams: Promise<{ token?: string; email?: string }>;
 }) {
   // Check if user is already authenticated
   const session = await getServerSession(authOptions);
-  
+
   if (session) {
     redirect("/");
   }
-  
+
   // Check if token and email are provided
-  const token = searchParams?.token;
-  const email = searchParams?.email;
+  const { token, email } = await searchParams;
   
   if (!token || !email) {
     redirect("/auth/signin?error=InvalidResetLink");

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 export default function SignInForm() {
@@ -64,7 +64,7 @@ export default function SignInForm() {
           router.refresh();
         }, 500);
       }
-    } catch (error) {
+    } catch {
       setErrorMessage("Error al iniciar sesión. Inténtelo de nuevo.");
       setIsSubmitting(false);
     }

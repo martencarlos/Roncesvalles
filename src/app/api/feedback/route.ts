@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
     const skip = (validPage - 1) * validLimit;
     
     // Build query based on filters
-    let query: any = {};
+    const query: any = {};
     
     if (status !== 'all') {
       query.status = status;

@@ -11,7 +11,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Sector } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 interface SystemSummaryProps {
   userStats: UserStats;
@@ -40,7 +40,7 @@ export default function SystemSummary({ userStats, bookingStats }: SystemSummary
   ];
 
   // Custom label renderer for pie charts
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+  const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent }: any) => {
     const RADIAN = Math.PI / 180;
     const radius = outerRadius * 0.55;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);

@@ -1,8 +1,6 @@
 // src/components/BookingCardSkeleton.tsx
 import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 export function BookingCardSkeleton() {
   return (

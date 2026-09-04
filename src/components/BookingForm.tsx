@@ -554,7 +554,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             </div>
             <DatePicker
               selected={date}
-              onChange={(date: Date) => setDate(date)}
+              onChange={(date: Date | null) => date && setDate(date)}
               minDate={new Date()}
               dateFormat="d MMMM, yyyy"
               locale="es"

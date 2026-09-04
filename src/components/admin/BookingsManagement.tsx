@@ -15,7 +15,6 @@ import {
   Edit,
   Trash2,
   StickyNote,
-  Save,
   Users,
   Table as TableIcon,
   Flame,
@@ -32,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { format, isPast, isToday } from "date-fns";
+import { format, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
@@ -48,7 +47,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { IBooking } from "@/models/Booking";
-import { IBlockedDate, BlockedMealType } from "@/models/BlockedDate";
+import { IBlockedDate } from "@/models/BlockedDate";
 import { getApartmentLabel } from "@/lib/utils";
 
 registerLocale("es", es);
@@ -419,7 +418,7 @@ export default function BookingsManagement({
             <div className="relative">
               <DatePicker
                 selected={selectedDate}
-                onChange={(date: Date) => setSelectedDate(date)}
+                onChange={(date: Date | null) => date && setSelectedDate(date)}
                 dateFormat="dd/MM/yyyy"
                 locale="es"
                 placeholderText="Fecha"
@@ -558,11 +557,7 @@ export default function BookingsManagement({
 
             const booking = entry.item;
             const isCompleted = booking.status === "completed";
-            const isPending = booking.status === "pending";
             const isCancelled = booking.status === "cancelled";
-            const isPastBooking =
-              isPast(new Date(booking.date)) &&
-              !isToday(new Date(booking.date));
 
             // Status Badge Logic
             let statusBadge = null;

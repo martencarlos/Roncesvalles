@@ -9,8 +9,9 @@ import { hash } from "bcryptjs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   try {
     // Authenticate user
     const currentUser = await authenticate(req);
@@ -57,8 +58,9 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   try {
     // Authenticate user
     const currentUser = await authenticate(req);
@@ -178,8 +180,9 @@ export async function PUT(
 // Only IT admins can delete users
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   try {
     // Authenticate as IT admin
     const currentUser = await authenticate(req, ["it_admin"]);

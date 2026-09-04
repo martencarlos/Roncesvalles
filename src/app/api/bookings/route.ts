@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     const availabilityCheck = url.searchParams.get('availabilityCheck');
     const forCalendar = url.searchParams.get('forCalendar');
     
-    let query: any = {};
+    const query: any = {};
     
     // Robust Date Range Query
     if (dateParam) {

@@ -3,7 +3,7 @@ import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import connectDB from "./mongodb";
-import User, { IUser } from "@/models/User";
+import User from "@/models/User";
 import LoginEvent from "@/models/LoginEvent"; // Import the LoginEvent model
 import { UAParser } from 'ua-parser-js'
 

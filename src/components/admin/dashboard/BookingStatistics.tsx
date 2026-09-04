@@ -149,7 +149,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   >
                     {bookingTypeData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -180,7 +180,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   >
                     {bookingStatusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />

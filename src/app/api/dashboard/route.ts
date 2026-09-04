@@ -6,7 +6,7 @@ import User from "@/models/User";
 import Booking from "@/models/Booking";
 import { authenticate } from "@/lib/auth-utils";
 import LoginEvent from "@/models/LoginEvent";
-import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { subMonths, startOfMonth, endOfMonth } from "date-fns";
 import ActivityLog from "@/models/ActivityLog";
 import { PasswordReset } from "@/models/PasswordReset";
 

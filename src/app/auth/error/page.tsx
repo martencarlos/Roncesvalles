@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   description: "Ha ocurrido un error durante la autenticación",
 };
 
-export default function AuthErrorPage({
+export default async function AuthErrorPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const error = searchParams?.error || "default";
+  const { error = "default" } = await searchParams;
   
   let errorMessage = "Ha ocurrido un error durante la autenticación.";
   let errorDescription = "Por favor, inténtelo de nuevo más tarde.";

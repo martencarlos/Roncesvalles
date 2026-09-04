@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Bell } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import { INotificationLog } from '@/models/NotificationLog';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function NotificationsPage() {

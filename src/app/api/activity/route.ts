@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     const skip = (validPage - 1) * validLimit;
     
     // Build query based on filters
-    let query: any = {};
+    const query: any = {};
     
     // If it's a regular user, only show their own apartment's logs
     if (currentUser.role === 'user') {

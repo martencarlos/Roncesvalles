@@ -17,7 +17,7 @@ export default function UserProfileForm() {
   const { data: session, update } = useSession();
   
   const [name, setName] = useState(session?.user?.name || "");
-  const [email, setEmail] = useState(session?.user?.email || "");
+  const [email] = useState(session?.user?.email || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

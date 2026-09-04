@@ -96,9 +96,6 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
     { name: "Tablet", value: stats.sessionsByDevice.tablet, color: "#f59e0b" }, // amber
   ];
 
-  // Prepare data for geographic distribution
-  const locationData = stats.geographicDistribution;
-
   // Prepare data for new users trend
   const monthNames = [
     "Ene",
@@ -358,7 +355,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     fill="#8884d8"
                     dataKey="value"
                     label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
+                      `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
                     }
                   >
                     {roleData.map((entry, index) => (
@@ -393,7 +390,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     fill="#8884d8"
                     dataKey="value"
                     label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
+                      `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
                     }
                   >
                     {deviceData.map((entry, index) => (

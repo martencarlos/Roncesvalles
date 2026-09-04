@@ -33,7 +33,6 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   onEdit,
   onDelete,
   onEditNote,
-  isPast = false,
   session,
 }) => {
   const isCompleted = booking.status === "completed";
