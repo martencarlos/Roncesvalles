@@ -120,6 +120,11 @@
     @apply bg-background text-foreground;
   }
 
+  /* Reserve the scrollbar gutter so scroll-locking (dialogs) causes no layout shift */
+  html {
+    scrollbar-gutter: stable;
+  }
+
   button, 
   a[role="button"],
   .button,

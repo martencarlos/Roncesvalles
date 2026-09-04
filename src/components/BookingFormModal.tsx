@@ -51,23 +51,25 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent 
+      <DialogContent
         ref={dialogRef}
-        className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto w-[95vw] p-3 sm:p-6"
+        className="sm:max-w-[600px] max-h-[90vh] w-[95vw] p-0 flex flex-col overflow-hidden"
         // Add this prop to prevent focus trap behavior
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0 px-3 sm:px-6 pt-3 sm:pt-6">
           <DialogTitle>{isEditing ? 'Editar Reserva' : 'Nueva Reserva'}</DialogTitle>
         </DialogHeader>
-        <BookingForm
-          onSubmit={async (data) => {
-            await onSubmit(data);
-            onClose();
-          }}
-          onCancel={onClose}
-          initialData={initialData}
-        />
+        <div className="overflow-y-auto min-h-0 px-3 sm:px-6 pb-3 sm:pb-6">
+          <BookingForm
+            onSubmit={async (data) => {
+              await onSubmit(data);
+              onClose();
+            }}
+            onCancel={onClose}
+            initialData={initialData}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
