@@ -9,13 +9,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Download, FileSpreadsheetIcon, FileIcon, Users, CalendarDays } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getMonthOptions,
-  type ExportScope,
-} from "@/lib/export-utils";
-import { runBookingsExport } from "@/lib/export-bookings";
+import BookingsExportForm from "@/components/BookingsExportForm";
 
 interface User {
   _id: string;
@@ -32,36 +27,11 @@ interface ExportDataPanelProps {
 
 export default function ExportDataPanel({ userRole }: ExportDataPanelProps) {
   const isITAdmin = userRole === "it_admin";
-  const [year, setYear] = useState<string>(new Date().getFullYear().toString());
-  const [scope, setScope] = useState<ExportScope>("year");
-  const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
-  const [format, setFormat] = useState<'excel' | 'pdf'>('excel');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
-  const [includeDetails, setIncludeDetails] = useState<boolean>(true);
   const [exportTab, setExportTab] = useState<string>("bookings");
   const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
   const [userExportFormat, setUserExportFormat] = useState<'excel' | 'pdf'>('excel');
   const [userError, setUserError] = useState<string>('');
   const [userRoleFilter, setUserRoleFilter] = useState<string>("all");
-
-  // Generate year options (last 5 years)
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
-  const monthOptions = getMonthOptions();
-
-  const handleExport = async () => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      await runBookingsExport({ scope, year, month, format, includeDetails });
-    } catch (err: any) {
-      setError(err.message || 'Error al exportar los datos');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // User export functionality
   const handleUserExport = async () => {
@@ -270,131 +240,8 @@ export default function ExportDataPanel({ userRole }: ExportDataPanelProps) {
                 Exporte datos de las reservas confirmadas para facturación y gestión administrativa
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Periodo</Label>
-                    <RadioGroup value={scope} onValueChange={(v) => setScope(v as ExportScope)} className="flex gap-4">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="year" id="scopeYear" />
-                        <Label htmlFor="scopeYear" className="cursor-pointer">
-                          Año natural
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="month" id="scopeMonth" />
-                        <Label htmlFor="scopeMonth" className="cursor-pointer">
-                          Mes
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="year">Año</Label>
-                    <Select value={year} onValueChange={setYear}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar año" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {yearOptions.map((y) => (
-                          <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {scope === "month" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="month">Mes</Label>
-                      <Select value={month} onValueChange={setMonth}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar mes" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {monthOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Ejemplo: febrero 2026 incluye del 22/01/2026 al 22/02/2026.
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <Label>Formato</Label>
-                    <RadioGroup value={format} onValueChange={(v) => setFormat(v as 'excel' | 'pdf')} className="flex gap-4">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="excel" id="excel" />
-                        <Label htmlFor="excel" className="flex items-center space-x-2 cursor-pointer">
-                          <FileSpreadsheetIcon className="w-4 h-4 text-success" />
-                          <span>Excel/CSV</span>
-                        </Label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="pdf" id="pdf" />
-                        <Label htmlFor="pdf" className="flex items-center space-x-2 cursor-pointer">
-                          <FileIcon className="w-4 h-4 text-destructive" />
-                          <span>PDF</span>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 pt-2">
-                    <Checkbox
-                      id="includeDetails"
-                      checked={includeDetails}
-                      onCheckedChange={(checked) => setIncludeDetails(checked as boolean)}
-                    />
-                    <Label htmlFor="includeDetails" className="cursor-pointer">
-                      Incluir desglose detallado de reservas
-                    </Label>
-                  </div>
-                  
-                  <div className="bg-muted p-4 rounded-md text-sm">
-                    <h3 className="font-medium mb-2">Datos incluidos:</h3>
-                    <ul className="list-disc list-inside space-y-1">
-                      <li>Resumen de reservas por apartamento</li>
-                      <li>Total de reservas, asistentes e importes</li>
-                      <li>Facturación según temporada y conserjería</li>
-                      {includeDetails && (
-                        <li>Detalle de cada reserva con estado de conserjería y horas</li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end mt-6">
-                <Button onClick={handleExport} disabled={isLoading}>
-                  {isLoading ? (
-                    <span className="flex items-center">
-                      <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></span>
-                      Exportando...
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <Download className="w-4 h-4 mr-2" />
-                      Exportar Reservas
-                    </span>
-                  )}
-                </Button>
-              </div>
+            <CardContent>
+              <BookingsExportForm variant="panel" buttonLabel="Exportar Reservas" />
             </CardContent>
           </Card>
         </TabsContent>

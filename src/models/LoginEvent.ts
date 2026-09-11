@@ -10,13 +10,6 @@ export interface ILoginEvent {
   browser: string;
   deviceType: 'desktop' | 'mobile' | 'tablet';
   location: string;
-  geoData?: {
-    country?: string;
-    city?: string;
-    region?: string;
-    latitude?: number;
-    longitude?: number;
-  };
   success: boolean;
   failureReason?: string;
 }
@@ -52,13 +45,6 @@ const LoginEventSchema = new Schema<ILoginEvent>(
     location: {
       type: String,
       default: 'Unknown',
-    },
-    geoData: {
-      country: String,
-      city: String,
-      region: String,
-      latitude: Number,
-      longitude: Number,
     },
     success: {
       type: Boolean,

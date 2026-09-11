@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, getApartmentLabel } from "@/lib/utils";
 import PushNotificationManager from "@/components/auth/PushNotificationManager";
 
 export default function UserMenu() {
@@ -119,18 +119,9 @@ export default function UserMenu() {
               </p>
               {session.user.role === "user" ? (
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {(() => {
-                    const num = session.user.apartmentNumber;
-                    if (num == null) return "Apartamento #—"; // fallback if undefined or null
-
-                    let label = `Apartamento #${num}`;
-                    if (num >= 43 && num <= 48) {
-                      const level = num - 42; // 43→1, 44→2, …, 48→6
-                      label += ` (L${level})`;
-                    }
-
-                    return label;
-                  })()}
+                  {session.user.apartmentNumber == null
+                    ? "Apartamento #—"
+                    : `Apartamento #${getApartmentLabel(session.user.apartmentNumber)}`}
                 </p>
               ) : (
                 <p className="mt-0.5 text-xs text-muted-foreground">

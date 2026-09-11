@@ -8,7 +8,7 @@ import { authenticate } from '@/lib/auth-utils';
 export async function GET(req: NextRequest) {
   try {
     // Authenticate user
-    const currentUser = await authenticate(req);
+    const currentUser = await authenticate();
     
     if (!currentUser) {
       return NextResponse.json(

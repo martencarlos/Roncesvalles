@@ -1,7 +1,6 @@
 // src/lib/auth-utils.ts
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth";
-import { NextRequest } from "next/server";
 
 // Types for extended session user
 declare module "next-auth" {
@@ -23,10 +22,7 @@ declare module "next-auth" {
 }
 
 // For protecting API routes - updated version
-export async function authenticate(
-  req: NextRequest,
-  requiredRoles?: string[]
-) {
+export async function authenticate(requiredRoles?: string[]) {
   try {
     // Try to get the session directly from NextAuth instead of making a fetch request
     const session = await getServerSession(authOptions);

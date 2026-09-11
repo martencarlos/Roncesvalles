@@ -5,8 +5,6 @@ import "./globals.css";
 import "../styles/datepicker.css";
 import { Toaster } from "sonner";
 import { NextAuthProvider } from "@/providers/NextAuthProvider";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -43,14 +41,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Check authentication status
-  await getServerSession(authOptions);
-  
   return (
     <html lang="es">
       <body

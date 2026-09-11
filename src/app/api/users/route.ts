@@ -5,10 +5,10 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import { authenticate } from "@/lib/auth-utils";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Authenticate and check if admin or IT admin
-    const user = await authenticate(req, ["admin", "it_admin"]);
+    const user = await authenticate(["admin", "it_admin"]);
     
     if (!user) {
       return NextResponse.json(

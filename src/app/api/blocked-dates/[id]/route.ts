@@ -8,7 +8,7 @@ import BlockedDate from "@/models/BlockedDate";
 import ActivityLog from "@/models/ActivityLog";
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const params = await context.params;

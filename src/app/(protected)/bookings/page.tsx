@@ -25,8 +25,6 @@ import {
   LayoutGrid,
   List,
   InfoIcon,
-  StickyNote,
-  Save,
   ShieldAlert,
   Flame,
   Lock,
@@ -46,19 +44,9 @@ import DatePicker from "react-datepicker";
 import { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
+import BookingNoteDialog from "@/components/BookingNoteDialog";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   PageContainer,
   PageHeader,
@@ -67,6 +55,11 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  buildBookingCalendarInfo,
+  CalendarDayContent,
+  type BookingCalendarInfo,
+} from "@/components/BookingCalendar";
 
 // Registrar el idioma español para el datepicker
 registerLocale("es", es);
@@ -105,7 +98,6 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
-  const [, setDatesWithBookings] = useState<Date[]>([]);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
@@ -116,8 +108,6 @@ export default function BookingsPage() {
   // State for Internal Notes (Conserje/IT Admin)
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteBooking, setNoteBooking] = useState<IBooking | null>(null);
-  const [internalNoteText, setInternalNoteText] = useState("");
-  const [cleaningHoursText, setCleaningHoursText] = useState("");
 
   const [loadingTables, setLoadingTables] = useState(true);
   const [availableTablesLunch, setAvailableTablesLunch] = useState<number[]>(
@@ -137,9 +127,7 @@ export default function BookingsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>(undefined);
 
   // Add state for bookings by date and meal type (including block indicators)
-  const [bookingsByDate, setBookingsByDate] = useState<{
-    [key: string]: { lunch: boolean; dinner: boolean; blockedLunch?: boolean; blockedDinner?: boolean };
-  }>({});
+  const [bookingsByDate, setBookingsByDate] = useState<BookingCalendarInfo>({});
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -177,64 +165,23 @@ export default function BookingsPage() {
       setBookings(sortedData);
       applyFilters(sortedData, dateFilter, selectedDate);
 
-      // Create a map of dates with booking info for lunch and dinner
-      const bookingsByDateMap: {
-        [key: string]: { lunch: boolean; dinner: boolean; blockedLunch?: boolean; blockedDinner?: boolean };
-      } = {};
-
       // Fetch all bookings and blocked dates for calendar indicators in parallel
       const [calendarRes, blocksCalRes] = await Promise.all([
         fetch("/api/bookings?forCalendar=true"),
         fetch("/api/blocked-dates"),
       ]);
 
-      if (calendarRes.ok) {
-        const allBookings = await calendarRes.json();
-
-        // Process all bookings to show in calendar
-        allBookings.forEach((booking: IBooking) => {
-          const dateKey = format(new Date(booking.date), "yyyy-MM-dd");
-
-          if (!bookingsByDateMap[dateKey]) {
-            bookingsByDateMap[dateKey] = { lunch: false, dinner: false };
-          }
-
-          if (booking.mealType === "lunch") {
-            bookingsByDateMap[dateKey].lunch = true;
-          } else {
-            bookingsByDateMap[dateKey].dinner = true;
-          }
-        });
-      }
-
-      // Add blocked date indicators to calendar map
+      const allBookings: IBooking[] = calendarRes.ok
+        ? await calendarRes.json()
+        : [];
+      let allBlocks: IBlockedDate[] = [];
       if (blocksCalRes.ok) {
-        const allBlocks: IBlockedDate[] = await blocksCalRes.json();
+        allBlocks = await blocksCalRes.json();
         setBlocks(allBlocks);
         applyBlockFilters(allBlocks, dateFilter, selectedDate);
-        allBlocks.forEach((block) => {
-          const dateKey = format(new Date(block.date), "yyyy-MM-dd");
-          if (!bookingsByDateMap[dateKey]) {
-            bookingsByDateMap[dateKey] = { lunch: false, dinner: false };
-          }
-          if (block.mealType === "both") {
-            bookingsByDateMap[dateKey].blockedLunch = true;
-            bookingsByDateMap[dateKey].blockedDinner = true;
-          } else if (block.mealType === "lunch") {
-            bookingsByDateMap[dateKey].blockedLunch = true;
-          } else {
-            bookingsByDateMap[dateKey].blockedDinner = true;
-          }
-        });
       }
 
-      // Extract unique dates with bookings
-      const uniqueDates = Object.keys(bookingsByDateMap).map(
-        (dateStr) => new Date(dateStr)
-      );
-
-      setDatesWithBookings(uniqueDates);
-      setBookingsByDate(bookingsByDateMap);
+      setBookingsByDate(buildBookingCalendarInfo(allBookings, allBlocks));
 
       // Now fetch ALL bookings for the selected date to check availability
       updateAvailableTables(selectedDate);
@@ -609,44 +556,7 @@ export default function BookingsPage() {
   // --- NEW HANDLERS: Internal Notes (For Conserje/IT Admin) ---
   const handleOpenNoteDialog = (booking: IBooking) => {
     setNoteBooking(booking);
-    setInternalNoteText(booking.internalNotes || "");
-    setCleaningHoursText(
-      typeof booking.cleaningHours === "number" ? String(booking.cleaningHours) : ""
-    );
     setShowNoteDialog(true);
-  };
-
-  const handleSaveInternalNote = async () => {
-    if (!noteBooking?._id) return;
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`/api/bookings/${noteBooking._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          internalNotes: internalNoteText,
-          cleaningHours: noteBooking.noCleaningService
-            ? cleaningHoursText.trim() === ""
-              ? null
-              : Number(cleaningHoursText)
-            : null,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al guardar la nota");
-      }
-
-      // Refresh local state
-      await fetchBookings();
-      toast.success("Nota interna actualizada");
-      setShowNoteDialog(false);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleDateFilterChange = (filter: DateFilter) => {
@@ -729,53 +639,13 @@ export default function BookingsPage() {
   };
 
   // Custom day rendering for the date picker to highlight dates with bookings
-  const renderDayContents = (day: number, date: Date | undefined) => {
-    if (!date) return <span>{day}</span>;
-
-    const dateKey = format(date, "yyyy-MM-dd");
-    const bookingInfo = bookingsByDate[dateKey];
-
-    return (
-      <div className="relative">
-        <span>{day}</span>
-        {bookingInfo && (
-          <>
-            {bookingInfo.lunch && bookingInfo.dinner && (
-              <div
-                className="booking-indicator booking-dot-both"
-                title="Reservas para comida y cena"
-              />
-            )}
-            {bookingInfo.lunch && !bookingInfo.dinner && (
-              <div
-                className="booking-indicator booking-indicator-lunch booking-dot-lunch"
-                title="Reservas para comida"
-              />
-            )}
-            {!bookingInfo.lunch && bookingInfo.dinner && (
-              <div
-                className="booking-indicator booking-indicator-dinner booking-dot-dinner"
-                title="Reservas para cena"
-              />
-            )}
-            {(bookingInfo.blockedLunch || bookingInfo.blockedDinner) && (
-              <div
-                className="booking-indicator booking-dot-blocked"
-                style={{ bottom: "-6px" }}
-                title={
-                  bookingInfo.blockedLunch && bookingInfo.blockedDinner
-                    ? "Fecha bloqueada (Comida y Cena)"
-                    : bookingInfo.blockedLunch
-                    ? "Comida bloqueada"
-                    : "Cena bloqueada"
-                }
-              />
-            )}
-          </>
-        )}
-      </div>
-    );
-  };
+  const renderDayContents = (day: number, date: Date | undefined) => (
+    <CalendarDayContent
+      day={day}
+      date={date}
+      info={date ? bookingsByDate[format(date, "yyyy-MM-dd")] : undefined}
+    />
+  );
 
   // AuthLoader in NextAuthProvider already blocks rendering until the session
   // has durably settled, so by the time this page renders, status is either
@@ -1094,60 +964,12 @@ export default function BookingsPage() {
         />
       )}
 
-      {/* Internal Notes Dialog */}
-      <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <StickyNote className="h-5 w-5 text-warning" />
-              Notas Internas (Conserjería)
-            </DialogTitle>
-            <DialogDescription>
-              Estas notas solo son visibles para conserjes y administradores.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Textarea
-              value={internalNoteText}
-              onChange={(e) => setInternalNoteText(e.target.value)}
-              placeholder="Escriba aquí anotaciones..."
-              rows={5}
-            />
-            {noteBooking?.noCleaningService && (
-              <div className="space-y-2">
-                <Label htmlFor="bookingCleaningHours">Horas de limpieza</Label>
-                <Input
-                  id="bookingCleaningHours"
-                  type="number"
-                  min="0"
-                  step="0.25"
-                  value={cleaningHoursText}
-                  onChange={(e) => setCleaningHoursText(e.target.value)}
-                  placeholder="Ej. 2.5"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Si hubo acuerdo con el usuario, introduce aquí las horas
-                  trabajadas para que la exportación calcule el importe correcto.
-                </p>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSaveInternalNote} disabled={isSubmitting}>
-              {isSubmitting ? (
-                "Guardando..."
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" /> Guardar Nota
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BookingNoteDialog
+        booking={noteBooking}
+        open={showNoteDialog}
+        onOpenChange={setShowNoteDialog}
+        onSaved={() => fetchBookings()}
+      />
 
         <section className="space-y-4">
           <SectionHeader

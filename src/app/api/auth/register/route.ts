@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const { name, email, password, apartmentNumber, role = 'user' } = body;
     
     // Get the current user if authenticated (for IT admin creating users)
-    const currentUser = await authenticate(req);
+    const currentUser = await authenticate();
     
     // Validate required fields
     if (!name || !email || !password) {

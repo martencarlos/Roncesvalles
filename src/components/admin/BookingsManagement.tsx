@@ -5,8 +5,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   PlusCircle,
@@ -40,14 +38,7 @@ import { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import BookingFormModal from "@/components/BookingFormModal";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import BookingNoteDialog from "@/components/BookingNoteDialog";
 import { IBooking } from "@/models/Booking";
 import { IBlockedDate } from "@/models/BlockedDate";
 import { getApartmentLabel } from "@/lib/utils";
@@ -89,8 +80,6 @@ export default function BookingsManagement({
   // Internal Notes Modal State
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteBooking, setNoteBooking] = useState<IBooking | null>(null);
-  const [internalNoteText, setInternalNoteText] = useState("");
-  const [cleaningHoursText, setCleaningHoursText] = useState("");
 
   // Fetch bookings and blocks
   useEffect(() => {
@@ -326,46 +315,7 @@ export default function BookingsManagement({
   // Internal Notes Handlers
   const openNoteDialog = (booking: IBooking) => {
     setNoteBooking(booking);
-    setInternalNoteText(booking.internalNotes || "");
-    setCleaningHoursText(
-      typeof booking.cleaningHours === "number" ? String(booking.cleaningHours) : ""
-    );
     setShowNoteDialog(true);
-  };
-
-  const handleSaveInternalNote = async () => {
-    if (!noteBooking?._id) return;
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`/api/bookings/${noteBooking._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          internalNotes: internalNoteText,
-          cleaningHours: noteBooking.noCleaningService
-            ? cleaningHoursText.trim() === ""
-              ? null
-              : Number(cleaningHoursText)
-            : null,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al guardar la nota");
-      }
-
-      const updatedBooking = await res.json();
-      setBookings((prev) =>
-        prev.map((b) => (b._id === updatedBooking._id ? updatedBooking : b))
-      );
-      toast.success("Nota interna actualizada");
-      setShowNoteDialog(false);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const formatDate = (date: string | Date) =>
@@ -737,57 +687,16 @@ export default function BookingsManagement({
       )}
 
       {/* Modals */}
-      <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <StickyNote className="h-5 w-5 text-warning-foreground" />
-              Notas Internas (Conserjería)
-            </DialogTitle>
-            <DialogDescription>
-              Estas notas solo son visibles para conserjes y administradores IT.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <Textarea
-              value={internalNoteText}
-              onChange={(e) => setInternalNoteText(e.target.value)}
-              placeholder="Escriba aquí anotaciones..."
-              rows={5}
-              className="bg-warning/10 border-warning/30"
-            />
-            {noteBooking?.noCleaningService && (
-              <div className="space-y-2">
-                <Label htmlFor="cleaningHours">Horas de limpieza</Label>
-                <Input
-                  id="cleaningHours"
-                  type="number"
-                  min="0"
-                  step="0.25"
-                  value={cleaningHoursText}
-                  onChange={(e) => setCleaningHoursText(e.target.value)}
-                  placeholder="Ej. 2.5"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Si hubo acuerdo con el usuario, introduzca aquí las horas
-                  trabajadas para que la exportación aplique la tarifa correcta.
-                </p>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSaveInternalNote}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Guardando..." : "Guardar Nota"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BookingNoteDialog
+        booking={noteBooking}
+        open={showNoteDialog}
+        onOpenChange={setShowNoteDialog}
+        onSaved={(updated) =>
+          setBookings((prev) =>
+            prev.map((b) => (b._id === updated._id ? updated : b))
+          )
+        }
+      />
 
       {isITAdmin && (
         <BookingFormModal

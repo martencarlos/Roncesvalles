@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getApartmentLabel } from "@/lib/utils";
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -130,16 +131,9 @@ export default function SignUpForm() {
               </SelectTrigger>
               <SelectContent>
                 {apartmentNumbers.map((num) => {
-                  let label = `Apartamento #${num}`;
-
-                  if (num >= 43 && num <= 48) {
-                    const level = num - 42; // 43→1, 44→2, …, 48→6
-                    label += ` (L${level})`;
-                  }
-
                   return (
                     <SelectItem key={num} value={num.toString()}>
-                      {label}
+                      Apartamento #{getApartmentLabel(num)}
                     </SelectItem>
                   );
                 })}

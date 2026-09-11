@@ -10,10 +10,10 @@ import { subMonths, startOfMonth, endOfMonth } from "date-fns";
 import ActivityLog from "@/models/ActivityLog";
 import { PasswordReset } from "@/models/PasswordReset";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Authenticate the request
-    const user = await authenticate(req, ["it_admin"]);
+    const user = await authenticate(["it_admin"]);
     
     if (!user) {
       return NextResponse.json(

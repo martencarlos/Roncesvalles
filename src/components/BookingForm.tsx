@@ -26,17 +26,13 @@ import { CalendarIcon, LockIcon, InfoIcon, AlertTriangle, ShieldAlert } from "lu
 import { isOffSeason } from "@/lib/export-utils";
 import { useSession } from "next-auth/react";
 import { getApartmentLabel } from "@/lib/utils";
+import {
+  buildBookingCalendarInfo,
+  CalendarDayContent,
+  type BookingCalendarInfo,
+} from "@/components/BookingCalendar";
 
 registerLocale("es", es);
-
-interface BookingsForDate {
-  [date: string]: {
-    lunch: boolean;
-    dinner: boolean;
-    blockedLunch?: boolean;
-    blockedDinner?: boolean;
-  };
-}
 
 interface BookingFormProps {
   onSubmit: (data: Partial<IBooking>) => Promise<void>;
@@ -98,7 +94,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [bookingsForDates, setBookingsForDates] = useState<BookingsForDate>({});
+  const [bookingsForDates, setBookingsForDates] = useState<BookingCalendarInfo>({});
   const [noCleaningService, setNoCleaningService] = useState<boolean>(
     initialData?.noCleaningService || false
   );
@@ -210,40 +206,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
         ]);
         if (!res.ok) throw new Error("Error al obtener reservas");
         const bookings: IBooking[] = await res.json();
-        const bookingMap: BookingsForDate = {};
+        const blocks: IBlockedDate[] = blocksRes.ok
+          ? await blocksRes.json()
+          : [];
 
-        bookings.forEach((booking) => {
-          const dateKey = format(new Date(booking.date), "yyyy-MM-dd");
-          if (!bookingMap[dateKey]) {
-            bookingMap[dateKey] = { lunch: false, dinner: false };
-          }
-          if (booking.mealType === "lunch") {
-            bookingMap[dateKey].lunch = true;
-          } else {
-            bookingMap[dateKey].dinner = true;
-          }
-        });
-
-        // Add blocked date indicators
-        if (blocksRes.ok) {
-          const allBlocks: IBlockedDate[] = await blocksRes.json();
-          allBlocks.forEach((block) => {
-            const dateKey = format(new Date(block.date), "yyyy-MM-dd");
-            if (!bookingMap[dateKey]) {
-              bookingMap[dateKey] = { lunch: false, dinner: false };
-            }
-            if (block.mealType === "both") {
-              bookingMap[dateKey].blockedLunch = true;
-              bookingMap[dateKey].blockedDinner = true;
-            } else if (block.mealType === "lunch") {
-              bookingMap[dateKey].blockedLunch = true;
-            } else {
-              bookingMap[dateKey].blockedDinner = true;
-            }
-          });
-        }
-
-        setBookingsForDates(bookingMap);
+        setBookingsForDates(buildBookingCalendarInfo(bookings, blocks));
       } catch (err) {
         console.error("Error fetching all bookings:", err);
       }
@@ -392,52 +359,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
     selectedTables.includes(tableNumber);
   const isBooked = (tableNumber: number) => bookedTables.includes(tableNumber);
 
-  const renderDayContents = (day: number, date: Date | undefined) => {
-    if (!date) return <span>{day}</span>;
-    const dateKey = format(date, "yyyy-MM-dd");
-    const bookingInfo = bookingsForDates[dateKey];
-
-    return (
-      <div className="relative">
-        <span>{day}</span>
-        {bookingInfo && (
-          <>
-            {bookingInfo.lunch && bookingInfo.dinner && (
-              <div
-                className="booking-indicator booking-dot-both"
-                title="Reservas para comida y cena"
-              />
-            )}
-            {bookingInfo.lunch && !bookingInfo.dinner && (
-              <div
-                className="booking-indicator booking-indicator-lunch booking-dot-lunch"
-                title="Reservas para comida"
-              />
-            )}
-            {!bookingInfo.lunch && bookingInfo.dinner && (
-              <div
-                className="booking-indicator booking-indicator-dinner booking-dot-dinner"
-                title="Reservas para cena"
-              />
-            )}
-            {(bookingInfo.blockedLunch || bookingInfo.blockedDinner) && (
-              <div
-                className="booking-indicator booking-dot-blocked"
-                style={{ bottom: "-6px" }}
-                title={
-                  bookingInfo.blockedLunch && bookingInfo.blockedDinner
-                    ? "Fecha bloqueada (Comida y Cena)"
-                    : bookingInfo.blockedLunch
-                    ? "Comida bloqueada"
-                    : "Cena bloqueada"
-                }
-              />
-            )}
-          </>
-        )}
-      </div>
-    );
-  };
+  const renderDayContents = (day: number, date: Date | undefined) => (
+    <CalendarDayContent
+      day={day}
+      date={date}
+      info={
+        date ? bookingsForDates[format(date, "yyyy-MM-dd")] : undefined
+      }
+    />
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

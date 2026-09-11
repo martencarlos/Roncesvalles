@@ -13,7 +13,7 @@ export async function PUT(
   const params = await context.params;
   try {
     // Authenticate as IT admin
-    const currentUser = await authenticate(req, ["it_admin"]);
+    const currentUser = await authenticate(["it_admin"]);
     
     if (!currentUser) {
       return NextResponse.json(
@@ -63,13 +63,13 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const params = await context.params;
   try {
     // Authenticate as IT admin
-    const currentUser = await authenticate(req, ["it_admin"]);
+    const currentUser = await authenticate(["it_admin"]);
     
     if (!currentUser) {
       return NextResponse.json(

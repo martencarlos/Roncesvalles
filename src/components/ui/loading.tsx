@@ -1,5 +1,4 @@
 // src/components/ui/loading.tsx
-import React from 'react';
 
 interface LoadingProps {
   size?: 'sm' | 'md' | 'lg';

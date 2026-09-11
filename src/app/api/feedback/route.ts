@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     // Authenticate as IT admin
-    const currentUser = await authenticate(req, ["it_admin"]);
+    const currentUser = await authenticate(["it_admin"]);
     
     if (!currentUser) {
       return NextResponse.json(
