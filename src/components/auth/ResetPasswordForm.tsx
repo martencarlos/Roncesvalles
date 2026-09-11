@@ -63,7 +63,7 @@ export default function ResetPasswordForm() {
   
   if (isSubmitted) {
     return (
-      <Card className="w-full max-w-md mx-auto">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-xl">Solicitud Enviada</CardTitle>
           <CardDescription>
@@ -73,14 +73,14 @@ export default function ResetPasswordForm() {
         <CardContent className="flex flex-col items-center py-6">
           {emailDeliveryFailed ? (
             <>
-              <div className="rounded-full bg-amber-50 p-3 mb-4">
-                <AlertCircle className="h-8 w-8 text-amber-500" />
+              <div className="mb-4 rounded-full bg-warning/15 p-3 text-warning-foreground">
+                <AlertCircle className="h-8 w-8" />
               </div>
               <p className="text-center mb-4">
                 Hemos procesado su solicitud, pero hubo un problema al enviar el correo electrónico a{" "}
                 <span className="font-medium">{email}</span>.
               </p>
-              <Alert className="mb-4">
+              <Alert variant="warning" className="mb-4">
                 <AlertDescription>
                   Por favor, contacte al administrador del sistema para recibir ayuda con su contraseña.
                 </AlertDescription>
@@ -88,8 +88,8 @@ export default function ResetPasswordForm() {
             </>
           ) : (
             <>
-              <div className="rounded-full bg-green-50 p-3 mb-4">
-                <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <div className="mb-4 rounded-full bg-success/10 p-3 text-success">
+                <CheckCircle2 className="h-8 w-8" />
               </div>
               <p className="text-center mb-4">
                 Hemos enviado las instrucciones para restablecer su contraseña a{" "}
@@ -118,7 +118,7 @@ export default function ResetPasswordForm() {
   }
   
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-xl">Restablecer Contraseña</CardTitle>
         <CardDescription>
@@ -176,7 +176,7 @@ export default function ResetPasswordForm() {
         <div className="text-sm text-muted-foreground text-center">
           <Link 
             href="/auth/signin" 
-            className="text-blue-600 hover:underline font-medium"
+            className="text-primary hover:underline font-medium"
           >
             Volver a Iniciar Sesión
           </Link>

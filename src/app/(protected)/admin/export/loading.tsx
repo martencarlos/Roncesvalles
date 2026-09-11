@@ -1,13 +1,23 @@
-// src/app/profile/loading.tsx
-import React from 'react';
+// src/app/(protected)/admin/export/loading.tsx
+import { PageContainer, PageHeader } from "@/components/layout/PageShell";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function ProfileLoading() {
+export default function ExportLoading() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
-      <div className="flex flex-col items-center justify-center h-[80vh]">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
-        <p className="text-lg font-medium">Cargando panel de exportación...</p>
+    <PageContainer>
+      <PageHeader title="Exportar Datos" />
+      <div className="rounded-xl border bg-card p-5">
+        <Skeleton className="h-5 w-56" />
+        <Skeleton className="mt-2 h-4 w-80" />
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-40" />
+          </div>
+          <Skeleton className="h-40 w-full" />
+        </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

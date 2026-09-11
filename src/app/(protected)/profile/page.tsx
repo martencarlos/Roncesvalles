@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import UserProfileForm from "@/components/auth/UserProfileForm";
 import { Metadata } from "next";
+import { PageContainer, PageHeader } from "@/components/layout/PageShell";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -37,23 +38,21 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
-      <header className="mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">Perfil de Usuario</h1>
-          {/* Updated Button with conditional href and text */}
-          <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+    <PageContainer className="max-w-2xl">
+      <PageHeader
+        title="Perfil de Usuario"
+        description="Gestione su información personal y su contraseña"
+        actions={
+          <Button asChild variant="outline" size="sm">
             <Link href={backUrl}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4" />
               {backText}
             </Link>
           </Button>
-        </div>
-      </header>
+        }
+      />
 
-      <div className="mt-8">
-        <UserProfileForm />
-      </div>
-    </div>
+      <UserProfileForm />
+    </PageContainer>
   );
 }

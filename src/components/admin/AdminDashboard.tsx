@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users,
   LineChart,
@@ -11,7 +12,6 @@ import {
   Calendar,
   LayoutGrid,
   AlertCircle,
-  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -153,10 +153,23 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-4 sm:p-8 h-[70vh]">
-        <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 text-primary animate-spin mb-3 sm:mb-4" />
-        <p className="text-base sm:text-lg font-medium text-center">Cargando datos del panel</p>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 text-center">Esto puede tomar unos momentos</p>
+      <div className="space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="mt-3 h-7 w-16" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-5">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="mt-4 h-64 w-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -221,7 +234,7 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       ) : (
-        <Alert className="bg-amber-50 border-amber-200 text-amber-800">
+        <Alert className="bg-warning/10 border-warning/30 text-warning-foreground">
           <AlertDescription className="flex items-center gap-2 text-sm">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             No se pudieron cargar los datos del panel. Inténtelo más tarde.

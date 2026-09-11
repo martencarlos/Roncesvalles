@@ -20,18 +20,22 @@ export default async function SignInPage() {
   }
   
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-muted/40 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mb-6 flex flex-col items-center text-center">
+        <Image
+          src="/icon-192x192.png"
+          alt="Roncesvalles"
+          width={56}
+          height={56}
+          className="rounded-2xl"
+        />
+        <h1 className="mt-4 text-xl font-semibold">Sociedad Roncesvalles</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Sistema de Reserva de Espacios Comunitarios
+        </p>
+      </div>
+
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="flex justify-center mb-4">
-            <Image src="/icon-192x192.png" alt="Roncesvalles" width={80} height={80} className="rounded-2xl" />
-          </div>
-          <h1 className="text-3xl font-bold">Sociedad Roncesvalles</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Sistema de Reserva de Espacios Comunitarios
-          </p>
-        </div>
-        
         <SignInForm />
       </div>
     </div>

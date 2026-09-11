@@ -338,7 +338,7 @@ export default function ExportDataPanel({ userRole }: ExportDataPanelProps) {
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="excel" id="excel" />
                         <Label htmlFor="excel" className="flex items-center space-x-2 cursor-pointer">
-                          <FileSpreadsheetIcon className="w-4 h-4 text-green-600" />
+                          <FileSpreadsheetIcon className="w-4 h-4 text-success" />
                           <span>Excel/CSV</span>
                         </Label>
                       </div>
@@ -346,7 +346,7 @@ export default function ExportDataPanel({ userRole }: ExportDataPanelProps) {
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="pdf" id="pdf" />
                         <Label htmlFor="pdf" className="flex items-center space-x-2 cursor-pointer">
-                          <FileIcon className="w-4 h-4 text-red-600" />
+                          <FileIcon className="w-4 h-4 text-destructive" />
                           <span>PDF</span>
                         </Label>
                       </div>
@@ -441,7 +441,7 @@ export default function ExportDataPanel({ userRole }: ExportDataPanelProps) {
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="excel" id="userExcel" />
                         <Label htmlFor="userExcel" className="flex items-center space-x-2 cursor-pointer">
-                          <FileSpreadsheetIcon className="w-4 h-4 text-green-600" />
+                          <FileSpreadsheetIcon className="w-4 h-4 text-success" />
                           <span>Excel/CSV</span>
                         </Label>
                       </div>
@@ -449,7 +449,7 @@ export default function ExportDataPanel({ userRole }: ExportDataPanelProps) {
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="pdf" id="userPdf" />
                         <Label htmlFor="userPdf" className="flex items-center space-x-2 cursor-pointer">
-                          <FileIcon className="w-4 h-4 text-red-600" />
+                          <FileIcon className="w-4 h-4 text-destructive" />
                           <span>PDF</span>
                         </Label>
                       </div>

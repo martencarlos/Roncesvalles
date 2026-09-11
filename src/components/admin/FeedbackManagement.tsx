@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Search,
@@ -34,7 +35,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/Pagination";
 import { 
   Dialog, 
@@ -155,13 +158,13 @@ interface Feedback {
     const getFeedbackTypeIcon = (type: string) => {
       switch (type) {
         case "bug":
-          return <Bug className="h-4 w-4 text-red-500" />;
+          return <Bug className="h-4 w-4 text-destructive" />;
         case "feature":
-          return <Lightbulb className="h-4 w-4 text-amber-500" />;
+          return <Lightbulb className="h-4 w-4 text-warning-foreground" />;
         case "question":
-          return <HelpCircle className="h-4 w-4 text-blue-500" />;
+          return <HelpCircle className="h-4 w-4 text-info" />;
         case "other":
-          return <MessageSquare className="h-4 w-4 text-purple-500" />;
+          return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
         default:
           return <MessageSquare className="h-4 w-4" />;
       }
@@ -171,27 +174,13 @@ interface Feedback {
     const getStatusBadge = (status: string) => {
       switch (status) {
         case "new":
-          return (
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              Nuevo
-            </Badge>
-          );
+          return <StatusBadge tone="info">Nuevo</StatusBadge>;
         case "in-progress":
-          return (
-            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-              En progreso
-            </Badge>
-          );
+          return <StatusBadge tone="warning">En progreso</StatusBadge>;
         case "resolved":
-          return (
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              Resuelto
-            </Badge>
-          );
+          return <StatusBadge tone="success">Resuelto</StatusBadge>;
         default:
-          return (
-            <Badge variant="outline">{status}</Badge>
-          );
+          return <StatusBadge tone="neutral">{status}</StatusBadge>;
       }
     };
     
@@ -347,7 +336,7 @@ interface Feedback {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Estado</label>
+                <Label className="mb-2 block">Estado</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="Filtrar por estado" />
@@ -362,7 +351,7 @@ interface Feedback {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Tipo</label>
+                <Label className="mb-2 block">Tipo</Label>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="Filtrar por tipo" />
@@ -397,7 +386,7 @@ interface Feedback {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-medium">Total Feedback</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Feedback</CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-3">
               <div className="text-2xl font-bold">{totalCount}</div>
@@ -405,7 +394,7 @@ interface Feedback {
           </Card>
           <Card>
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-medium text-blue-600">Nuevos</CardTitle>
+              <CardTitle className="text-sm font-medium text-info">Nuevos</CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-3">
               <div className="text-2xl font-bold">{feedbacks.filter(f => f.status === "new").length}</div>
@@ -413,7 +402,7 @@ interface Feedback {
           </Card>
           <Card>
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-medium text-amber-600">En Progreso</CardTitle>
+              <CardTitle className="text-sm font-medium text-warning-foreground">En Progreso</CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-3">
               <div className="text-2xl font-bold">{feedbacks.filter(f => f.status === "in-progress").length}</div>
@@ -421,7 +410,7 @@ interface Feedback {
           </Card>
           <Card>
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-medium text-green-600">Resueltos</CardTitle>
+              <CardTitle className="text-sm font-medium text-success">Resueltos</CardTitle>
             </CardHeader>
             <CardContent className="py-0 px-4 pb-3">
               <div className="text-2xl font-bold">{feedbacks.filter(f => f.status === "resolved").length}</div>
@@ -443,15 +432,20 @@ interface Feedback {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex justify-center p-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="rounded-xl border bg-card p-4">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="mt-3 h-4 w-3/4" />
+                  </div>
+                ))}
               </div>
             ) : filteredFeedbacks.length > 0 ? (
               <div className="space-y-4">
                 {filteredFeedbacks.map((feedback) => (
                   <div
                     key={feedback._id}
-                    className="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="p-4 border rounded-lg hover:bg-accent/40 transition-colors cursor-pointer"
                     onClick={() => {
                       setSelectedFeedback(feedback);
                       setIsDetailsOpen(true);
@@ -498,15 +492,22 @@ interface Feedback {
                 )}
               </div>
             ) : (
-              <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-100">
-                <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-                <p className="text-muted-foreground mb-2">No se encontraron comentarios</p>
-                <p className="text-sm text-muted-foreground">
-                  {searchQuery || statusFilter !== "all" || typeFilter !== "all"
+              <EmptyState
+                icon={MessageSquare}
+                title="No se encontraron comentarios"
+                description={
+                  searchQuery || statusFilter !== "all" || typeFilter !== "all"
                     ? "Intente cambiar los filtros de búsqueda"
-                    : "Todavía no hay feedback en el sistema"}
-                </p>
-              </div>
+                    : "Todavía no hay feedback en el sistema"
+                }
+                action={
+                  (searchQuery || statusFilter !== "all" || typeFilter !== "all") ? (
+                    <Button variant="outline" onClick={resetFilters}>
+                      Limpiar filtros
+                    </Button>
+                  ) : undefined
+                }
+              />
             )}
           </CardContent>
         </Card>
@@ -545,7 +546,7 @@ interface Feedback {
                 
                 <div className="pt-2 border-t">
                   <h3 className="text-sm font-medium mb-2">Contenido:</h3>
-                  <div className="text-sm bg-gray-50 p-3 rounded-md whitespace-pre-line">
+                  <div className="text-sm bg-muted p-3 rounded-md whitespace-pre-line">
                     {selectedFeedback.content}
                   </div>
                 </div>
@@ -613,7 +614,7 @@ interface Feedback {
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="bg-gray-50 p-4 rounded-md text-sm">
+              <div className="bg-muted p-4 rounded-md text-sm">
                 <p>
                   <span className="font-medium">Tipo:</span>{" "}
                   {getFeedbackTypeLabel(deletingFeedback.type)}

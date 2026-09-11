@@ -84,9 +84,9 @@ export default function PushNotificationManager() {
   };
 
   const bellIcon = (() => {
-    if (permission === 'granted') return <BellRing className="h-5 w-5 text-green-600" />;
-    if (permission === 'denied') return <BellOff className="h-5 w-5 text-red-500" />;
-    return <Bell className="h-5 w-5 text-amber-500" />;
+    if (permission === 'granted') return <BellRing className="h-5 w-5 text-success" />;
+    if (permission === 'denied') return <BellOff className="h-5 w-5 text-destructive" />;
+    return <Bell className="h-5 w-5 text-warning" />;
   })();
 
   const panelContent = (
@@ -103,7 +103,7 @@ export default function PushNotificationManager() {
           {isMobile && (
             <button
               onClick={() => setOpen(false)}
-              className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+              className="rounded-md p-1 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
             >
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -175,7 +175,7 @@ export default function PushNotificationManager() {
   const triggerButton = (
     <button
       title="Notificaciones"
-      className="relative p-1.5 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+      className="relative cursor-pointer rounded-md p-1.5 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
       onClick={isMobile ? () => handleOpen(!open) : undefined}
     >
       {bellIcon}

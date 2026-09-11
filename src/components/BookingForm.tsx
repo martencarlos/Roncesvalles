@@ -528,12 +528,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   const getTableClasses = (tableNumber: number) => {
     if (isBooked(tableNumber)) {
-      return "bg-gray-300 text-gray-500 cursor-not-allowed relative border border-gray-400";
+      return "bg-muted text-muted-foreground cursor-not-allowed relative border border-border";
     }
     if (isSelected(tableNumber)) {
-      return "bg-primary text-primary-foreground cursor-pointer border-2 border-primary-dark ";
+      return "bg-primary text-primary-foreground cursor-pointer border-2 border-primary ";
     }
-    return "bg-orange-300 hover:bg-orange-400 cursor-pointer border border-orange-400 hover:scale-105";
+    return "bg-warning/20 text-warning-foreground hover:bg-warning/30 cursor-pointer border border-warning/40 hover:scale-105";
   };
 
   return (
@@ -625,22 +625,22 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-end mb-3 gap-3 text-xs bg-gray-50 p-2 rounded-md">
+                  <div className="mb-3 flex justify-end gap-3 rounded-md bg-muted p-2 text-xs">
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-orange-300 rounded-md shadow-sm"></div>
+                      <div className="w-3 h-3 rounded-md border border-warning/50 bg-warning/40 shadow-sm"></div>
                       <span>Disponible</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-primary rounded-md shadow-sm"></div>
+                      <div className="w-3 h-3 rounded-md bg-primary shadow-sm"></div>
                       <span>Seleccionada</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-gray-300 rounded-md shadow-sm"></div>
+                      <div className="w-3 h-3 rounded-md border border-border bg-muted shadow-sm"></div>
                       <span>Reservada</span>
                     </div>
                   </div>
 
-                  <div className="relative w-full aspect-video bg-[#f5f8fa] rounded-lg mb-4 border border-gray-200 shadow-inner overflow-hidden">
+                  <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-lg border border-border bg-muted/40 shadow-inner">
                     {/* Visual representation of tables layout */}
                     <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
                       {[2, 1].map((num) => (
@@ -653,11 +653,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
                           >
                             <span className="font-bold">{num}</span>
                             {isBooked(num) && (
-                              <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                              <LockIcon className="absolute right-1 top-1 h-3 w-3 text-muted-foreground" />
                             )}
                             {isSelected(num) && (
-                              <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
+                              <div className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
+                                <span className="text-xs text-primary-foreground">✓</span>
                               </div>
                             )}
                           </div>
@@ -675,11 +675,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
                           >
                             <span className="font-bold">{num}</span>
                             {isBooked(num) && (
-                              <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                              <LockIcon className="absolute right-1 top-1 h-3 w-3 text-muted-foreground" />
                             )}
                             {isSelected(num) && (
-                              <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
+                              <div className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
+                                <span className="text-xs text-primary-foreground">✓</span>
                               </div>
                             )}
                           </div>
@@ -697,11 +697,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
                           >
                             <span className="font-bold">{num}</span>
                             {isBooked(num) && (
-                              <LockIcon className="h-3 w-3 absolute top-1 right-1 text-gray-500" />
+                              <LockIcon className="absolute right-1 top-1 h-3 w-3 text-muted-foreground" />
                             )}
                             {isSelected(num) && (
-                              <div className="absolute top-0 right-0 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
+                              <div className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
+                                <span className="text-xs text-primary-foreground">✓</span>
                               </div>
                             )}
                           </div>
@@ -711,19 +711,21 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   </div>
 
                   <div className="mb-3 grid grid-cols-1 gap-y-2">
-                    <div className="bg-gray-50 p-2 rounded-md border border-gray-200">
-                      <p className="font-medium text-sm sm:text-base">
+                    <div className="rounded-md border border-border bg-muted p-2">
+                      <p className="text-sm font-medium sm:text-base">
                         Mesas seleccionadas:
                         {selectedTables.length > 0 ? (
                           <span className="ml-1 text-primary">
                             {selectedTables.sort((a, b) => a - b).join(", ")}
                           </span>
                         ) : (
-                          <span className="ml-1 text-gray-500">Ninguna</span>
+                          <span className="ml-1 text-muted-foreground">
+                            Ninguna
+                          </span>
                         )}
                       </p>
                       {selectedTables.length > 0 && (
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           Capacidad total:{" "}
                           <span className="font-medium">
                             {maxPeopleAllowed} personas
@@ -834,8 +836,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </Label>
             </div>
             {(isConciergeRestDay || isShortNotice) && (
-              <span className="text-xs text-amber-600 pl-6 flex items-center gap-1">
-                <InfoIcon className="h-3 w-3" /> 
+              <span className="flex items-center gap-1 pl-6 text-xs text-warning-foreground">
+                <InfoIcon className="h-3 w-3" />{" "}
                 {isConciergeRestDay 
                   ? "No disponible martes y miércoles (sin conserje)." 
                   : "No disponible con menos de 5 días (autogestión)."}
@@ -861,7 +863,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </Label>
             </div>
             {isOvenBooked && (
-              <span className="text-xs text-amber-600 pl-6 flex items-center gap-1">
+              <span className="flex items-center gap-1 pl-6 text-xs text-warning-foreground">
                 <InfoIcon className="h-3 w-3" /> El horno ya está reservado por
                 otro usuario
               </span>
@@ -871,9 +873,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       {noCleaningService && (
-        <Alert className="bg-amber-50 border-amber-200 mt-4 mb-2">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-800">
+        <Alert className="mt-4 mb-2 border-warning/20 bg-warning/10">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-warning-foreground">
             <strong>Aviso importante:</strong>{" "}
             {cleaningWarningReason || "Sin servicio de conserjería."} El
             propietario deberá encargarse de los servicios de conserjería, incluida la limpieza tras su uso.
@@ -882,9 +884,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
       )}
 
       {dateBlock && (
-        <Alert className="bg-rose-50 border-rose-200 mt-4 mb-2">
-          <ShieldAlert className="h-4 w-4 text-rose-600" />
-          <AlertDescription className="text-rose-800">
+        <Alert className="mt-4 mb-2 border-destructive/20 bg-destructive/10">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-destructive">
             <strong>Fecha no disponible:</strong> Esta fecha está reservada para{" "}
             <span className="font-semibold">{dateBlock.reason}</span>. No es
             posible realizar reservas de{" "}
@@ -893,23 +895,19 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </Alert>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 pt-4">
+      <div className="flex flex-col gap-2 pt-4 sm:flex-row sm:justify-end sm:space-x-2">
         <Button
           variant="outline"
           type="button"
           onClick={onCancel}
-          className="cursor-pointer w-full sm:w-auto"
+          className="w-full cursor-pointer sm:w-auto"
         >
           Cancelar
         </Button>
         <Button
           type="submit"
           disabled={isSubmitting || !!dateBlock}
-          className={`cursor-pointer w-full sm:w-auto active:scale-95 transition-all duration-150 ${
-            initialData?._id
-              ? ""
-              : "bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg"
-          }`}
+          className="w-full cursor-pointer sm:w-auto"
         >
           {isSubmitting
             ? "Guardando..."

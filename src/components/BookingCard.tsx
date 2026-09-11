@@ -19,7 +19,7 @@ import {
   AlertTriangle,
   StickyNote,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Session } from "next-auth";
 import { getApartmentLabel } from "@/lib/utils";
 
@@ -49,7 +49,6 @@ const BookingCard: React.FC<BookingCardProps> = ({
   const isConserje = userRole === "conserje";
 
   const canManageNotes = isITAdmin || isConserje;
-  const isRegularUser = userRole === "user";
 
   const canEdit =
     isITAdmin || (isOwner && !isCompleted && userRole === "user");
@@ -58,56 +57,28 @@ const BookingCard: React.FC<BookingCardProps> = ({
 
   return (
     <Card
-      className={`overflow-hidden group ${
-        isCompleted ? "border-green-300" : ""
-      } ${isCancelled ? "border-red-300 opacity-75" : ""}`}
+      className={`group overflow-hidden ${
+        isCompleted ? "border-success/40" : ""
+      } ${isCancelled ? "border-destructive/40 opacity-75" : ""}`}
     >
       <CardHeader className="pb-2 px-4">
-        {isRegularUser ? (
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-bold text-base sm:text-lg">
-                {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
-              </h3>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                Apto. #{getApartmentLabel(booking.apartmentNumber)}
-              </div>
-            </div>
-            <Badge
-              className={`text-sm px-3 py-1 ${
-                booking.mealType === "lunch"
-                  ? "bg-orange-100 text-orange-800 border-orange-300"
-                  : "bg-indigo-100 text-indigo-800 border-indigo-300"
-              }`}
-              variant="outline"
-            >
-              {booking.mealType === "lunch" ? "Comida" : "Cena"}
-            </Badge>
-          </div>
-        ) : (
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-base sm:text-lg">
-              Apto. #{getApartmentLabel(booking.apartmentNumber)}
-            </h3>
-            <div className="text-xs sm:text-sm text-muted-foreground">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-base font-bold sm:text-lg">
               {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
+            </h3>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              Apto. #{getApartmentLabel(booking.apartmentNumber)}
             </div>
           </div>
-        )}
+          <StatusBadge
+            tone={booking.mealType === "lunch" ? "warning" : "info"}
+          >
+            {booking.mealType === "lunch" ? "Comida" : "Cena"}
+          </StatusBadge>
+        </div>
       </CardHeader>
-      <CardContent className="pb-2 px-4 space-y-2">
-        {!isRegularUser && (
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-sm">Comida:</span>
-            <Badge
-              variant={booking.mealType === "lunch" ? "secondary" : "default"}
-              className="capitalize"
-            >
-              {booking.mealType === "lunch" ? "Comida" : "Cena"}
-            </Badge>
-          </div>
-        )}
-
+      <CardContent className="space-y-2 px-4 pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-sm">
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
@@ -127,67 +98,38 @@ const BookingCard: React.FC<BookingCardProps> = ({
         </div>
 
         {(booking.prepararFuego || booking.reservaHorno) && (
-          <div className="flex items-center justify-between mt-1">
+          <div className="mt-1 flex items-center justify-between">
             <div className="flex items-center gap-1 text-sm">
               <span className="font-medium">Servicios:</span>
             </div>
-            <div className="text-sm flex gap-1 flex-wrap justify-end">
+            <div className="flex flex-wrap justify-end gap-1 text-sm">
               {booking.prepararFuego && (
-                <Badge
-                  variant="outline"
-                  className="bg-blue-50 text-blue-700 border-blue-200"
-                >
-                  Fuego
-                </Badge>
+                <StatusBadge tone="warning">Fuego</StatusBadge>
               )}
               {booking.reservaHorno && (
-                <Badge
-                  variant="outline"
-                  className="bg-orange-50 text-orange-700 border-orange-200"
-                >
-                  Horno
-                </Badge>
+                <StatusBadge tone="info">Horno</StatusBadge>
               )}
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-1">
+        <div className="mt-1 flex items-center justify-between">
           <div className="flex items-center gap-1 text-sm">
             <span className="font-medium">Estado:</span>
           </div>
           <div>
-            {isCompleted && (
-              <Badge
-                variant="outline"
-                className="bg-green-50 text-green-700 border-green-200"
-              >
-                Completado
-              </Badge>
-            )}
-            {isPending && (
-              <Badge
-                variant="outline"
-                className="bg-blue-50 text-blue-700 border-blue-200"
-              >
-                Reservado
-              </Badge>
-            )}
+            {isCompleted && <StatusBadge tone="success">Completado</StatusBadge>}
+            {isPending && <StatusBadge tone="info">Reservado</StatusBadge>}
             {isCancelled && (
-              <Badge
-                variant="outline"
-                className="bg-red-50 text-red-700 border-red-200"
-              >
-                Cancelado
-              </Badge>
+              <StatusBadge tone="danger">Cancelado</StatusBadge>
             )}
           </div>
         </div>
 
         {booking.noCleaningService && (
-          <div className="mt-2 pt-2 border-t text-sm">
-            <div className="flex items-start text-amber-700 gap-1">
-              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <div className="mt-2 rounded-md border border-warning/20 bg-warning/10 p-2 text-sm">
+            <div className="flex items-start gap-1 text-warning-foreground">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <div className="space-y-1">
                 <p className="text-xs">Sin servicio de conserjería.</p>
                 {typeof booking.cleaningHours === "number" &&
@@ -202,33 +144,33 @@ const BookingCard: React.FC<BookingCardProps> = ({
         )}
 
         {!booking.noCleaningService && isConserje && (
-          <div className="mt-2 pt-2 border-t text-sm">
-            <div className="flex items-start text-green-700 gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <div className="mt-2 border-t pt-2 text-sm">
+            <div className="flex items-start gap-1 text-success">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <p className="text-xs">Con servicio de conserjería.</p>
             </div>
           </div>
         )}
 
         {canManageNotes && booking.internalNotes && (
-          <div className="mt-2 pt-2 border-t text-sm bg-amber-50 p-2 rounded border border-amber-100">
-            <div className="font-medium mb-1 text-xs text-amber-800 flex items-center gap-1">
+          <div className="mt-2 rounded-md border border-warning/20 bg-warning/10 p-2 text-sm">
+            <div className="mb-1 flex items-center gap-1 text-xs font-medium text-warning-foreground">
               <StickyNote className="h-3 w-3" /> Nota Interna:
             </div>
-            <p className="text-amber-900 text-xs whitespace-pre-wrap">
+            <p className="whitespace-pre-wrap text-xs text-warning-foreground">
               {booking.internalNotes}
             </p>
           </div>
         )}
       </CardContent>
 
-      <CardFooter className="pt-2 flex justify-end gap-2 px-4 pb-4">
+      <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-2">
         {canManageNotes && onEditNote && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onEditNote(booking)}
-            className="cursor-pointer h-7 text-xs px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+            className="h-7 cursor-pointer px-2 text-xs text-warning-foreground hover:bg-warning/10"
             title={
               booking.internalNotes
                 ? "Editar nota interna"
@@ -246,7 +188,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
               variant="outline"
               size="sm"
               onClick={onEdit}
-              className="cursor-pointer h-7 text-xs px-2"
+              className="h-7 cursor-pointer px-2 text-xs"
             >
               <Edit className="h-3 w-3 mr-1" />
               Editar
@@ -258,7 +200,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
               variant="destructive"
               size="sm"
               onClick={() => onDelete(booking)}
-              className="cursor-pointer h-7 text-xs px-2"
+              className="h-7 cursor-pointer px-2 text-xs"
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Eliminar

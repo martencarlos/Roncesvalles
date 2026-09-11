@@ -101,95 +101,102 @@ export default function UserProfileForm() {
   };
   
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-xl">Perfil de Usuario</CardTitle>
+        <CardTitle className="text-base">Información de la cuenta</CardTitle>
         <CardDescription>
-          Actualice su información personal
+          Actualice su nombre o cambie su contraseña
         </CardDescription>
       </CardHeader>
       <CardContent>
         {errorMessage && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert variant="destructive" className="mb-5">
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre completo</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nombre Apellido"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="email">Correo electrónico</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              disabled={true}
-              className="bg-muted"
-            />
-            <p className="text-xs text-muted-foreground">
-              El correo electrónico no se puede cambiar
-            </p>
-          </div>
-          
-          <div className="pt-4">
-            <h3 className="text-sm font-medium mb-3">Cambiar contraseña (opcional)</h3>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Contraseña actual</Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={isSubmitting}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">Nueva contraseña</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={isSubmitting}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar nueva contraseña</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={isSubmitting}
-                />
-              </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <section className="space-y-4">
+            <h3 className="text-sm font-medium">Datos personales</h3>
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre completo</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nombre Apellido"
+                required
+                disabled={isSubmitting}
+              />
             </div>
-          </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Correo electrónico</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                disabled={true}
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground">
+                El correo electrónico no se puede cambiar
+              </p>
+            </div>
+          </section>
+
+          <section className="space-y-4 border-t border-border pt-6">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-medium">Cambiar contraseña</h3>
+              <p className="text-xs text-muted-foreground">
+                Opcional. Deje los campos vacíos para mantener su contraseña actual.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Contraseña actual</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nueva contraseña</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar nueva contraseña</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={isSubmitting}
+              />
+            </div>
+          </section>
         </form>
       </CardContent>
       <CardFooter>
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="w-full"
+          className="w-full sm:w-auto"
         >
           {isSubmitting ? (
             <>

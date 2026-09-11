@@ -1,11 +1,18 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from "next";
+import { Geist } from "next/font/google";
 import "./globals.css";
 import "../styles/datepicker.css";
 import { Toaster } from "sonner";
 import { NextAuthProvider } from "@/providers/NextAuthProvider";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist-sans",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   themeColor: [
@@ -46,11 +53,22 @@ export default async function RootLayout({
   
   return (
     <html lang="es">
-      <body className="relative font-sans antialiased text-primary-background bg-primary-foreground">
+      <body
+        className={`${geist.variable} font-sans antialiased text-foreground bg-background`}
+      >
         <NextAuthProvider>
           {/* The children will be wrapped with NextAuthProvider, enabling session management */}
           {children}
-          <Toaster richColors position="top-right" />
+          <Toaster
+            richColors
+            position="top-right"
+            toastOptions={{
+              classNames: {
+                toast:
+                  "rounded-lg border border-border shadow-sm text-sm",
+              },
+            }}
+          />
         </NextAuthProvider>
       </body>
     </html>

@@ -5,16 +5,18 @@
 
 .react-datepicker {
   font-family: inherit;
-  border-radius: 0.5rem;
-  border: 1px solid hsl(240 5.9% 90%);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  box-shadow:
+    0 1px 2px 0 rgba(16, 24, 40, 0.05),
+    0 8px 24px -12px rgba(16, 24, 40, 0.15);
+  overflow: hidden;
 }
 
 .react-datepicker__header {
-  background-color: hsl(240 4.9% 97.6%);
-  border-bottom: 1px solid hsl(240 5.9% 90%);
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
+  background-color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
   padding-top: 0.5rem;
 }
 
@@ -26,9 +28,9 @@
   padding: 0.5rem;
 }
 
-.react-datepicker__day-name, 
+.react-datepicker__day-name,
 .react-datepicker__day {
-  color: hsl(240 10% 3.9%);
+  color: var(--color-foreground);
   width: 2rem;
   line-height: 2rem;
   margin: 0.1rem;
@@ -36,52 +38,63 @@
 
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-  background-color: hsl(221.2 83.2% 53.3%);
-  color: white;
-  border-radius: 0.25rem;
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  border-radius: var(--radius-md);
+}
+
+.react-datepicker__day--selected:hover {
+  background-color: var(--color-primary);
 }
 
 .react-datepicker__day:hover {
-  background-color: hsl(240 5.9% 90%);
-  border-radius: 0.25rem;
+  background-color: var(--color-accent);
+  border-radius: var(--radius-md);
 }
 
 .react-datepicker__day--today {
-  font-weight: bold;
+  font-weight: 600;
   position: relative;
-  border: 1px solid hsl(0, 0%, 11%);
-  border-radius: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 }
 
-.react-datepicker__day--today::after {
-  /* content: '';
-  border: 1px solid currentColor;
-  background-color: currentColor; */
+.react-datepicker__day--outside-month {
+  color: var(--color-muted-foreground);
 }
 
 .react-datepicker__day--disabled {
-  color: hsl(240 5% 64.9%);
+  color: var(--color-muted-foreground);
+  opacity: 0.5;
 }
 
 .react-datepicker__current-month {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   margin-bottom: 0.5rem;
+  color: var(--color-foreground);
 }
 
 .react-datepicker__input-container input {
   width: 100%;
-  padding: 0.35rem 2.5rem;
-  border-radius: 0.375rem;
-  border: 1px solid hsl(240 5.9% 90%);
-  background-color: transparent;
+  padding: 0.5rem 2.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-input);
+  background-color: var(--color-card);
   font-size: 0.875rem;
+  color: var(--color-foreground);
+  transition: border-color 150ms, box-shadow 150ms;
 }
 
-.react-datepicker__input-container input:focus {
+.react-datepicker__input-container input:hover {
+  border-color: color-mix(in oklch, var(--color-input) 80%, var(--color-foreground));
+}
+
+.react-datepicker__input-container input:focus,
+.react-datepicker__input-container input:focus-visible {
   outline: none;
-  border-color: hsl(221.2 83.2% 53.3%);
-  box-shadow: 0 0 0 1px hsl(221.2 83.2% 53.3%);
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-ring) 35%, transparent);
 }
 
 /* Custom styles for booking indicators */
@@ -93,15 +106,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: #2563eb; /* blue-600 */
-}
-
-.booking-indicator-lunch {
-  left: 50%;
-}
-
-.booking-indicator-dinner {
-  left: 50%;
+  background-color: var(--color-info);
 }
 
 .booking-dot-lunch {
@@ -124,18 +129,20 @@
 .datepicker-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 8px;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 6px 10px;
   margin-top: 8px;
-  background-color: hsl(240 4.9% 97.6%);
-  border-radius: 0.375rem;
+  background-color: var(--color-muted);
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
+  color: var(--color-muted-foreground);
 }
 
 .datepicker-legend-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .datepicker-legend-dot {

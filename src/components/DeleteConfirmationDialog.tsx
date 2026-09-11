@@ -64,7 +64,7 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
             </div>
           </div>
 
-          <p className="text-destructive-foreground text-sm mt-4">
+          <p className="mt-4 text-sm text-destructive">
             Esta acción no se puede deshacer.
           </p>
         </div>

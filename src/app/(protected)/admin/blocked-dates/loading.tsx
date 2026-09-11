@@ -1,13 +1,21 @@
 // src/app/(protected)/admin/blocked-dates/loading.tsx
-import React from "react";
+import { PageContainer, PageHeader } from "@/components/layout/PageShell";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BlockedDatesLoading() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
-      <div className="flex flex-col items-center justify-center h-[80vh]">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
-        <p className="text-lg font-medium">Cargando bloqueos...</p>
+    <PageContainer>
+      <PageHeader title="Bloqueos de Fecha" />
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rounded-xl border bg-card p-4">
+            <div className="flex items-center justify-between gap-4">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-8 w-8" />
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+    </PageContainer>
   );
 }

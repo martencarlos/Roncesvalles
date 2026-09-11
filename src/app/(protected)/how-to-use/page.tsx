@@ -11,6 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { PageContainer, PageHeader } from "@/components/layout/PageShell";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   ArrowLeft,
   Info,
@@ -33,41 +35,31 @@ export default function HowToUsePage() {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
-      <header className="mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">Guía de Uso</h1>
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-            >
+    <PageContainer>
+      <PageHeader
+        title="Guía de Uso"
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm">
               <Link href="/">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4" />
                 Volver a Reservas
               </Link>
             </Button>
-            <Button 
-              variant="default" 
-              size="sm"
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-              onClick={() => setShowFeedbackForm(true)}
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
+            <Button size="sm" onClick={() => setShowFeedbackForm(true)}>
+              <MessageSquare className="h-4 w-4" />
               Enviar Feedback
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className="space-y-6">
         {/* Table of contents */}
         <Card>
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <LayoutDashboard className="h-5 w-5 text-blue-500" />
+              <LayoutDashboard className="h-5 w-5 text-primary" />
               Contenido
             </CardTitle>
           </CardHeader>
@@ -76,20 +68,20 @@ export default function HowToUsePage() {
               <li>
                 <Link
                   href="#introduccion"
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   1. Introducción
                 </Link>
               </li>
               <li>
-                <Link href="#cuenta" className="text-blue-600 hover:underline">
+                <Link href="#cuenta" className="text-primary hover:underline">
                   2. Gestión de Cuenta
                 </Link>
                 <ul className="ml-5 mt-1 space-y-1">
                   <li>
                     <Link
                       href="#crear-cuenta"
-                      className="text-blue-600 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       2.1 Crear una nueva cuenta
                     </Link>
@@ -97,7 +89,7 @@ export default function HowToUsePage() {
                   <li>
                     <Link
                       href="#iniciar-sesion"
-                      className="text-blue-600 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       2.2 Iniciar sesión
                     </Link>
@@ -105,7 +97,7 @@ export default function HowToUsePage() {
                   <li>
                     <Link
                       href="#recuperar-contraseña"
-                      className="text-blue-600 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       2.3 Recuperar contraseña
                     </Link>
@@ -113,7 +105,7 @@ export default function HowToUsePage() {
                   <li>
                     <Link
                       href="#perfil"
-                      className="text-blue-600 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       2.4 Gestionar perfil
                     </Link>
@@ -123,7 +115,7 @@ export default function HowToUsePage() {
               <li>
                 <Link
                   href="#reservas"
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   3. Gestión de Reservas
                 </Link>
@@ -131,7 +123,7 @@ export default function HowToUsePage() {
                   <li>
                     <Link
                       href="#crear-reserva"
-                      className="text-blue-600 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       3.1 Crear una reserva
                     </Link>
@@ -139,7 +131,7 @@ export default function HowToUsePage() {
                   <li>
                     <Link
                       href="#gestionar-reservas"
-                      className="text-blue-600 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       3.2 Gestionar reservas existentes
                     </Link>
@@ -149,7 +141,7 @@ export default function HowToUsePage() {
               <li>
                 <Link
                   href="#visualizacion"
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   4. Filtros y Visualización
                 </Link>
@@ -157,7 +149,7 @@ export default function HowToUsePage() {
               <li>
                 <Link
                   href="#servicios-adicionales"
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   5. Servicios Adicionales
                 </Link>
@@ -165,7 +157,7 @@ export default function HowToUsePage() {
               <li>
                 <Link
                   href="#actividad"
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   6. Registro de Actividad
                 </Link>
@@ -173,7 +165,7 @@ export default function HowToUsePage() {
               <li>
                 <Link
                   href="#fechas-bloqueadas"
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   7. Fechas Bloqueadas
                 </Link>
@@ -181,7 +173,7 @@ export default function HowToUsePage() {
               <li>
                 <Link
                   href="#feedback"
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   8. Enviar Feedback
                 </Link>
@@ -194,7 +186,7 @@ export default function HowToUsePage() {
         <Card id="introduccion">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5 text-blue-500" />
+              <Info className="h-5 w-5 text-primary" />
               1. Introducción
             </CardTitle>
           </CardHeader>
@@ -211,7 +203,7 @@ export default function HowToUsePage() {
               intuitivo y fácil de usar, permitiendo una gestión eficiente de
               los espacios comunes.
             </p>
-            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-md text-blue-700">
+            <div className="flex items-start gap-2 rounded-md border border-primary/15 bg-primary/5 p-3">
               <Download className="h-5 w-5" />
               <p className="text-sm">
                 Puede consultar el reglamento completo de la Sociedad
@@ -220,7 +212,7 @@ export default function HowToUsePage() {
                   href="/reglamento-sociedad-roncesvalles.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium underline hover:text-blue-800"
+                  className="font-medium underline hover:text-primary"
                 >
                   descargando el PDF aquí
                 </a>
@@ -234,7 +226,7 @@ export default function HowToUsePage() {
         <Card id="cuenta">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <UserIcon className="h-5 w-5 text-purple-500" />
+              <UserIcon className="h-5 w-5 text-primary" />
               2. Gestión de Cuenta
             </CardTitle>
           </CardHeader>
@@ -242,7 +234,7 @@ export default function HowToUsePage() {
             {/* Create Account Subsection */}
             <div id="crear-cuenta">
               <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                <PlusCircle className="h-5 w-5 text-green-500" />
+                <PlusCircle className="h-5 w-5 text-primary" />
                 2.1 Crear una nueva cuenta
               </h3>
               <p className="text-muted-foreground mb-3">
@@ -291,7 +283,7 @@ export default function HowToUsePage() {
                   para finalizar el registro.
                 </li>
               </ol>
-              <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+              <div className="rounded-md border border-primary/15 bg-primary/5 p-3 text-sm">
                 <span className="font-medium">Nota:</span> Solo se permite una
                 cuenta por apartamento. Si su apartamento ya tiene una cuenta
                 registrada, deberá utilizar esa cuenta o contactar al
@@ -304,7 +296,7 @@ export default function HowToUsePage() {
             {/* Login Subsection */}
             <div id="iniciar-sesion">
               <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                <UserIcon className="h-5 w-5 text-blue-500" />
+                <UserIcon className="h-5 w-5 text-primary" />
                 2.2 Iniciar sesión
               </h3>
               <p className="text-muted-foreground mb-3">
@@ -333,7 +325,7 @@ export default function HowToUsePage() {
             {/* Password Recovery Subsection */}
             <div id="recuperar-contraseña">
               <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                <KeyIcon className="h-5 w-5 text-amber-500" />
+                <KeyIcon className="h-5 w-5 text-primary" />
                 2.3 Recuperar contraseña
               </h3>
               <p className="text-muted-foreground mb-3">
@@ -359,7 +351,7 @@ export default function HowToUsePage() {
                   nueva contraseña.
                 </li>
               </ol>
-              <div className="bg-amber-50 p-3 rounded-md text-sm text-amber-700">
+              <div className="rounded-md border border-warning/30 bg-warning/15 p-3 text-sm text-warning-foreground">
                 <span className="font-medium">Importante:</span> El enlace para
                 restablecer la contraseña expira después de 1 hora por razones
                 de seguridad.
@@ -371,7 +363,7 @@ export default function HowToUsePage() {
             {/* Profile Management Subsection */}
             <div id="perfil">
               <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                <UserIcon className="h-5 w-5 text-indigo-500" />
+                <UserIcon className="h-5 w-5 text-primary" />
                 2.4 Gestionar perfil
               </h3>
               <p className="text-muted-foreground mb-3">
@@ -412,7 +404,7 @@ export default function HowToUsePage() {
         <Card id="reservas">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-green-500" />
+              <Calendar className="h-5 w-5 text-primary" />
               3. Gestión de Reservas
             </CardTitle>
           </CardHeader>
@@ -420,7 +412,7 @@ export default function HowToUsePage() {
             {/* Create Booking Subsection */}
             <div id="crear-reserva">
               <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                <PlusCircle className="h-5 w-5 text-green-500" />
+                <PlusCircle className="h-5 w-5 text-primary" />
                 3.1 Crear una reserva
               </h3>
               <p className="text-muted-foreground mb-3">
@@ -477,26 +469,14 @@ export default function HowToUsePage() {
                   finalizar.
                 </li>
               </ol>
-              <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+              <div className="rounded-md border border-primary/15 bg-primary/5 p-3 text-sm">
                 <span className="font-medium">Nota:</span> El calendario muestra
                 indicadores de colores bajo cada fecha:
-                <div className="flex flex-wrap gap-3 mt-2">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-orange-400"></div>
-                    <span>Comida</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-indigo-600"></div>
-                    <span>Cena</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-teal-500"></div>
-                    <span>Ambas</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-rose-600"></div>
-                    <span>Bloqueada (Junta General)</span>
-                  </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <StatusBadge tone="warning">Comida</StatusBadge>
+                  <StatusBadge tone="info">Cena</StatusBadge>
+                  <StatusBadge tone="neutral">Comida y Cena</StatusBadge>
+                  <StatusBadge tone="danger">Bloqueada (Junta General)</StatusBadge>
                 </div>
               </div>
             </div>
@@ -506,7 +486,7 @@ export default function HowToUsePage() {
             {/* Manage Bookings Subsection */}
             <div id="gestionar-reservas">
               <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                <Edit className="h-5 w-5 text-blue-500" />
+                <Edit className="h-5 w-5 text-primary" />
                 3.2 Gestionar reservas existentes
               </h3>
               <p className="text-muted-foreground mb-3">
@@ -542,7 +522,7 @@ export default function HowToUsePage() {
                 <li>Confirme la eliminación cuando se le solicite.</li>
               </ol>
 
-              <div className="bg-amber-50 p-3 rounded-md text-sm text-amber-700 mt-2">
+              <div className="mt-2 rounded-md border border-warning/30 bg-warning/15 p-3 text-sm text-warning-foreground">
                 <span className="font-medium">Importante:</span> Las reservas
                 completadas no se pueden editar ni eliminar por usuarios
                 regulares. Si necesita modificar una reserva completada,
@@ -556,7 +536,7 @@ export default function HowToUsePage() {
         <Card id="visualizacion">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-purple-500" />
+              <Filter className="h-5 w-5 text-primary" />
               4. Filtros y Visualización
             </CardTitle>
           </CardHeader>
@@ -597,14 +577,14 @@ export default function HowToUsePage() {
                 <span className="font-medium">Vista de Tarjetas:</span> Muestra
                 las reservas en formato de tarjetas individuales con todos los
                 detalles.
-                <div className="bg-gray-50 p-2 mt-1 rounded text-xs text-muted-foreground">
+                <div className="mt-1 rounded bg-muted p-2 text-xs text-muted-foreground">
                   Ideal para ver todos los detalles de cada reserva.
                 </div>
               </li>
               <li>
                 <span className="font-medium">Vista de Lista:</span> Muestra las
                 reservas en formato de lista compacta, agrupadas por fecha.
-                <div className="bg-gray-50 p-2 mt-1 rounded text-xs text-muted-foreground">
+                <div className="mt-1 rounded bg-muted p-2 text-xs text-muted-foreground">
                   Ideal para una visión general de múltiples reservas.
                 </div>
               </li>
@@ -632,9 +612,7 @@ export default function HowToUsePage() {
               <li>
                 Las mesas disponibles se mostrarán con etiquetas verdes
                 (ejemplo:{" "}
-                <span className="text-xs bg-green-50 text-green-700 border border-green-200 rounded px-2 py-0.5">
-                  Mesa #3
-                </span>
+                <StatusBadge tone="success">Mesa #3</StatusBadge>
                 ).
               </li>
               <li>
@@ -649,7 +627,7 @@ export default function HowToUsePage() {
         <Card id="servicios-adicionales">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <UtensilsCrossed className="h-5 w-5 text-orange-500" />
+              <UtensilsCrossed className="h-5 w-5 text-primary" />
               5. Servicios Adicionales
             </CardTitle>
           </CardHeader>
@@ -679,7 +657,7 @@ export default function HowToUsePage() {
               </li>
           
             </ul>
-            <div className="bg-green-50 p-3 rounded-md text-sm text-green-700 mt-4">
+            <div className="mt-4 rounded-md border border-success/20 bg-success/10 p-3 text-sm text-success">
               <span className="font-medium">Sugerencia:</span> Si planea
               utilizar estos servicios, es recomendable reservarlos con
               anticipación, especialmente en fechas de alta demanda como fines
@@ -692,7 +670,7 @@ export default function HowToUsePage() {
         <Card id="actividad">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-indigo-500" />
+              <History className="h-5 w-5 text-primary" />
               6. Registro de Actividad
             </CardTitle>
           </CardHeader>
@@ -727,7 +705,7 @@ export default function HowToUsePage() {
               </li>
             </ol>
 
-            <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700 mt-3">
+            <div className="mt-3 rounded-md border border-primary/15 bg-primary/5 p-3 text-sm">
               <span className="font-medium">Nota:</span> El registro de
               actividad es útil para verificar acciones pasadas y resolver
               cualquier duda sobre reservas realizadas, modificadas o
@@ -739,7 +717,7 @@ export default function HowToUsePage() {
         <Card id="fechas-bloqueadas">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-rose-500" />
+              <ShieldAlert className="h-5 w-5 text-primary" />
               7. Fechas Bloqueadas
             </CardTitle>
           </CardHeader>
@@ -753,20 +731,16 @@ export default function HowToUsePage() {
               sociedad y no está disponible para reservas individuales.
             </p>
 
-            <div className="bg-rose-50 border border-rose-200 rounded-md p-3">
-              <h3 className="font-medium text-rose-800 mb-2 flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-rose-600" />
+            <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3">
+              <h3 className="mb-2 flex items-center gap-2 font-medium text-destructive">
+                <ShieldAlert className="h-4 w-4 text-destructive" />
                 ¿Cómo sé si una fecha está bloqueada?
               </h3>
-              <ul className="list-disc pl-5 space-y-2 text-sm text-rose-700">
+              <ul className="list-disc space-y-2 pl-5 text-sm text-destructive">
                 <li>
                   En el <span className="font-medium">calendario</span>, las
-                  fechas bloqueadas muestran un punto rojo (
-                  <span className="inline-flex items-center gap-1">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                    <span>Bloqueada</span>
-                  </span>
-                  ) en la leyenda inferior.
+                  fechas bloqueadas muestran un punto rojo en la leyenda inferior
+                  (ejemplo: <StatusBadge tone="danger">Bloqueada</StatusBadge>).
                 </li>
                 <li>
                   Al seleccionar una fecha bloqueada, la sección de
@@ -784,7 +758,7 @@ export default function HowToUsePage() {
               </ul>
             </div>
 
-            <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+            <div className="rounded-md border border-primary/15 bg-primary/5 p-3 text-sm">
               <span className="font-medium">Nota:</span> Los bloqueos son
               gestionados por la administración de la sociedad. Si tiene alguna
               duda sobre una fecha bloqueada, contacte con el administrador.
@@ -796,7 +770,7 @@ export default function HowToUsePage() {
         <Card id="feedback">
           <CardHeader className="px-4 pb-2">
             <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-blue-500" />
+              <MessageSquare className="h-5 w-5 text-primary" />
               8. Enviar Feedback
             </CardTitle>
           </CardHeader>
@@ -806,9 +780,9 @@ export default function HowToUsePage() {
             </p>
             
             <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-md">
+              <div className="rounded-md border border-primary/15 bg-primary/5 p-4">
                 <h3 className="font-medium mb-2 flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-blue-600" />
+                  <MessageSquare className="h-4 w-4 text-primary" />
                   ¿Cómo enviar feedback?
                 </h3>
                 <ul className="list-disc pl-5 space-y-2">
@@ -828,11 +802,8 @@ export default function HowToUsePage() {
               </div>
               
               <div className="flex justify-center mt-2">
-                <Button 
-                  onClick={() => setShowFeedbackForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
+                <Button onClick={() => setShowFeedbackForm(true)}>
+                  <MessageSquare className="h-4 w-4" />
                   Enviar Feedback
                 </Button>
               </div>
@@ -846,7 +817,7 @@ export default function HowToUsePage() {
         isOpen={showFeedbackForm} 
         onClose={() => setShowFeedbackForm(false)} 
       />
-    </div>
+    </PageContainer>
   );
 }
      

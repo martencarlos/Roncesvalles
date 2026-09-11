@@ -22,7 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarIcon,
   PlusCircle,
@@ -46,10 +48,10 @@ const MEAL_LABELS: Record<BlockedMealType, string> = {
   both: "Comida y Cena",
 };
 
-const MEAL_BADGE_CLASSES: Record<BlockedMealType, string> = {
-  lunch: "bg-orange-50 text-orange-700 border-orange-200",
-  dinner: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  both: "bg-teal-50 text-teal-700 border-teal-200",
+const MEAL_TONES: Record<BlockedMealType, "warning" | "info" | "neutral"> = {
+  lunch: "warning",
+  dinner: "info",
+  both: "neutral",
 };
 
 export default function BlockedDatesManagement() {
@@ -178,56 +180,52 @@ export default function BlockedDatesManagement() {
             resetCreateForm();
             setShowCreateDialog(true);
           }}
-          className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150"
         >
-          <PlusCircle className="h-4 w-4 mr-2" />
+          <PlusCircle />
           Nuevo Bloqueo
         </Button>
       </div>
 
       {/* Blocks list */}
       {loading ? (
-        <div className="flex justify-center p-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-4">
+              <div className="flex items-center justify-between gap-4">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-8 w-8" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : blocks.length > 0 ? (
         <div className="space-y-3">
           {blocks.map((block) => (
-            <Card key={block._id as string} className="py-0 transition-colors hover:bg-gray-50/50">
+            <Card key={block._id as string} className="py-0 transition-colors hover:bg-accent/40">
               <CardContent className="p-3 sm:p-4">
                 <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
                   <div className="flex flex-wrap items-center gap-2">
-                    <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0" />
+                    <ShieldAlert className="h-4 w-4 text-destructive shrink-0" />
                     <span className="font-medium text-sm">
                       {formatDate(block.date)}
                     </span>
-                    <Badge
-                      variant="outline"
-                      className={MEAL_BADGE_CLASSES[block.mealType]}
-                    >
+                    <StatusBadge tone={MEAL_TONES[block.mealType]}>
                       {MEAL_LABELS[block.mealType]}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className="bg-violet-50 text-violet-700 border-violet-200"
-                    >
-                      {block.reason}
-                    </Badge>
+                    </StatusBadge>
+                    <StatusBadge tone="neutral">{block.reason}</StatusBadge>
                     {block.prepararFuego && (
-                      <Badge
-                        variant="outline"
-                        className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1"
-                      >
+                      <StatusBadge tone="danger" className="gap-1">
                         <Flame className="h-3 w-3" />
                         Con fuego
-                      </Badge>
+                      </StatusBadge>
                     )}
                   </div>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon-sm"
                     onClick={() => handleDeleteClick(block)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                    aria-label="Eliminar bloqueo"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -237,12 +235,22 @@ export default function BlockedDatesManagement() {
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            <ShieldAlert className="h-8 w-8 mx-auto mb-3 text-gray-300" />
-            <p>No hay bloqueos de fecha activos.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={ShieldAlert}
+          title="No hay bloqueos de fecha activos"
+          description="Cree un bloqueo para impedir reservas durante una Junta General."
+          action={
+            <Button
+              onClick={() => {
+                resetCreateForm();
+                setShowCreateDialog(true);
+              }}
+            >
+              <PlusCircle />
+              Nuevo Bloqueo
+            </Button>
+          }
+        />
       )}
 
       {/* Create Dialog */}
@@ -269,7 +277,7 @@ export default function BlockedDatesManagement() {
                 onChange={(date: Date | null) => date && setNewDate(date)}
                 dateFormat="d MMMM, yyyy"
                 locale="es"
-                className="w-full p-2 border rounded-md text-sm"
+                className="w-full rounded-md border border-input bg-card p-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
                 wrapperClassName="w-full"
               />
             </div>
@@ -314,7 +322,7 @@ export default function BlockedDatesManagement() {
             </div>
 
             {/* Fire preparation */}
-            <div className="flex items-start gap-3 p-3 rounded-md border bg-amber-50 border-amber-200">
+            <div className="flex items-start gap-3 rounded-md border border-warning/30 bg-warning/10 p-3">
               <Checkbox
                 id="prepararFuego"
                 checked={newPrepararFuego}
@@ -325,7 +333,7 @@ export default function BlockedDatesManagement() {
               />
               <div>
                 <Label htmlFor="prepararFuego" className="cursor-pointer font-medium flex items-center gap-1.5">
-                  <Flame className="h-4 w-4 text-amber-600" />
+                  <Flame className="h-4 w-4 text-warning-foreground" />
                   Preparar fuego
                 </Label>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -347,7 +355,6 @@ export default function BlockedDatesManagement() {
             <Button
               onClick={handleCreate}
               disabled={isSubmitting}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
             >
               {isSubmitting ? "Creando..." : "Crear Bloqueo"}
             </Button>

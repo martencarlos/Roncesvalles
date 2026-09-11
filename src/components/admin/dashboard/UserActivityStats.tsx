@@ -34,9 +34,9 @@ interface UserActivityStatsProps {
 export default function UserActivityStats({ userStats, bookingStats }: UserActivityStatsProps) {
   // Create activity type data for pie chart
   const activityData = [
-    { name: "Creación de Reservas", value: bookingStats.totalBookings - bookingStats.bookingModifications - bookingStats.bookingCancellations, color: "#3b82f6" },
-    { name: "Modificaciones", value: bookingStats.bookingModifications, color: "#8b5cf6" },
-    { name: "Cancelaciones", value: bookingStats.bookingCancellations, color: "#ef4444" }
+    { name: "Creación de Reservas", value: bookingStats.totalBookings - bookingStats.bookingModifications - bookingStats.bookingCancellations, color: "var(--chart-1)" },
+    { name: "Modificaciones", value: bookingStats.bookingModifications, color: "var(--chart-2)" },
+    { name: "Cancelaciones", value: bookingStats.bookingCancellations, color: "var(--destructive)" }
   ];
 
   // Create user vs booking activity data
@@ -88,7 +88,7 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
         {/* Total Activities Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Actividades</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Actividades</CardTitle>
             <ActivityIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -102,7 +102,7 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
         {/* Bookings Activity Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Actividad de Reservas</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Actividad de Reservas</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -114,7 +114,7 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
         {/* User Activity Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Actividad de Usuarios</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Actividad de Usuarios</CardTitle>
             <UserCheckIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -126,7 +126,7 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
         {/* Password Resets Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Reestablecimientos</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Reestablecimientos</CardTitle>
             <RefreshCwIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -157,23 +157,23 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
                     yAxisId="left" 
                     dataKey="bookings" 
                     name="Reservas" 
-                    fill="#3b82f6" 
+                    fill="var(--chart-1)" 
                   />
                   <Line 
                     yAxisId="right" 
                     type="monotone" 
                     dataKey="newUsers" 
                     name="Nuevos Usuarios" 
-                    stroke="#ef4444"
+                    stroke="var(--destructive)"
                     strokeWidth={2} 
                   />
                   <Area 
                     yAxisId="left"
                     dataKey="totalActivity" 
                     name="Actividad Total" 
-                    fill="#8b5cf6" 
+                    fill="var(--chart-2)" 
                     fillOpacity={0.3}
-                    stroke="#8b5cf6"
+                    stroke="var(--chart-2)"
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -197,7 +197,7 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
                     cy="50%"
                     labelLine={false}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="var(--chart-1)"
                     dataKey="value"
                     label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   >
@@ -225,7 +225,7 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
                   <XAxis dataKey="month" />
                   <YAxis allowDecimals={false} domain={[0, 5]} />
                   <Tooltip />
-                  <Bar dataKey="resets" name="Reestablecimientos" fill="#f59e0b" />
+                  <Bar dataKey="resets" name="Reestablecimientos" fill="var(--chart-4)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -238,8 +238,8 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
         {/* Booking Modifications Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Modificaciones</CardTitle>
-            <PenToolIcon className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Modificaciones</CardTitle>
+            <PenToolIcon className="h-4 w-4 text-info" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{bookingStats.bookingModifications}</div>
@@ -260,8 +260,8 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
         {/* Booking Cancellations Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Cancelaciones</CardTitle>
-            <Trash2Icon className="h-4 w-4 text-red-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Cancelaciones</CardTitle>
+            <Trash2Icon className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{bookingStats.bookingCancellations}</div>
@@ -282,8 +282,8 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
         {/* New User Registrations Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Nuevos Registros</CardTitle>
-            <UserPlusIcon className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Nuevos Registros</CardTitle>
+            <UserPlusIcon className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{userStats.newUsersThisMonth}</div>
@@ -311,15 +311,15 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
             <div className="space-y-3">
               <h3 className="font-medium text-base">Actividad de Reservas</h3>
               <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/60 rounded">
                   <span>Reservas totales:</span>
                   <span className="font-medium">{bookingStats.totalBookings}</span>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-green-50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/60 rounded">
                   <span>Modificaciones:</span>
                   <span className="font-medium">{bookingStats.bookingModifications}</span>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/60 rounded">
                   <span>Cancelaciones:</span>
                   <span className="font-medium">{bookingStats.bookingCancellations}</span>
                 </div>
@@ -329,19 +329,19 @@ export default function UserActivityStats({ userStats, bookingStats }: UserActiv
             <div className="space-y-3">
               <h3 className="font-medium text-base">Actividad de Usuarios</h3>
               <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/60 rounded">
                   <span>Usuarios totales:</span>
                   <span className="font-medium">{userStats.totalUsers}</span>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-green-50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/60 rounded">
                   <span>Nuevos usuarios:</span>
                   <span className="font-medium">{userStats.newUsersThisMonth} este mes</span>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-amber-50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/60 rounded">
                   <span>Cambios de contraseña:</span>
                   <span className="font-medium">{userStats.passwordResets}</span>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-purple-50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/60 rounded">
                   <span>Sesiones por dispositivo:</span>
                   <span className="font-medium">
                     {userStats.sessionsByDevice.desktop}% Escritorio / 

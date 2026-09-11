@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FileIcon, FileSpreadsheetIcon, Download } from "lucide-react";
 import { getMonthOptions, type ExportScope } from "@/lib/export-utils";
 import { runBookingsExport } from "@/lib/export-bookings";
@@ -116,7 +117,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="excel" id="excel" />
                 <Label htmlFor="excel" className="flex items-center space-x-2 cursor-pointer">
-                  <FileSpreadsheetIcon className="w-4 h-4 text-green-600" />
+                  <FileSpreadsheetIcon className="w-4 h-4 text-primary" />
                   <span>Excel/CSV</span>
                 </Label>
               </div>
@@ -124,7 +125,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="pdf" id="pdf" />
                 <Label htmlFor="pdf" className="flex items-center space-x-2 cursor-pointer">
-                  <FileIcon className="w-4 h-4 text-red-600" />
+                  <FileIcon className="w-4 h-4 text-destructive" />
                   <span>PDF</span>
                 </Label>
               </div>
@@ -132,12 +133,10 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ isOpen, onClose }) => {
           </div>
 
           <div className="flex items-center space-x-2 pt-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="includeDetails"
               checked={includeDetails}
-              onChange={(e) => setIncludeDetails(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+              onCheckedChange={(checked) => setIncludeDetails(checked === true)}
             />
             <Label htmlFor="includeDetails" className="text-sm cursor-pointer">
               Incluir desglose detallado de reservas

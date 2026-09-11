@@ -82,7 +82,7 @@ export default function SignInForm() {
   }
   
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-xl">Iniciar Sesión</CardTitle>
         <CardDescription>
@@ -103,8 +103,8 @@ export default function SignInForm() {
         )}
         
         {successMessage && (
-          <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
-            <CheckCircle2 className="h-4 w-4 mr-2 text-green-600" />
+          <Alert variant="success" className="mb-4">
+            <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>{successMessage}</AlertDescription>
           </Alert>
         )}
@@ -129,7 +129,7 @@ export default function SignInForm() {
               <Label htmlFor="password">Contraseña</Label>
               <Link 
                 href="/auth/reset-password" 
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-primary hover:underline"
                 tabIndex={-1}
               >
                 ¿Olvidó su contraseña?
@@ -175,7 +175,7 @@ export default function SignInForm() {
           ¿No tiene una cuenta?{" "}
           <Link 
             href="/auth/signup" 
-            className="text-blue-600 hover:underline font-medium"
+            className="text-primary hover:underline font-medium"
           >
             Crear cuenta
           </Link>

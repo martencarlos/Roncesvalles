@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import PushNotificationManager from "@/components/auth/PushNotificationManager";
 
 export default function UserMenu() {
@@ -45,10 +46,10 @@ export default function UserMenu() {
     return (
       <Button
         variant="outline"
+        size="sm"
         onClick={() => router.push("/auth/signin")}
-        className="h-8 px-2 sm:h-9 sm:px-3"
       >
-        <User className="h-4 w-4 mr-2" />
+        <User className="h-4 w-4" />
         <span className="hidden sm:inline">Iniciar Sesión</span>
         <span className="sm:hidden">Entrar</span>
       </Button>
@@ -76,84 +77,98 @@ export default function UserMenu() {
         return "Administrador (Lectura)";
       case "it_admin":
         return "Admin IT";
+      case "conserje":
+        return "Conserjería";
       default:
         return role;
     }
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <PushNotificationManager />
-    <div ref={menuRef} className="relative z-10">
-      {/* User Button */}
-      <Button
-        variant="outline"
-        className="cursor-pointer h-8 px-2 sm:h-9 sm:px-3"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <Avatar className="h-6 w-6">
-          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-            {getInitials(session.user.name)}
-          </AvatarFallback>
-        </Avatar>
-        <span className="hidden sm:inline ml-2 text-sm">
-          {session.user.name.split(" ")[0]}
-        </span>
-      </Button>
+      <div ref={menuRef} className="relative z-10">
+        {/* User Button */}
+        <Button
+          variant="ghost"
+          className="h-9 gap-2 px-1.5 sm:pr-3"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+        >
+          <Avatar className="size-6">
+            <AvatarFallback className="bg-primary text-[10px] font-semibold text-primary-foreground">
+              {getInitials(session.user.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="hidden text-sm font-medium sm:inline">
+            {session.user.name.split(" ")[0]}
+          </span>
+        </Button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute right-0 mt-1 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          {/* User Info */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <p className="text-sm font-medium truncate">{session.user.name}</p>
-            {session.user.role === "user" ? (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {(() => {
-                  const num = session.user.apartmentNumber;
-                  if (num == null) return "Apartamento #—"; // fallback if undefined or null
-
-                  let label = `Apartamento #${num}`;
-                  if (num >= 43 && num <= 48) {
-                    const level = num - 42; // 43→1, 44→2, …, 48→6
-                    label += ` (L${level})`;
-                  }
-
-                  return label;
-                })()}
+        {/* Dropdown Menu */}
+        {isOpen && (
+          <div
+            role="menu"
+            className="absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
+          >
+            {/* User Info */}
+            <div className="border-b border-border px-4 py-3">
+              <p className="truncate text-sm font-medium">
+                {session.user.name}
               </p>
-            ) : (
-              <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                {getRoleDisplay(session.user.role)}
-              </p>
-            )}
-          </div>
+              {session.user.role === "user" ? (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {(() => {
+                    const num = session.user.apartmentNumber;
+                    if (num == null) return "Apartamento #—"; // fallback if undefined or null
 
-          {/* Menu Items */}
-          <div className="py-1">
-            <Link
-              href="/profile"
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-              onClick={() => setIsOpen(false)}
-            >
-              <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span>Perfil</span>
-            </Link>
+                    let label = `Apartamento #${num}`;
+                    if (num >= 43 && num <= 48) {
+                      const level = num - 42; // 43→1, 44→2, …, 48→6
+                      label += ` (L${level})`;
+                    }
 
-            <button
-              className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isSigningOut}
-              onClick={handleSignOut}
-            >
-              <LogOut className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span>
-                {isSigningOut ? "Cerrando sesión..." : "Cerrar Sesión"}
-              </span>
-            </button>
+                    return label;
+                  })()}
+                </p>
+              ) : (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {getRoleDisplay(session.user.role)}
+                </p>
+              )}
+            </div>
+
+            {/* Menu Items */}
+            <div className="p-1">
+              <Link
+                href="/profile"
+                role="menuitem"
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                onClick={() => setIsOpen(false)}
+              >
+                <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span>Perfil</span>
+              </Link>
+
+              <button
+                role="menuitem"
+                className={cn(
+                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:outline-none",
+                  "disabled:cursor-not-allowed disabled:opacity-50"
+                )}
+                disabled={isSigningOut}
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4 shrink-0" />
+                <span>
+                  {isSigningOut ? "Cerrando sesión..." : "Cerrar Sesión"}
+                </span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -91,7 +91,7 @@ export default function SignUpForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-xl">Crear Cuenta</CardTitle>
         <CardDescription>
@@ -212,7 +212,7 @@ export default function SignUpForm() {
           ¿Ya tiene una cuenta?{" "}
           <Link
             href="/auth/signin"
-            className="text-blue-600 hover:underline font-medium"
+            className="text-primary hover:underline font-medium"
           >
             Iniciar sesión
           </Link>

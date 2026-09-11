@@ -4,13 +4,16 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, ActivityIcon, Filter, BookOpen, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { PageContainer, PageHeader } from "@/components/layout/PageShell";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import ActivityLogItem from '@/components/ActivityLogItem';
 import { IActivityLog } from '@/models/ActivityLog';
 import Pagination from '@/components/Pagination';
@@ -99,18 +102,19 @@ export default function ActivityPage() {
   };
   
   return (
-    <div className="max-w-4xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
-      <header className="mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">Registro de Actividad</h1>
-          <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+    <PageContainer>
+      <PageHeader
+        title="Registro de Actividad"
+        description="Toda la actividad relacionada con las reservas y gestión de usuarios"
+        actions={
+          <Button asChild variant="outline" size="sm">
             <Link href="/">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4" />
               Volver a Reservas
             </Link>
           </Button>
-        </div>
-      </header>
+        }
+      />
       
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -122,8 +126,8 @@ export default function ActivityPage() {
       {isAdmin && (
         <Card className="mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Filter className="h-4 w-4" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Filter className="h-4 w-4 text-muted-foreground" />
               Filtrar Actividad
             </CardTitle>
           </CardHeader>
@@ -197,61 +201,77 @@ export default function ActivityPage() {
         </Card>
       )}
       
-      <Card>
-        <CardHeader className="px-4 pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <ActivityIcon className="h-5 w-5" />
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <ActivityIcon className="h-4 w-4 text-muted-foreground" />
             Actividad Reciente
-            {isFilterApplied && (
-              <Badge variant="outline" className="ml-2 text-xs">
-                Filtros aplicados
-              </Badge>
-            )}
-          </CardTitle>
-          <CardDescription className="text-sm">
-            Toda la actividad relacionada con las reservas y gestión de usuarios
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-4">
-          {loading && currentPage === 1 ? (
-            <div className="flex justify-center p-6 sm:p-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-            </div>
-          ) : activityLogs.length > 0 ? (
-            <>
-              <div className="space-y-1">
-                {activityLogs.map((log) => (
-                  <ActivityLogItem key={log._id as string} log={log} />
-                ))}
-              </div>
-              
-              {totalPages > 1 && (
-                <div className="mt-6">
-                  <Pagination 
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    itemsPerPage={itemsPerPage}
-                    onItemsPerPageChange={handleItemsPerPageChange}
-                  />
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-muted-foreground py-6 sm:py-8 text-center">No se ha registrado actividad todavía{isFilterApplied ? ' con los filtros seleccionados' : ''}.</p>
+          </h2>
+          {isFilterApplied && (
+            <Badge variant="outline" className="shrink-0 text-xs">
+              Filtros aplicados
+            </Badge>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {loading && currentPage === 1 ? (
+          <div className="divide-y divide-border">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-start gap-3 px-4 py-3.5">
+                <Skeleton className="h-5 w-28 rounded-md" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="hidden h-4 w-24 sm:block" />
+              </div>
+            ))}
+          </div>
+        ) : activityLogs.length > 0 ? (
+          <>
+            <div className="divide-y divide-border">
+              {activityLogs.map((log) => (
+                <ActivityLogItem key={log._id as string} log={log} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="border-t border-border p-4">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  itemsPerPage={itemsPerPage}
+                  onItemsPerPageChange={handleItemsPerPageChange}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="p-4">
+            <EmptyState
+              icon={ActivityIcon}
+              title="No hay actividad registrada"
+              description={`No se ha registrado actividad todavía${isFilterApplied ? ' con los filtros seleccionados' : ''}.`}
+              action={
+                isFilterApplied ? (
+                  <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                    Limpiar filtros
+                  </Button>
+                ) : undefined
+              }
+              className="border-0 bg-transparent"
+            />
+          </div>
+        )}
+      </div>
       
       {/* Help card at the bottom */}
       <Card className="mt-6">
-        <CardHeader className="px-4 pb-3">
+        <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
-            <BookOpen className="h-4 w-4" />
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
             Información de Actividad
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-4 text-sm text-muted-foreground">
+        <CardContent className="text-sm text-muted-foreground">
           <p>
             Este registro muestra todas las acciones realizadas en el sistema, incluyendo:
           </p>
@@ -267,6 +287,6 @@ export default function ActivityPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

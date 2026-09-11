@@ -83,7 +83,7 @@ export default function NewPasswordForm({ token, email }: NewPasswordFormProps) 
   
   if (isSuccess) {
     return (
-      <Card className="w-full max-w-md mx-auto">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-xl">¡Contraseña Actualizada!</CardTitle>
           <CardDescription>
@@ -91,8 +91,8 @@ export default function NewPasswordForm({ token, email }: NewPasswordFormProps) 
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center py-6">
-          <div className="rounded-full bg-green-50 p-3 mb-4">
-            <CheckCircle2 className="h-8 w-8 text-green-500" />
+          <div className="mb-4 rounded-full bg-success/10 p-3 text-success">
+            <CheckCircle2 className="h-8 w-8" />
           </div>
           <p className="text-center mb-4">
             Su contraseña ha sido actualizada correctamente. Ahora puede iniciar sesión con su nueva contraseña.
@@ -106,7 +106,7 @@ export default function NewPasswordForm({ token, email }: NewPasswordFormProps) 
   }
   
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-xl">Crear Nueva Contraseña</CardTitle>
         <CardDescription>
@@ -186,7 +186,7 @@ export default function NewPasswordForm({ token, email }: NewPasswordFormProps) 
         <div className="text-sm text-muted-foreground text-center">
           <Link 
             href="/auth/signin" 
-            className="text-blue-600 hover:underline font-medium"
+            className="text-primary hover:underline font-medium"
           >
             Volver a Iniciar Sesión
           </Link>

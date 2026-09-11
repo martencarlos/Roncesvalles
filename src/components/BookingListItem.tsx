@@ -15,7 +15,7 @@ import {
   AlertTriangle,
   StickyNote,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Session } from "next-auth";
 import { getApartmentLabel } from "@/lib/utils";
 
@@ -52,23 +52,31 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
   const canDelete =
     isITAdmin || (isOwner && !isCompleted && userRole === "user");
 
+  const renderStatus = () => (
+    <>
+      {isCompleted && <StatusBadge tone="success">Completado</StatusBadge>}
+      {isPending && <StatusBadge tone="info">Reservado</StatusBadge>}
+      {isCancelled && <StatusBadge tone="danger">Cancelado</StatusBadge>}
+    </>
+  );
+
   return (
     <div
-      className={`p-3 sm:p-4 rounded-md border group ${
-        isCompleted ? "border-green-300" : ""
-      } ${isCancelled ? "border-red-300 opacity-75" : ""}`}
+      className={`group rounded-lg border bg-card p-3 sm:p-4 ${
+        isCompleted ? "border-success/40" : ""
+      } ${isCancelled ? "border-destructive/40 opacity-75" : ""}`}
     >
       {/* Mobile layout */}
       <div className="flex flex-col gap-3 sm:hidden">
-        <div className="flex justify-between items-start">
-          <div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
             {isRegularUser ? (
               <>
-                <h3 className="font-bold flex items-center gap-1.5">
+                <h3 className="flex items-center gap-1.5 font-bold">
                   <CalendarDays className="h-4 w-4 text-muted-foreground" />
                   {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
                 </h3>
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="mt-1 text-xs text-muted-foreground">
                   Apto. #{getApartmentLabel(booking.apartmentNumber)}
                 </div>
               </>
@@ -77,96 +85,52 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                 <h3 className="font-bold">
                   Apto. #{getApartmentLabel(booking.apartmentNumber)}
                 </h3>
-                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                   <CalendarDays className="h-3 w-3" />
                   {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
                 </div>
               </>
             )}
           </div>
-          <div>
-            {isCompleted && (
-              <Badge
-                variant="outline"
-                className="bg-green-100 text-green-700 border-green-200"
-              >
-                Completado
-              </Badge>
-            )}
-            {isPending && (
-              <Badge
-                variant="outline"
-                className="bg-blue-100 text-blue-700 border-blue-200"
-              >
-                Reservado
-              </Badge>
-            )}
-            {isCancelled && (
-              <Badge
-                variant="outline"
-                className="bg-red-100 text-red-700 border-red-200"
-              >
-                Cancelado
-              </Badge>
-            )}
-          </div>
+          <div>{renderStatus()}</div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-1">
             <UtensilsCrossed className="h-3.5 w-3.5 text-muted-foreground" />
-            {isRegularUser ? (
-              <Badge
-                variant="outline"
-                className={`text-xs px-2 ${
-                  booking.mealType === "lunch"
-                    ? "bg-orange-100 text-orange-800 border-orange-300"
-                    : "bg-indigo-100 text-indigo-800 border-indigo-300"
-                }`}
-              >
-                {booking.mealType === "lunch" ? "Comida" : "Cena"}
-              </Badge>
-            ) : (
-              <span>{booking.mealType === "lunch" ? "Comida" : "Cena"}</span>
-            )}
+            <StatusBadge
+              tone={booking.mealType === "lunch" ? "warning" : "info"}
+            >
+              {booking.mealType === "lunch" ? "Comida" : "Cena"}
+            </StatusBadge>
           </div>
           <div className="flex items-center gap-1">
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
             <span>{booking.numberOfPeople}</span>
           </div>
-          <div className="flex items-center gap-1 col-span-2">
+          <div className="col-span-2 flex items-center gap-1">
             <Table className="h-3.5 w-3.5 text-muted-foreground" />
             <span>Mesas: {booking.tables.map((t) => `#${t}`).join(", ")}</span>
           </div>
         </div>
 
         {(booking.prepararFuego || booking.reservaHorno) && (
-          <div className="flex flex-wrap gap-2 items-center text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
             <span>Servicios:</span>
-            <div className="flex gap-1 flex-wrap">
+            <div className="flex flex-wrap gap-1">
               {booking.prepararFuego && (
-                <Badge
-                  variant="outline"
-                  className="bg-blue-50 text-blue-700 border-blue-200"
-                >
-                  Fuego
-                </Badge>
+                <StatusBadge tone="warning">Fuego</StatusBadge>
               )}
               {booking.reservaHorno && (
-                <Badge
-                  variant="outline"
-                  className="bg-orange-50 text-orange-700 border-orange-200"
-                >
-                  Horno
-                </Badge>
+                <StatusBadge tone="info">Horno</StatusBadge>
               )}
             </div>
           </div>
         )}
 
         {booking.noCleaningService && (
-          <div className="flex items-start gap-1 text-sm text-amber-700">
-            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-1 text-sm text-warning-foreground">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <div className="space-y-1">
               <p className="text-xs">Sin servicio de conserjería</p>
               {typeof booking.cleaningHours === "number" &&
@@ -180,49 +144,45 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
         )}
 
         {!booking.noCleaningService && isConserje && (
-          <div className="flex items-start gap-1 text-sm text-green-700">
-            <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-1 text-sm text-success">
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <p className="text-xs">Con servicio de conserjería</p>
           </div>
         )}
 
         {canManageNotes && booking.internalNotes && (
-          <div className="mt-2 pt-2 border-t text-sm bg-amber-50 p-2 rounded border border-amber-100">
-            <div className="font-medium mb-1 text-xs text-amber-800 flex items-center gap-1">
+          <div className="mt-2 rounded-md border border-warning/20 bg-warning/10 p-2 text-sm">
+            <div className="mb-1 flex items-center gap-1 text-xs font-medium text-warning-foreground">
               <StickyNote className="h-3 w-3" /> Nota Interna:
             </div>
-            <p className="text-amber-900 text-xs whitespace-pre-wrap">
+            <p className="whitespace-pre-wrap text-xs text-warning-foreground">
               {booking.internalNotes}
             </p>
           </div>
         )}
 
-        <div className="flex gap-2 justify-end mt-1 flex-wrap">
+        <div className="mt-1 flex flex-wrap justify-end gap-2">
           {canManageNotes && onEditNote && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => onEditNote(booking)}
-              className={`cursor-pointer h-8 text-xs px-2 flex-1 ${
-                booking.internalNotes
-                  ? "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
-                  : ""
-              }`}
+              className="h-8 flex-1 cursor-pointer px-2 text-xs"
             >
               <StickyNote className="h-3.5 w-3.5 mr-1.5" />
               {booking.internalNotes ? "Editar Nota" : "Añadir Nota"}
             </Button>
           )}
 
-          <div className="flex gap-2 flex-1 justify-end">
+          <div className="flex flex-1 justify-end gap-2">
             {canEdit && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onEdit}
-                className="cursor-pointer h-8 text-xs px-2 flex-1"
+                className="h-8 flex-1 cursor-pointer px-2 text-xs"
               >
-                <Edit className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
+                <Edit className="h-3.5 w-3.5 mr-1.5" />
                 Editar
               </Button>
             )}
@@ -232,9 +192,9 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                 variant="destructive"
                 size="sm"
                 onClick={() => onDelete(booking)}
-                className="cursor-pointer h-8 text-xs px-2 flex-1"
+                className="h-8 flex-1 cursor-pointer px-2 text-xs"
               >
-                <Trash2 className="cursor-pointer h-3.5 w-3.5 mr-1.5" />
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                 Eliminar
               </Button>
             )}
@@ -243,67 +203,38 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
       </div>
 
       {/* Desktop layout */}
-      <div className="hidden sm:flex sm:flex-col gap-2">
-        <div className="flex sm:flex-row gap-3 sm:items-center justify-between">
-          <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-8">
-            <div className="flex flex-col min-w-[120px]">
+      <div className="hidden gap-2 sm:flex sm:flex-col">
+        <div className="flex justify-between gap-3 sm:flex-row sm:items-center">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+            <div className="flex min-w-[120px] flex-col">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold">
                   {isRegularUser
-                    ? format(new Date(booking.date), "d MMM, yyyy", { locale: es })
+                    ? format(new Date(booking.date), "d MMM, yyyy", {
+                        locale: es,
+                      })
                     : `Apto. #${getApartmentLabel(booking.apartmentNumber)}`}
                 </h3>
-                <div>
-                  {isCompleted && (
-                    <Badge
-                      variant="outline"
-                      className="bg-green-100 text-green-700 border-green-200"
-                    >
-                      Completado
-                    </Badge>
-                  )}
-                  {isPending && (
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-100 text-blue-700 border-blue-200"
-                    >
-                      Reservado
-                    </Badge>
-                  )}
-                  {isCancelled && (
-                    <Badge
-                      variant="outline"
-                      className="bg-red-100 text-red-700 border-red-200"
-                    >
-                      Cancelado
-                    </Badge>
-                  )}
-                </div>
+                <div>{renderStatus()}</div>
               </div>
-              {isRegularUser ? (
-                <div className="text-muted-foreground text-xs mt-1">
-                  Apto. #{getApartmentLabel(booking.apartmentNumber)}
-                </div>
-              ) : (
-                <div className="text-muted-foreground text-xs mt-1">
-                  {booking.mealType === "lunch" ? "Comida" : "Cena"} ·{" "}
-                  {format(new Date(booking.date), "d MMM, yyyy", { locale: es })}
-                </div>
-              )}
+              <div className="mt-1 text-xs text-muted-foreground">
+                {isRegularUser
+                  ? `Apto. #${getApartmentLabel(booking.apartmentNumber)}`
+                  : `${booking.mealType === "lunch" ? "Comida" : "Cena"} · ${format(
+                      new Date(booking.date),
+                      "d MMM, yyyy",
+                      { locale: es }
+                    )}`}
+              </div>
             </div>
 
-            <div className="flex flex-row gap-6 items-center">
+            <div className="flex flex-row items-center gap-6">
               {isRegularUser && (
-                <Badge
-                  variant="outline"
-                  className={`text-xs px-2 ${
-                    booking.mealType === "lunch"
-                      ? "bg-orange-100 text-orange-800 border-orange-300"
-                      : "bg-indigo-100 text-indigo-800 border-indigo-300"
-                  }`}
+                <StatusBadge
+                  tone={booking.mealType === "lunch" ? "warning" : "info"}
                 >
                   {booking.mealType === "lunch" ? "Comida" : "Cena"}
-                </Badge>
+                </StatusBadge>
               )}
               <div className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
@@ -321,27 +252,17 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
                   {booking.prepararFuego && (
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-50 text-blue-700 border-blue-200"
-                    >
-                      Fuego
-                    </Badge>
+                    <StatusBadge tone="warning">Fuego</StatusBadge>
                   )}
                   {booking.reservaHorno && (
-                    <Badge
-                      variant="outline"
-                      className="bg-orange-50 text-orange-700 border-orange-200"
-                    >
-                      Horno
-                    </Badge>
+                    <StatusBadge tone="info">Horno</StatusBadge>
                   )}
                 </div>
               </div>
             )}
 
             {booking.noCleaningService && (
-              <div className="flex items-center gap-1 text-amber-700">
+              <div className="flex items-center gap-1 text-warning-foreground">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 <span className="text-xs">
                   Sin conserjería
@@ -354,20 +275,20 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
             )}
 
             {!booking.noCleaningService && isConserje && (
-              <div className="flex items-center gap-1 text-green-700">
+              <div className="flex items-center gap-1 text-success">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span className="text-xs">Con conserjería</span>
               </div>
             )}
           </div>
 
-          <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
             {canManageNotes && onEditNote && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onEditNote(booking)}
-                className="cursor-pointer h-7 text-xs px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                className="h-7 cursor-pointer px-2 text-xs text-warning-foreground hover:bg-warning/10"
                 title={
                   booking.internalNotes
                     ? "Editar nota interna"
@@ -385,9 +306,9 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={onEdit}
-                  className="cursor-pointer h-7 text-xs px-2"
+                  className="h-7 cursor-pointer px-2 text-xs"
                 >
-                  <Edit className="cursor-pointer h-3 w-3 mr-1" />
+                  <Edit className="h-3 w-3 mr-1" />
                   Editar
                 </Button>
               )}
@@ -397,9 +318,9 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
                   variant="destructive"
                   size="sm"
                   onClick={() => onDelete(booking)}
-                  className="cursor-pointer h-7 text-xs px-2"
+                  className="h-7 cursor-pointer px-2 text-xs"
                 >
-                  <Trash2 className="cursor-pointer h-3 w-3 mr-1" />
+                  <Trash2 className="h-3 w-3 mr-1" />
                   Eliminar
                 </Button>
               )}
@@ -408,9 +329,9 @@ const BookingListItem: React.FC<BookingListItemProps> = ({
         </div>
 
         {canManageNotes && booking.internalNotes && (
-          <div className="flex flex-col gap-1 mt-1 text-sm border-t pt-2 border-dashed">
-            <div className="text-xs text-amber-900 bg-amber-50 p-1 rounded flex items-start gap-1">
-              <StickyNote className="h-3 w-3 mt-0.5 shrink-0 text-amber-700" />
+          <div className="mt-1 flex flex-col gap-1 border-t border-dashed pt-2 text-sm">
+            <div className="flex items-start gap-1 rounded border border-warning/20 bg-warning/10 p-1 text-xs text-warning-foreground">
+              <StickyNote className="mt-0.5 h-3 w-3 shrink-0" />
               <span className="whitespace-pre-wrap">
                 {booking.internalNotes}
               </span>

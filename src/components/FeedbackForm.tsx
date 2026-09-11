@@ -92,7 +92,7 @@ export default function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:max-w-md">
           <div className="flex flex-col items-center py-6 text-center">
-            <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+            <CheckCircle2 className="h-12 w-12 text-success mb-4" />
             <h3 className="text-lg font-semibold mb-2">¡Feedback enviado!</h3>
             <p className="text-muted-foreground">
               Gracias por ayudarnos a mejorar la aplicación. Su comentario ha sido recibido.

@@ -1,6 +1,8 @@
 // src/app/auth/error/page.tsx
+import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { Metadata } from "next";
 
@@ -35,24 +37,37 @@ export default async function AuthErrorPage({
   }
   
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <h1 className="text-2xl font-bold text-center">Error de Autenticación</h1>
-        
-        <Alert variant="destructive">
-          <AlertTitle>{errorMessage}</AlertTitle>
-          <AlertDescription>{errorDescription}</AlertDescription>
-        </Alert>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild>
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-muted/40 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mb-6 flex flex-col items-center text-center">
+        <Image
+          src="/icon-192x192.png"
+          alt="Roncesvalles"
+          width={56}
+          height={56}
+          className="rounded-2xl"
+        />
+        <h1 className="mt-4 text-xl font-semibold">Error de Autenticación</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Sistema de Reserva de Espacios Comunitarios
+        </p>
+      </div>
+
+      <Card className="w-full max-w-md">
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertTitle>{errorMessage}</AlertTitle>
+            <AlertDescription>{errorDescription}</AlertDescription>
+          </Alert>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/auth/signin">Volver a Iniciar Sesión</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="w-full sm:w-auto">
             <Link href="/">Volver al Inicio</Link>
           </Button>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

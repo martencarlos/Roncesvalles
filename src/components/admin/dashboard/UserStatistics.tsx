@@ -42,6 +42,7 @@ import { es } from "date-fns/locale";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Enhanced UserStats interface with login tracking
 interface UserLogin {
@@ -90,10 +91,10 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
     {
       name: "Desktop",
       value: stats.sessionsByDevice.desktop,
-      color: "#3b82f6",
-    }, // blue
-    { name: "Mobile", value: stats.sessionsByDevice.mobile, color: "#10b981" }, // green
-    { name: "Tablet", value: stats.sessionsByDevice.tablet, color: "#f59e0b" }, // amber
+      color: "var(--chart-1)",
+    },
+    { name: "Mobile", value: stats.sessionsByDevice.mobile, color: "var(--chart-2)" },
+    { name: "Tablet", value: stats.sessionsByDevice.tablet, color: "var(--chart-4)" },
   ];
 
   // Prepare data for new users trend
@@ -129,18 +130,18 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
     {
       name: "Usuarios Regulares",
       value: stats.usersByRole.user,
-      color: "#3b82f6",
-    }, // blue
+      color: "var(--chart-1)",
+    },
     {
       name: "Administradores",
       value: stats.usersByRole.admin,
-      color: "#8b5cf6",
-    }, // purple
+      color: "var(--chart-2)",
+    },
     {
       name: "Administradores IT",
       value: stats.usersByRole.it_admin,
-      color: "#ef4444",
-    }, // red
+      color: "var(--chart-3)",
+    },
   ];
 
   // Format date for display
@@ -175,11 +176,11 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
   const getDeviceIcon = (type: string) => {
     switch (type) {
       case "desktop":
-        return <LaptopIcon className="h-4 w-4 text-blue-500" />;
+        return <LaptopIcon className="h-4 w-4 text-info" />;
       case "mobile":
-        return <SmartphoneIcon className="h-4 w-4 text-green-500" />;
+        return <SmartphoneIcon className="h-4 w-4 text-success" />;
       case "tablet":
-        return <TabletIcon className="h-4 w-4 text-amber-500" />;
+        return <TabletIcon className="h-4 w-4 text-warning-foreground" />;
       default:
         return <MonitorSmartphone className="h-4 w-4" />;
     }
@@ -192,7 +193,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
         {/* Total Users Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Usuarios
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -208,7 +209,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
         {/* New Users Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Nuevos Usuarios
             </CardTitle>
             <UserPlus className="h-4 w-4 text-muted-foreground" />
@@ -222,7 +223,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
         {/* Total Logins Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Inicios Sesión
             </CardTitle>
             <LogIn className="h-4 w-4 text-muted-foreground" />
@@ -240,7 +241,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
         {/* Device Usage Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Uso por Dispositivos
             </CardTitle>
             <MonitorSmartphone className="h-4 w-4 text-muted-foreground" />
@@ -248,19 +249,19 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
           <CardContent>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <LaptopIcon className="h-4 w-4 mr-1 text-blue-500" />
+                <LaptopIcon className="h-4 w-4 mr-1 text-info" />
                 <span className="text-sm">
                   {stats.sessionsByDevice.desktop}%
                 </span>
               </div>
               <div className="flex items-center">
-                <SmartphoneIcon className="h-4 w-4 mr-1 text-green-500" />
+                <SmartphoneIcon className="h-4 w-4 mr-1 text-success" />
                 <span className="text-sm">
                   {stats.sessionsByDevice.mobile}%
                 </span>
               </div>
               <div className="flex items-center">
-                <TabletIcon className="h-4 w-4 mr-1 text-amber-500" />
+                <TabletIcon className="h-4 w-4 mr-1 text-warning-foreground" />
                 <span className="text-sm">
                   {stats.sessionsByDevice.tablet}%
                 </span>
@@ -295,7 +296,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     type="monotone"
                     dataKey="count"
                     name="Nuevos Usuarios"
-                    stroke="#3b82f6"
+                    stroke="var(--chart-1)"
                     activeDot={{ r: 8 }}
                   />
                 </LineChart>
@@ -327,7 +328,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     type="monotone"
                     dataKey="count"
                     name="Inicios de Sesión"
-                    stroke="#8b5cf6"
+                    stroke="var(--chart-2)"
                     activeDot={{ r: 8 }}
                   />
                 </LineChart>
@@ -352,7 +353,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     cy="50%"
                     labelLine={false}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="var(--chart-1)"
                     dataKey="value"
                     label={({ name, percent }) =>
                       `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
@@ -387,7 +388,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                     cy="50%"
                     labelLine={false}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="var(--chart-1)"
                     dataKey="value"
                     label={({ name, percent }) =>
                       `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
@@ -463,7 +464,7 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                       : "Administrador"}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded-md">
+                <div className="flex items-center gap-1 bg-info/10 text-info px-2 py-1 rounded-md">
                   <LogIn className="h-3 w-3 mr-1" />
                   <span className="font-semibold">{user.count}</span>
                 </div>
@@ -498,24 +499,24 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Fecha y Hora</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Navegador
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Sistema Op.
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedLogins.length > 0 ? (
-                  paginatedLogins.map((login) => (
+          {filteredLogins.length > 0 ? (
+            <div className="overflow-hidden rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuario</TableHead>
+                    <TableHead>Fecha y Hora</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Navegador
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Sistema Op.
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedLogins.map((login) => (
                     <TableRow key={login.id}>
                       <TableCell>
                         <div className="font-medium">{login.userName}</div>
@@ -542,21 +543,31 @@ export default function UserStatistics({ stats }: UserStatisticsProps) {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No se encontraron registros
-                      {loginSearchQuery && " que coincidan con la búsqueda"}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <EmptyState
+              icon={LogIn}
+              title="No se encontraron registros"
+              description={
+                loginSearchQuery
+                  ? "Intente cambiar la búsqueda."
+                  : "Todavía no hay inicios de sesión registrados."
+              }
+              action={
+                loginSearchQuery ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => setLoginSearchQuery("")}
+                  >
+                    Limpiar búsqueda
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
 
           {/* Pagination Controls */}
           {filteredLogins.length > 0 && (

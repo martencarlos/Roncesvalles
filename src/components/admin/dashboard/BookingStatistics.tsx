@@ -30,11 +30,11 @@ interface BookingStatisticsProps {
 export default function BookingStatistics({ stats }: BookingStatisticsProps) {
   // Colors for charts
   const COLORS = {
-    lunch: "#f97316", // orange
-    dinner: "#4f46e5", // indigo
-    active: "#3b82f6", // blue
-    cancelled: "#ef4444", // red
-    default: "#3b82f6", // blue
+    lunch: "var(--chart-4)", // warm
+    dinner: "var(--chart-3)", // cool
+    active: "var(--chart-1)", // brand
+    cancelled: "var(--destructive)",
+    default: "var(--chart-1)",
   };
 
   // Prepare booking type data for pie chart
@@ -51,8 +51,8 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
 
   // Prepare data for services usage
   const servicesData = [
-    { name: "Preparación de Fuego", value: stats.additionalServices.prepararFuego, color: "#f97316" },
-    { name: "Reserva de Horno", value: stats.additionalServices.reservaHorno, color: "#8b5cf6" }
+    { name: "Preparación de Fuego", value: stats.additionalServices.prepararFuego, color: "var(--chart-4)" },
+    { name: "Reserva de Horno", value: stats.additionalServices.reservaHorno, color: "var(--chart-2)" }
   ];
 
   // Prepare data for most used tables
@@ -65,7 +65,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
         {/* Total Bookings Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Reservas</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Reservas</CardTitle>
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -77,7 +77,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
         {/* Average Attendees Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Asistentes Promedio</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Asistentes Promedio</CardTitle>
             <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -89,7 +89,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
         {/* Cancellations Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Cancelaciones</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Cancelaciones</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -121,7 +121,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
                     type="monotone" 
                     dataKey="count" 
                     name="Reservas" 
-                    stroke="#3b82f6" 
+                    stroke="var(--chart-1)" 
                     strokeWidth={2}
                     activeDot={{ r: 8 }} 
                   />
@@ -147,7 +147,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
                     cy="50%"
                     labelLine={false}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="var(--chart-1)"
                     dataKey="value"
                     label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   >
@@ -178,7 +178,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
                     cy="50%"
                     labelLine={false}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="var(--chart-1)"
                     dataKey="value"
                     label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   >
@@ -206,7 +206,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
                   <XAxis dataKey="tableNumber" label={{ value: 'Número de Mesa', position: 'insideBottom', offset: -5 }} />
                   <YAxis />
                   <Tooltip formatter={(value) => [`${value} reservas`, 'Cantidad']} />
-                  <Bar dataKey="count" name="Reservas" fill="#8b5cf6" />
+                  <Bar dataKey="count" name="Reservas" fill="var(--chart-2)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -261,7 +261,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Media de Asistentes</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Media de Asistentes</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -272,7 +272,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Modificaciones</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Modificaciones</CardTitle>
             <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -285,7 +285,7 @@ export default function BookingStatistics({ stats }: BookingStatisticsProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Cancelaciones</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Cancelaciones</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>

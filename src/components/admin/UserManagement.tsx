@@ -39,7 +39,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
 interface User {
@@ -54,6 +56,20 @@ interface User {
 interface UserManagementProps {
   isITAdmin: boolean;
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  user: "Usuario",
+  admin: "Administrador",
+  conserje: "Conserje",
+  it_admin: "Admin IT",
+};
+
+const ROLE_TONES: Record<string, "neutral" | "info" | "warning" | "success"> = {
+  user: "neutral",
+  admin: "info",
+  conserje: "warning",
+  it_admin: "success",
+};
 
 export default function UserManagement({ isITAdmin }: UserManagementProps) {
   const [users, setUsers] = useState<User[]>([]);
@@ -398,8 +414,14 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-5">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="mt-2 h-4 w-56" />
+              <Skeleton className="mt-4 h-8 w-full" />
+            </div>
+          ))}
         </div>
       ) : filteredUsers.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -413,27 +435,9 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
                       {user.email}
                     </CardDescription>
                   </div>
-                  <Badge
-                    className={
-                      user.role === "user"
-                        ? "bg-blue-100 text-blue-800 border-blue-200"
-                        : user.role === "admin"
-                        ? "bg-purple-100 text-purple-800 border-purple-200"
-                        : user.role === "conserje"
-                        ? "bg-orange-100 text-orange-800 border-orange-200"
-                        : "bg-red-100 text-red-800 border-red-200"
-                    }
-                  >
-                    {user.role === "user"
-                      ? "Usuario"
-                      : user.role === "admin"
-                      ? "Administrador"
-                      : user.role === "conserje"
-                      ? "Conserje"
-                      : user.role === "it_admin"
-                      ? "Admin IT"
-                      : ""}
-                  </Badge>
+                  <StatusBadge tone={ROLE_TONES[user.role] ?? "neutral"}>
+                    {ROLE_LABELS[user.role] ?? user.role}
+                  </StatusBadge>
                 </div>
               </CardHeader>
               <CardContent className="pb-2">
@@ -482,12 +486,18 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           ))}
         </div>
       ) : (
-        <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-100">
-          <p className="text-muted-foreground">
-            No se encontraron usuarios que coincidan con los criterios de
-            búsqueda.
-          </p>
-        </div>
+        <EmptyState
+          icon={Search}
+          title="No se encontraron usuarios"
+          description="No hay usuarios que coincidan con los criterios de búsqueda."
+          action={
+            (searchQuery || roleFilter !== "all") ? (
+              <Button variant="outline" onClick={resetFilters}>
+                Limpiar filtros
+              </Button>
+            ) : undefined
+          }
+        />
       )}
 
       {/* Add User Dialog */}
@@ -764,7 +774,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
           {userToDelete && (
             <div className="py-4">
               <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-md">
+                <div className="bg-muted p-4 rounded-md">
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <span className="font-medium">Nombre:</span>
                     <span>{userToDelete.name}</span>

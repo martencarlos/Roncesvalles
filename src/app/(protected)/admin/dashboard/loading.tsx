@@ -1,14 +1,27 @@
 // src/app/(protected)/admin/dashboard/loading.tsx
-import React from 'react';
+import { PageContainer, PageHeader } from "@/components/layout/PageShell";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (
-    <div className="mx-auto max-w-full px-3 py-2 sm:max-w-6xl sm:px-4 sm:py-3 min-h-[100dvh]">
-      <div className="flex flex-col items-center justify-center h-[80vh]">
-        <div className="h-10 w-10 animate-spin rounded-full border-3 border-primary border-t-transparent mb-3 sm:h-12 sm:w-12 sm:mb-4"></div>
-        <p className="text-base sm:text-lg font-medium text-center">Cargando panel de estadísticas...</p>
-        <p className="text-xs text-muted-foreground mt-2 text-center opacity-75">Este proceso puede tardar unos segundos</p>
+    <PageContainer>
+      <PageHeader title="Panel de Estadísticas" />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl border bg-card p-5">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="mt-3 h-7 w-16" />
+          </div>
+        ))}
       </div>
-    </div>
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl border bg-card p-5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="mt-4 h-64 w-full" />
+          </div>
+        ))}
+      </div>
+    </PageContainer>
   );
 }

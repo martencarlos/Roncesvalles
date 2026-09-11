@@ -17,7 +17,7 @@ export function Loading({
   // Size map
   const sizeMap = {
     sm: 'h-8 w-8 border-2',
-    md: 'h-12 w-12 border-3',
+    md: 'h-12 w-12 border-[3px]',
     lg: 'h-16 w-16 border-4',
   };
   

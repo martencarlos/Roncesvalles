@@ -17,26 +17,23 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Download,
   PlusCircle,
   History,
-  UtensilsCrossed,
   CalendarIcon,
   LayoutGrid,
   List,
   InfoIcon,
-  BookOpen,
   StickyNote,
   Save,
   ShieldAlert,
   Flame,
+  Lock,
+  CalendarX,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import BookingCard from "@/components/BookingCard";
 import BookingListItem from "@/components/BookingListItem";
@@ -50,7 +47,6 @@ import { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import { useSession } from "next-auth/react";
-import UserMenu from "@/components/auth/UserMenu";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -63,19 +59,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  PageContainer,
+  PageHeader,
+  SectionHeader,
+} from "@/components/layout/PageShell";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Registrar el idioma español para el datepicker
 registerLocale("es", es);
 
+const ALL_TABLES = [1, 2, 3, 4, 5, 6];
+
 // Create a skeleton for the available tables
 const TablesSkeleton = () => {
   return (
-    <div className="flex flex-wrap gap-2">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          className="h-7 w-16 bg-gray-200 animate-pulse rounded-full"
-        />
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+      {ALL_TABLES.map((i) => (
+        <Skeleton key={i} className="h-[68px] rounded-lg" />
       ))}
     </div>
   );
@@ -673,6 +676,12 @@ export default function BookingsPage() {
   const isAdminOrConserje =
     session?.user?.role === "admin" || session?.user?.role === "conserje";
 
+  const isRegularUser = session?.user?.role === "user";
+  const canExport =
+    session?.user?.role === "admin" ||
+    session?.user?.role === "it_admin" ||
+    session?.user?.role === "conserje";
+
   type MergedItem =
     | { kind: "booking"; item: IBooking }
     | { kind: "block"; item: IBlockedDate };
@@ -683,10 +692,10 @@ export default function BookingsPage() {
     both: "Comida y Cena",
   };
 
-  const MEAL_BADGE_CLASSES: Record<BlockedMealType, string> = {
-    lunch: "bg-orange-50 text-orange-700 border-orange-200",
-    dinner: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    both: "bg-teal-50 text-teal-700 border-teal-200",
+  const MEAL_TONES: Record<BlockedMealType, StatusTone> = {
+    lunch: "warning",
+    dinner: "info",
+    both: "neutral",
   };
 
   const mergedList: MergedItem[] = isAdminOrConserje
@@ -788,271 +797,250 @@ export default function BookingsPage() {
     return null;
   }
 
+  const activeAvailableTables =
+    selectedMealType === "lunch" ? availableTablesLunch : availableTablesDinner;
+  const activeBlockedDate =
+    selectedMealType === "lunch" ? blockedLunch : blockedDinner;
+
+  const listTitle =
+    dateFilter === "today"
+      ? "Reservas de Hoy"
+      : dateFilter === "future"
+      ? "Próximas Reservas"
+      : dateFilter === "past"
+      ? "Reservas Pasadas"
+      : dateFilter === "specific"
+      ? `Reservas del ${formatDateEs(selectedDate, "d MMMM, yyyy")}`
+      : "Todas las Reservas";
+
+  const hasResults = isAdminOrConserje
+    ? mergedList.length > 0
+    : filteredBookings.length > 0;
+
+  const emptyDescription = isAdminOrConserje
+    ? {
+        today: "No hay reservas ni bloqueos para hoy.",
+        future: "No hay próximas reservas ni bloqueos.",
+        past: "No hay reservas ni bloqueos pasados.",
+        specific: `No hay reservas ni bloqueos para ${formatDateEs(
+          selectedDate,
+          "d MMMM, yyyy"
+        )}.`,
+        all: "No hay reservas ni bloqueos disponibles.",
+      }[dateFilter]
+    : {
+        today: "No hay reservas para hoy.",
+        future: "No hay próximas reservas.",
+        past: "No hay reservas pasadas.",
+        specific: `No hay reservas para ${formatDateEs(
+          selectedDate,
+          "d MMMM, yyyy"
+        )}.`,
+        all: "No hay reservas disponibles.",
+      }[dateFilter];
+
+  const emptyState = (
+    <EmptyState
+      icon={CalendarX}
+      title="Sin resultados"
+      description={emptyDescription}
+      action={
+        isRegularUser ? (
+          <Button onClick={handleNewBooking}>
+            <PlusCircle className="h-4 w-4" />
+            Nueva Reserva
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={() => setDateFilter("future")}>
+            Ver Próximas Reservas
+          </Button>
+        )
+      }
+    />
+  );
+
   return (
-    <div className="max-w-6xl mb-32 mx-auto px-4 py-3 sm:p-4 min-h-screen">
-      <header className="mb-6 sm:mb-8">
-        {/* Top header with title, user guide, and user menu */}
-        <div className="flex justify-between items-center gap-2 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold truncate">
-            <Link href="/">Sociedad Roncesvalles</Link>
-          </h1>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-8 px-2 sm:h-9 sm:px-3"
-            >
-              <Link href="/how-to-use">
-                <BookOpen className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Guía de Uso</span>
-                <span className="sm:hidden">Guía</span>
-              </Link>
-            </Button>
-            <UserMenu />
-          </div>
-        </div>
-
-        <br />
-
-        {/* Activity and Export buttons for admin/conserje/it_admin */}
-        {(session?.user?.role === "admin" ||
-          session?.user?.role === "it_admin" ||
-          session?.user?.role === "conserje") && (
-          <div className="flex gap-2 mb-4">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="cursor-pointer flex-1 sm:flex-none"
-            >
-              <Link href="/activity">
-                <History className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Ver Actividad</span>
-                <span className="sm:hidden">Actividad</span>
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowExportDialog(true)}
-              className="cursor-pointer flex-1 sm:flex-none"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
-        )}
-
-        {/* New Booking Section - Clearly marked and separated */}
-        <div className="mb-6 p-4 border rounded-lg bg-slate-50 shadow-sm">
-          {/* Title and action buttons in a column on mobile, row on desktop */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-            <h2 className="text-xl font-semibold flex items-center">
-              <CalendarIcon className="h-5 w-5 mr-2 text-green-600" />
-              Disponibilidad
-            </h2>
-
-            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
-              {session?.user?.role === "user" && (
+    <PageContainer>
+      <div className="space-y-8">
+        <PageHeader
+          title="Sociedad Roncesvalles"
+          description={`Hoy es ${format(new Date(), "EEEE, d 'de' MMMM", {
+            locale: es,
+          })}. Consulte la disponibilidad y gestione sus reservas.`}
+          actions={
+            <>
+              {isRegularUser && (
                 <Button
                   onClick={handleNewBooking}
-                  size="sm"
-                  disabled={
-                    (selectedMealType === "lunch" && !!blockedLunch) ||
-                    (selectedMealType === "dinner" && !!blockedDinner)
-                  }
-                  className="cursor-pointer bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium shadow-md hover:shadow-lg active:scale-95 transition-all duration-150 px-4 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!!activeBlockedDate}
                 >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Nueva Reserva</span>
-                  <span className="sm:hidden">Reservar</span>
+                  <PlusCircle className="h-4 w-4" />
+                  Nueva Reserva
                 </Button>
               )}
-
-              {session?.user?.role === "user" && (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/activity">
+                  <History className="h-4 w-4" />
+                  Actividad
+                </Link>
+              </Button>
+              {canExport && (
                 <Button
-                  asChild
                   variant="outline"
                   size="sm"
-                  className="cursor-pointer w-full sm:w-auto"
+                  onClick={() => setShowExportDialog(true)}
                 >
-                  <Link href="/activity">
-                    <History className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Ver Actividad</span>
-                    <span className="sm:hidden">Actividad</span>
-                  </Link>
+                  <Download className="h-4 w-4" />
+                  Exportar
                 </Button>
               )}
-            </div>
-          </div>
+            </>
+          }
+        />
 
-          {/* Date picker */}
-          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-            {/* Date picker container */}
-            <div className="custom-datepicker-container w-full">
-              <div className="relative flex items-center w-full">
-                <div className="absolute left-3 pointer-events-none text-muted-foreground">
-                  <CalendarIcon className="h-4 w-4" />
-                </div>
-                <DatePicker
-                  selected={selectedDate}
-                  onChange={(date: Date | null) => {
-                    if (date) {
-                      setSelectedDate(date);
-                      setDateFilter("specific");
-                    }
-                  }}
-                  dateFormat="d MMMM, yyyy"
-                  locale="es"
-                  className="w-full pl-10 p-2 border rounded-md"
-                  renderDayContents={renderDayContents}
-                  onFocus={(e) => e.target.blur()}
-                  customInput={
-                    <input
-                      className="w-full pl-10 p-2 border rounded-md cursor-pointer"
-                      readOnly
-                    />
+        <section className="space-y-4">
+          <SectionHeader
+            title={
+              <span className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-primary" />
+                Disponibilidad
+              </span>
+            }
+            description={
+              loadingTables
+                ? "Consultando disponibilidad…"
+                : activeBlockedDate
+                ? "Fecha no disponible"
+                : `${activeAvailableTables.length} de ${ALL_TABLES.length} mesas disponibles`
+            }
+            actions={
+              <Tabs
+                value={selectedMealType}
+                onValueChange={(value) =>
+                  setSelectedMealType(value as MealType)
+                }
+              >
+                <TabsList>
+                  <TabsTrigger value="lunch">Comida</TabsTrigger>
+                  <TabsTrigger value="dinner">Cena</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            }
+          />
+
+          <div className="custom-datepicker-container">
+            <div className="relative flex items-center">
+              <div className="pointer-events-none absolute left-3 text-muted-foreground">
+                <CalendarIcon className="h-4 w-4" />
+              </div>
+              <DatePicker
+                selected={selectedDate}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    setSelectedDate(date);
+                    setDateFilter("specific");
                   }
-                />
-              </div>
-
-              <div className="datepicker-legend">
-                <div className="datepicker-legend-item">
-                  <div className="datepicker-legend-dot booking-dot-lunch"></div>
-                  <span>Comida</span>
-                </div>
-                <div className="datepicker-legend-item">
-                  <div className="datepicker-legend-dot booking-dot-dinner"></div>
-                  <span>Cena</span>
-                </div>
-                <div className="datepicker-legend-item">
-                  <div className="datepicker-legend-dot booking-dot-both"></div>
-                  <span>Ambas</span>
-                </div>
-                <div className="datepicker-legend-item">
-                  <div className="datepicker-legend-dot booking-dot-blocked"></div>
-                  <span>Bloqueada</span>
-                </div>
-                <div className="flex items-center gap-1 text-muted-foreground ml-auto">
-                  <InfoIcon className="h-3 w-3" />
-                  <span>Fechas con reservas</span>
-                </div>
-              </div>
+                }}
+                dateFormat="d MMMM, yyyy"
+                locale="es"
+                renderDayContents={renderDayContents}
+                onFocus={(e) => e.target.blur()}
+                customInput={
+                  <input
+                    className="w-full cursor-pointer rounded-md border border-input bg-card py-2 pl-10 pr-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                    readOnly
+                  />
+                }
+              />
             </div>
 
+            <div className="datepicker-legend">
+              <div className="datepicker-legend-item">
+                <div className="datepicker-legend-dot booking-dot-lunch"></div>
+                <span>Comida</span>
+              </div>
+              <div className="datepicker-legend-item">
+                <div className="datepicker-legend-dot booking-dot-dinner"></div>
+                <span>Cena</span>
+              </div>
+              <div className="datepicker-legend-item">
+                <div className="datepicker-legend-dot booking-dot-both"></div>
+                <span>Ambas</span>
+              </div>
+              <div className="datepicker-legend-item">
+                <div className="datepicker-legend-dot booking-dot-blocked"></div>
+                <span>Bloqueada</span>
+              </div>
+              <div className="flex items-center gap-1 text-muted-foreground ml-auto">
+                <InfoIcon className="h-3 w-3" />
+                <span>Fechas con reservas</span>
+              </div>
+            </div>
           </div>
 
-          {/* Tabs for meal type selection */}
-          <Tabs
-            defaultValue="lunch"
-            onValueChange={(value) => setSelectedMealType(value as MealType)}
-            className="w-full"
-          >
-            <TabsList className="mb-4 w-full">
-              <TabsTrigger value="lunch" className="flex-1">
-                Comida
-              </TabsTrigger>
-              <TabsTrigger value="dinner" className="flex-1">
-                Cena
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="lunch">
-              <Card>
-                <CardHeader className="pb-3 px-4">
-                  <CardTitle className="text-sm sm:text-md flex items-center gap-2">
-                    <UtensilsCrossed className="h-4 w-4" />
-                    Mesas disponibles para comida el{" "}
-                    {formatDateEs(selectedDate, "d MMM, yyyy")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-4">
-                  {loadingTables ? (
-                    <TablesSkeleton />
-                  ) : blockedLunch ? (
-                    <div className="flex items-start gap-2 p-3 rounded-md bg-rose-50 border border-rose-200">
-                      <ShieldAlert className="h-4 w-4 text-rose-600 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-rose-700 text-sm font-medium">
-                          Fecha no disponible
-                        </p>
-                        <p className="text-rose-600 text-sm">
-                          Esta fecha está reservada para{" "}
-                          <span className="font-semibold">{blockedLunch.reason}</span>.
-                          No es posible realizar reservas de comida en esta fecha.
-                        </p>
-                      </div>
-                    </div>
-                  ) : availableTablesLunch.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {availableTablesLunch.map((table) => (
-                        <Badge
-                          key={table}
-                          variant="outline"
-                          className="bg-green-50 text-green-700 border-green-200"
-                        >
-                          Mesa #{table}
-                        </Badge>
-                      ))}
+          {loadingTables ? (
+            <TablesSkeleton />
+          ) : activeBlockedDate ? (
+            <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-4">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-destructive">
+                  Fecha no disponible
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Esta fecha está reservada para{" "}
+                  <span className="font-semibold text-foreground">
+                    {activeBlockedDate.reason}
+                  </span>
+                  . No es posible realizar reservas de{" "}
+                  {selectedMealType === "lunch" ? "comida" : "cena"} en esta
+                  fecha.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                {ALL_TABLES.map((table) => {
+                  const isAvailable = activeAvailableTables.includes(table);
+                  return isAvailable ? (
+                    <div
+                      key={table}
+                      className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-card p-3 text-center transition-colors hover:border-primary/40 hover:bg-accent"
+                    >
+                      <span className="size-1.5 rounded-full bg-primary" />
+                      <span className="text-sm font-semibold text-primary">
+                        Mesa {table}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        Disponible
+                      </span>
                     </div>
                   ) : (
-                    <p className="text-red-500 text-sm">
-                      Todas las mesas están reservadas para comida en esta
-                      fecha.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="dinner">
-              <Card>
-                <CardHeader className="pb-3 px-4">
-                  <CardTitle className="text-sm sm:text-md flex items-center gap-2">
-                    <UtensilsCrossed className="h-4 w-4" />
-                    Mesas disponibles para cena el{" "}
-                    {formatDateEs(selectedDate, "d MMM, yyyy")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-4">
-                  {loadingTables ? (
-                    <TablesSkeleton />
-                  ) : blockedDinner ? (
-                    <div className="flex items-start gap-2 p-3 rounded-md bg-rose-50 border border-rose-200">
-                      <ShieldAlert className="h-4 w-4 text-rose-600 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-rose-700 text-sm font-medium">
-                          Fecha no disponible
-                        </p>
-                        <p className="text-rose-600 text-sm">
-                          Esta fecha está reservada para{" "}
-                          <span className="font-semibold">{blockedDinner.reason}</span>.
-                          No es posible realizar reservas de cena en esta fecha.
-                        </p>
-                      </div>
+                    <div
+                      key={table}
+                      className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-muted p-3 text-center text-muted-foreground"
+                    >
+                      <Lock className="h-3.5 w-3.5" />
+                      <span className="text-sm font-semibold">Mesa {table}</span>
+                      <span className="text-[11px]">Reservada</span>
                     </div>
-                  ) : availableTablesDinner.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {availableTablesDinner.map((table) => (
-                        <Badge
-                          key={table}
-                          variant="outline"
-                          className="bg-green-50 text-green-700 border-green-200"
-                        >
-                          Mesa #{table}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-red-500 text-sm">
-                      Todas las mesas están reservadas para cena en esta fecha.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </header>
+                  );
+                })}
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-primary" />
+                  Disponible
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Lock className="h-3 w-3" />
+                  Reservada
+                </span>
+              </div>
+            </div>
+          )}
+        </section>
 
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -1111,20 +1099,19 @@ export default function BookingsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <StickyNote className="h-5 w-5 text-amber-500" />
+              <StickyNote className="h-5 w-5 text-warning" />
               Notas Internas (Conserjería)
             </DialogTitle>
             <DialogDescription>
               Estas notas solo son visibles para conserjes y administradores.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-4">
+          <div className="space-y-4 py-4">
             <Textarea
               value={internalNoteText}
               onChange={(e) => setInternalNoteText(e.target.value)}
               placeholder="Escriba aquí anotaciones..."
               rows={5}
-              className="bg-amber-50 border-amber-200 focus-visible:ring-amber-500"
             />
             {noteBooking?.noCleaningService && (
               <div className="space-y-2">
@@ -1149,11 +1136,7 @@ export default function BookingsPage() {
             <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
               Cancelar
             </Button>
-            <Button
-              onClick={handleSaveInternalNote}
-              disabled={isSubmitting}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
-            >
+            <Button onClick={handleSaveInternalNote} disabled={isSubmitting}>
               {isSubmitting ? (
                 "Guardando..."
               ) : (
@@ -1166,323 +1149,222 @@ export default function BookingsPage() {
         </DialogContent>
       </Dialog>
 
-      <br />
-      {/* List view title with filter info */}
-      <div className="flex flex-col gap-3 mb-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg sm:text-xl font-semibold">
-              {dateFilter === "today" && "Reservas de Hoy"}
-              {dateFilter === "future" && "Próximas Reservas"}
-              {dateFilter === "past" && "Reservas Pasadas"}
-              {dateFilter === "specific" &&
-                `Reservas del ${formatDateEs(selectedDate, "d MMMM, yyyy")}`}
-              {dateFilter === "all" && "Todas las Reservas"}
-            </h2>
+        <section className="space-y-4">
+          <SectionHeader
+            title={listTitle}
+            actions={
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {!isRegularUser && (
+                    <Button
+                      variant={dateFilter === "today" ? "default" : "outline"}
+                      onClick={() => handleDateFilterChange("today")}
+                      size="sm"
+                    >
+                      Hoy
+                    </Button>
+                  )}
+                  <Button
+                    variant={dateFilter === "future" ? "default" : "outline"}
+                    onClick={() => handleDateFilterChange("future")}
+                    size="sm"
+                  >
+                    Próximas
+                  </Button>
+                  <Button
+                    variant={dateFilter === "past" ? "default" : "outline"}
+                    onClick={() => handleDateFilterChange("past")}
+                    size="sm"
+                  >
+                    Pasadas
+                  </Button>
+                </div>
 
-            {/* VIEW TOGGLE BUTTON */}
-            <Button
-              onClick={toggleViewMode}
-              variant="outline"
-              size="sm"
-              className="cursor-pointer hidden sm:inline-flex"
-            >
-              {viewMode === "card" ? (
-                <>
-                  <List className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Vista Lista</span>
-                  <span className="sm:hidden">Lista</span>
-                </>
-              ) : (
-                <>
-                  <LayoutGrid className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Vista Tarjetas</span>
-                  <span className="sm:hidden">Tarjetas</span>
-                </>
-              )}
-            </Button>
-          </div>
+                <Button
+                  onClick={toggleViewMode}
+                  variant="outline"
+                  size="sm"
+                  className="hidden sm:inline-flex"
+                >
+                  {viewMode === "card" ? (
+                    <>
+                      <List className="h-4 w-4" />
+                      Vista Lista
+                    </>
+                  ) : (
+                    <>
+                      <LayoutGrid className="h-4 w-4" />
+                      Vista Tarjetas
+                    </>
+                  )}
+                </Button>
+              </>
+            }
+          />
 
-          {(isAdminOrConserje ? mergedList.length === 0 : filteredBookings.length === 0) && (
-              <Button
-                variant="outline"
-                onClick={() => setDateFilter("future")}
-                size="sm"
-                className="w-full sm:w-auto"
-              >
-                Ver Próximas Reservas
-              </Button>
-            )}
-        </div>
+          {/* Bookings display - Card or List view */}
+          {loading ? (
+            viewMode === "list" ? (
+              <BookingsListSkeleton />
+            ) : (
+              <BookingsDateSkeleton />
+            )
+          ) : isAdminOrConserje ? (
+            /* Admin / Conserje: merged list of bookings + blocks */
+            hasResults ? (
+              <>
+                <div className="space-y-3">
+                  {paginatedMergedList.map((entry) => {
+                    if (entry.kind === "block") {
+                      const block = entry.item;
+                      const blockDate = new Date(block.date);
+                      const isBlockToday = isToday(blockDate);
+                      const isBlockFuture = isFuture(blockDate);
+                      const isBlockPast =
+                        isPast(blockDate) && !isToday(blockDate);
 
-        {/* DATE FILTER BUTTONS */}
-        <div className="flex gap-2 flex-wrap">
-          {session?.user?.role !== "user" && (
-            <Button
-              variant={dateFilter === "today" ? "default" : "outline"}
-              onClick={() => handleDateFilterChange("today")}
-              className="cursor-pointer"
-              size="sm"
-            >
-              Hoy
-            </Button>
-          )}
-          <Button
-            variant={dateFilter === "future" ? "default" : "outline"}
-            onClick={() => handleDateFilterChange("future")}
-            className="cursor-pointer"
-            size="sm"
-          >
-            Próximas
-          </Button>
-          <Button
-            variant={dateFilter === "past" ? "default" : "outline"}
-            onClick={() => handleDateFilterChange("past")}
-            className="cursor-pointer"
-            size="sm"
-          >
-            Pasadas
-          </Button>
-        </div>
-      </div>
-      <Separator className="mb-4" />
+                      return (
+                        <div
+                          key={`block-${block._id}`}
+                          className="flex flex-col gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3 sm:flex-row sm:items-center"
+                        >
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            <ShieldAlert className="h-4 w-4 shrink-0 text-destructive" />
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
+                              <StatusBadge tone="danger">Bloqueo</StatusBadge>
+                              <span className="shrink-0 text-sm font-medium text-foreground">
+                                {formatDateEs(blockDate, "EEEE, d MMM yyyy")}
+                              </span>
+                              <StatusBadge tone={MEAL_TONES[block.mealType]}>
+                                {MEAL_LABELS[block.mealType]}
+                              </StatusBadge>
+                              <StatusBadge tone="neutral">
+                                {block.reason}
+                              </StatusBadge>
+                              {block.prepararFuego && (
+                                <StatusBadge tone="warning">
+                                  <Flame className="h-3 w-3" />
+                                  Fuego
+                                </StatusBadge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="shrink-0">
+                            {isBlockToday && (
+                              <StatusBadge tone="info">Hoy</StatusBadge>
+                            )}
+                            {!isBlockToday && isBlockFuture && (
+                              <StatusBadge tone="success">Próxima</StatusBadge>
+                            )}
+                            {isBlockPast && (
+                              <StatusBadge tone="neutral">Pasada</StatusBadge>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
 
-      {/* Bookings display - Card or List view */}
-      {loading ? (
-        <div>
-          {viewMode === "list" ? (
-            <BookingsListSkeleton />
-          ) : (
-            <BookingsDateSkeleton />
-          )}
-        </div>
-      ) : isAdminOrConserje ? (
-        /* Admin / Conserje: merged list of bookings + blocks */
-        mergedList.length > 0 ? (
-          <>
-          <div className="space-y-3">
-            {paginatedMergedList.map((entry) => {
-              if (entry.kind === "block") {
-                const block = entry.item;
-                const blockDate = new Date(block.date);
-                const isBlockToday = isToday(blockDate);
-                const isBlockFuture = isFuture(blockDate);
-                const isBlockPast = isPast(blockDate) && !isToday(blockDate);
+                    // Regular booking entry
+                    const booking = entry.item;
+                    const bookingDate = new Date(booking.date);
+                    const isBookingPast =
+                      isPast(bookingDate) && !isToday(bookingDate);
 
-                let statusBadge = null;
-                if (isBlockToday) {
-                  statusBadge = (
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">Hoy</Badge>
-                  );
-                } else if (isBlockFuture) {
-                  statusBadge = (
-                    <Badge className="bg-green-100 text-green-800 border-green-200">Próxima</Badge>
-                  );
-                } else if (isBlockPast) {
-                  statusBadge = (
-                    <Badge className="bg-gray-100 text-gray-800 border-gray-200">Pasada</Badge>
-                  );
-                }
+                    return (
+                      <div key={`booking-${booking._id}`}>
+                        {/* Mobile */}
+                        <div className="sm:hidden">
+                          <BookingListItem
+                            booking={booking}
+                            onEdit={() => setEditingBooking(booking)}
+                            onDelete={() => handleDeleteBooking(booking)}
+                            onEditNote={handleOpenNoteDialog}
+                            isPast={isBookingPast}
+                            session={session}
+                          />
+                        </div>
+                        {/* Desktop */}
+                        <div className="hidden sm:block">
+                          {viewMode === "card" ? (
+                            <BookingCard
+                              booking={booking}
+                              onEdit={() => setEditingBooking(booking)}
+                              onDelete={() => handleDeleteBooking(booking)}
+                              onEditNote={handleOpenNoteDialog}
+                              isPast={isBookingPast}
+                              session={session}
+                            />
+                          ) : (
+                            <BookingListItem
+                              booking={booking}
+                              onEdit={() => setEditingBooking(booking)}
+                              onDelete={() => handleDeleteBooking(booking)}
+                              onEditNote={handleOpenNoteDialog}
+                              isPast={isBookingPast}
+                              session={session}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {totalPages > 1 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={(value) => {
+                      setItemsPerPage(value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                )}
+              </>
+            ) : (
+              emptyState
+            )
+          ) : filteredBookings.length > 0 ? (
+            /* Regular user or other roles: original grouped by date view */
+            <div className="space-y-6 sm:space-y-8">
+              {sortedDateKeys.map((dateKey) => {
+                const bookingsForDate = groupedBookings[dateKey];
+                const bookingDate = new Date(dateKey);
+                const isBookingToday = isToday(bookingDate);
+                const isBookingFuture = isFuture(bookingDate);
+                const isBookingPast =
+                  isPast(bookingDate) && !isToday(bookingDate);
+
+                // Pre-sorted list for consistent rendering order
+                const sortedBookingsForDate = bookingsForDate.sort((a, b) => {
+                  if (a.mealType !== b.mealType) {
+                    return a.mealType === "lunch" ? -1 : 1;
+                  }
+                  return a.apartmentNumber - b.apartmentNumber;
+                });
 
                 return (
-                  <div
-                    key={`block-${block._id}`}
-                    className="border border-rose-200 bg-rose-50 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2"
-                  >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0" />
-                      <div className="flex flex-wrap items-center gap-2 min-w-0">
-                        <Badge className="bg-rose-100 text-rose-700 border-rose-200 shrink-0">
-                          Bloqueo
-                        </Badge>
-                        <span className="text-sm font-medium text-rose-900 shrink-0">
-                          {formatDateEs(blockDate, "EEEE, d MMM yyyy")}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className={`${MEAL_BADGE_CLASSES[block.mealType]} shrink-0`}
-                        >
-                          {MEAL_LABELS[block.mealType]}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className="bg-violet-50 text-violet-700 border-violet-200 shrink-0"
-                        >
-                          {block.reason}
-                        </Badge>
-                        {block.prepararFuego && (
-                          <Badge
-                            variant="outline"
-                            className="bg-amber-50 text-amber-700 border-amber-200 shrink-0"
-                          >
-                            <Flame className="h-3 w-3 mr-1" />
-                            Fuego
-                          </Badge>
+                  <div key={dateKey}>
+                    {!isRegularUser && (
+                      <div className="mb-3 flex items-center justify-between rounded-md bg-muted px-3 py-2">
+                        <h3 className="text-base font-medium sm:text-lg">
+                          {formatDateEs(bookingDate, "EEEE, d MMMM, yyyy")}
+                        </h3>
+                        {isBookingToday && (
+                          <StatusBadge tone="info">Hoy</StatusBadge>
+                        )}
+                        {!isBookingToday && isBookingFuture && (
+                          <StatusBadge tone="success">Próxima</StatusBadge>
+                        )}
+                        {isBookingPast && (
+                          <StatusBadge tone="neutral">Pasada</StatusBadge>
                         )}
                       </div>
-                    </div>
-                    <div className="shrink-0">{statusBadge}</div>
-                  </div>
-                );
-              }
-
-              // Regular booking entry
-              const booking = entry.item;
-              const bookingDate = new Date(booking.date);
-              const isBookingPast = isPast(bookingDate) && !isToday(bookingDate);
-
-              return (
-                <div key={`booking-${booking._id}`}>
-                  {/* Mobile */}
-                  <div className="sm:hidden">
-                    <BookingListItem
-                      booking={booking}
-                      onEdit={() => setEditingBooking(booking)}
-                      onDelete={() => handleDeleteBooking(booking)}
-                      onEditNote={handleOpenNoteDialog}
-                      isPast={isBookingPast}
-                      session={session}
-                    />
-                  </div>
-                  {/* Desktop */}
-                  <div className="hidden sm:block">
-                    {viewMode === "card" ? (
-                      <BookingCard
-                        booking={booking}
-                        onEdit={() => setEditingBooking(booking)}
-                        onDelete={() => handleDeleteBooking(booking)}
-                        onEditNote={handleOpenNoteDialog}
-                        isPast={isBookingPast}
-                        session={session}
-                      />
-                    ) : (
-                      <BookingListItem
-                        booking={booking}
-                        onEdit={() => setEditingBooking(booking)}
-                        onDelete={() => handleDeleteBooking(booking)}
-                        onEditNote={handleOpenNoteDialog}
-                        isPast={isBookingPast}
-                        session={session}
-                      />
                     )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {totalPages > 1 && (
-            <div className="mt-6">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                onItemsPerPageChange={(value) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          )}
-          </>
-        ) : (
-          <p className="text-muted-foreground py-6 sm:py-8 text-center">
-            {dateFilter === "today" && "No hay reservas ni bloqueos para hoy."}
-            {dateFilter === "future" && "No hay próximas reservas ni bloqueos."}
-            {dateFilter === "past" && "No hay reservas ni bloqueos pasados."}
-            {dateFilter === "specific" &&
-              `No hay reservas ni bloqueos para ${formatDateEs(selectedDate, "d MMMM, yyyy")}.`}
-            {dateFilter === "all" && "No hay reservas ni bloqueos disponibles."}
-          </p>
-        )
-      ) : filteredBookings.length > 0 ? (
-        /* Regular user or other roles: original grouped by date view */
-        <div className="space-y-6 sm:space-y-8">
-          {sortedDateKeys.map((dateKey) => {
-            const bookingsForDate = groupedBookings[dateKey];
-            const bookingDate = new Date(dateKey);
-            const isBookingToday = isToday(bookingDate);
-            const isBookingFuture = isFuture(bookingDate);
-            const isBookingPast = isPast(bookingDate) && !isToday(bookingDate);
 
-            // Determine the appropriate status badge
-            let statusBadge = null;
-            if (isBookingToday) {
-              statusBadge = (
-                <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                  Hoy
-                </Badge>
-              );
-            } else if (isBookingFuture) {
-              statusBadge = (
-                <Badge className="bg-green-100 text-green-800 border-green-200">
-                  Próxima
-                </Badge>
-              );
-            } else if (isBookingPast) {
-              statusBadge = (
-                <Badge className="bg-gray-100 text-gray-800 border-gray-200">
-                  Pasada
-                </Badge>
-              );
-            }
-
-            // Pre-sorted list for consistent rendering order
-            const sortedBookingsForDate = bookingsForDate.sort((a, b) => {
-              if (a.mealType !== b.mealType) {
-                return a.mealType === "lunch" ? -1 : 1;
-              }
-              return a.apartmentNumber - b.apartmentNumber;
-            });
-
-            const isRegularUser = session?.user?.role === "user";
-
-            return (
-              <div key={dateKey}>
-                {!isRegularUser && (
-                  <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded">
-                    <h3 className="text-base sm:text-lg font-medium flex items-center gap-2">
-                      {formatDateEs(bookingDate, "EEEE, d MMMM, yyyy")}
-                    </h3>
-                    {statusBadge}
-                  </div>
-                )}
-
-                {/* Mobile View: Always List View */}
-                <div className="sm:hidden flex flex-col gap-3">
-                  {sortedBookingsForDate.map((booking) => (
-                    <BookingListItem
-                      key={booking._id as string}
-                      booking={booking}
-                      onEdit={() => setEditingBooking(booking)}
-                      onDelete={() => handleDeleteBooking(booking)}
-                      onEditNote={handleOpenNoteDialog}
-                      isPast={isBookingPast}
-                      session={session}
-                    />
-                  ))}
-                </div>
-
-                {/* Desktop View: Toggled via viewMode state */}
-                <div className="hidden sm:block">
-                  {viewMode === "card" ? (
-                    // Card View
-                    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                      {sortedBookingsForDate.map((booking) => (
-                        <BookingCard
-                          key={booking._id as string}
-                          booking={booking}
-                          onEdit={() => setEditingBooking(booking)}
-                          onDelete={() => handleDeleteBooking(booking)}
-                          onEditNote={handleOpenNoteDialog}
-                          isPast={isBookingPast}
-                          session={session}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    // List View
-                    <div className="flex flex-col gap-3">
+                    {/* Mobile View: Always List View */}
+                    <div className="flex flex-col gap-3 sm:hidden">
                       {sortedBookingsForDate.map((booking) => (
                         <BookingListItem
                           key={booking._id as string}
@@ -1495,25 +1377,50 @@ export default function BookingsPage() {
                         />
                       ))}
                     </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <p className="text-muted-foreground py-6 sm:py-8 text-center">
-          {dateFilter === "today" && "No hay reservas para hoy."}
-          {dateFilter === "future" && "No hay próximas reservas."}
-          {dateFilter === "past" && "No hay reservas pasadas."}
-          {dateFilter === "specific" &&
-            `No hay reservas para ${formatDateEs(
-              selectedDate,
-              "d MMMM, yyyy"
-            )}.`}
-          {dateFilter === "all" && "No hay reservas disponibles."}
-        </p>
-      )}
-    </div>
+
+                    {/* Desktop View: Toggled via viewMode state */}
+                    <div className="hidden sm:block">
+                      {viewMode === "card" ? (
+                        // Card View
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {sortedBookingsForDate.map((booking) => (
+                            <BookingCard
+                              key={booking._id as string}
+                              booking={booking}
+                              onEdit={() => setEditingBooking(booking)}
+                              onDelete={() => handleDeleteBooking(booking)}
+                              onEditNote={handleOpenNoteDialog}
+                              isPast={isBookingPast}
+                              session={session}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        // List View
+                        <div className="flex flex-col gap-3">
+                          {sortedBookingsForDate.map((booking) => (
+                            <BookingListItem
+                              key={booking._id as string}
+                              booking={booking}
+                              onEdit={() => setEditingBooking(booking)}
+                              onDelete={() => handleDeleteBooking(booking)}
+                              onEditNote={handleOpenNoteDialog}
+                              isPast={isBookingPast}
+                              session={session}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            emptyState
+          )}
+        </section>
+      </div>
+    </PageContainer>
   );
 }

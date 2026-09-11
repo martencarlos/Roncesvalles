@@ -6,8 +6,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { PageContainer, PageHeader } from "@/components/layout/PageShell";
 import FeedbackManagement from "@/components/admin/FeedbackManagement";
-import UserMenu from "@/components/auth/UserMenu";
 
 export const metadata: Metadata = {
   title: "Gestión de Feedback | Panel de Administración",
@@ -28,32 +28,21 @@ export default async function AdminFeedbackPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-3 sm:p-4 min-h-screen">
-      <header className="mb-6">
-        {/* Top row with back button and user menu */}
-        <div className="flex justify-between items-center gap-2 mb-4">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="h-8 px-2 sm:h-9 sm:px-3"
-          >
+    <PageContainer>
+      <PageHeader
+        title="Gestión de Feedback"
+        description="Revise reportes de errores, sugerencias y preguntas."
+        actions={
+          <Button asChild variant="outline" size="sm">
             <Link href="/admin">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Volver al Panel</span>
-              <span className="sm:hidden">Volver</span>
+              <ArrowLeft />
+              Volver al Panel
             </Link>
           </Button>
-          <div className="flex-shrink-0">
-            <UserMenu />
-          </div>
-        </div>
-
-        {/* Title row */}
-        <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Feedback</h1>
-      </header>
+        }
+      />
 
       <FeedbackManagement />
-    </div>
+    </PageContainer>
   );
 }

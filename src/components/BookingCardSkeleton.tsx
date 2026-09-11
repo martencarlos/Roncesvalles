@@ -1,61 +1,54 @@
 // src/components/BookingCardSkeleton.tsx
-import React from 'react';
+import React from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function BookingCardSkeleton() {
   return (
-    <Card className="overflow-hidden group animate-pulse">
+    <Card className="group overflow-hidden">
       <CardHeader className="pb-2 px-4">
-        <div className="flex justify-between items-center">
-          <div className="h-6 bg-gray-200 rounded w-28"></div>
-          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-28" />
+          <Skeleton className="h-4 w-20" />
         </div>
       </CardHeader>
-      <CardContent className="pb-2 px-4 space-y-2">
+      <CardContent className="space-y-2 px-4 pb-2">
         <div className="flex items-center justify-between">
-          <span className="h-4 bg-gray-200 rounded w-20"></span>
-          <span className="h-6 bg-gray-200 rounded w-16"></span>
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-6 w-16" />
         </div>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <span className="h-4 w-4 bg-gray-200 rounded-full"></span>
-            <span className="h-4 bg-gray-200 rounded w-16"></span>
-          </div>
-          <span className="h-4 bg-gray-200 rounded w-4"></span>
-        </div>
-        
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <span className="h-4 w-4 bg-gray-200 rounded-full"></span>
-            <span className="h-4 bg-gray-200 rounded w-16"></span>
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-16" />
           </div>
-          <span className="h-4 bg-gray-200 rounded w-16"></span>
+          <Skeleton className="h-4 w-4" />
         </div>
-        
-        <div className="flex items-center justify-between mt-1">
+
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <span className="h-4 bg-gray-200 rounded w-16"></span>
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-16" />
           </div>
-          <div className="flex gap-1 flex-wrap justify-end">
-            <span className="h-6 bg-gray-200 rounded w-16"></span>
-          </div>
+          <Skeleton className="h-4 w-16" />
         </div>
-        
-        <div className="flex items-center justify-between mt-1">
-          <div className="flex items-center gap-1">
-            <span className="h-4 bg-gray-200 rounded w-16"></span>
-          </div>
-          <div>
-            <span className="h-6 bg-gray-200 rounded w-24"></span>
-          </div>
+
+        <div className="mt-1 flex items-center justify-between">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-6 w-16" />
+        </div>
+
+        <div className="mt-1 flex items-center justify-between">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-6 w-24" />
         </div>
       </CardContent>
-      
-      <CardFooter className="pt-2 flex justify-end gap-2 px-4">
-        <div className="flex gap-2 w-full">
-          <div className="h-8 bg-gray-200 rounded flex-1"></div>
-          <div className="h-8 bg-gray-200 rounded flex-1"></div>
+
+      <CardFooter className="flex justify-end gap-2 px-4 pt-2">
+        <div className="flex w-full gap-2">
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 flex-1" />
         </div>
       </CardFooter>
     </Card>
@@ -65,88 +58,88 @@ export function BookingCardSkeleton() {
 // src/components/BookingListItemSkeleton.tsx
 export function BookingListItemSkeleton() {
   return (
-    <div className="p-3 sm:p-4 rounded-md border animate-pulse">
+    <div className="rounded-md border p-3 sm:p-4">
       {/* Mobile layout */}
       <div className="flex flex-col gap-3 sm:hidden">
         {/* Header with apartment number and status */}
         <div className="flex justify-between items-start">
           <div>
-            <div className="h-5 bg-gray-200 rounded w-24 mb-1"></div>
-            <div className="h-3 bg-gray-200 rounded w-20"></div>
+            <Skeleton className="mb-1 h-5 w-24" />
+            <Skeleton className="h-3 w-20" />
           </div>
-          <div className="h-6 bg-gray-200 rounded w-20"></div>
+          <Skeleton className="h-6 w-20" />
         </div>
 
         {/* Booking details */}
         <div className="grid grid-cols-2 gap-2">
           <div className="flex items-center gap-1">
-            <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-            <div className="h-4 bg-gray-200 rounded w-16"></div>
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-16" />
           </div>
           <div className="flex items-center gap-1">
-            <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-            <div className="h-4 bg-gray-200 rounded w-4"></div>
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-4" />
           </div>
-          <div className="flex items-center gap-1 col-span-2">
-            <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-            <div className="h-4 bg-gray-200 rounded w-32"></div>
+          <div className="col-span-2 flex items-center gap-1">
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </div>
 
         {/* Services */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="h-4 bg-gray-200 rounded w-16"></div>
-          <div className="flex gap-1 flex-wrap">
-            <div className="h-6 bg-gray-200 rounded w-16"></div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Skeleton className="h-4 w-16" />
+          <div className="flex flex-wrap gap-1">
+            <Skeleton className="h-6 w-16" />
           </div>
         </div>
 
         {/* Mobile Action buttons */}
-        <div className="flex gap-2 justify-end mt-1 pt-3 border-t">
-          <div className="h-8 bg-gray-200 rounded flex-1"></div>
-          <div className="h-8 bg-gray-200 rounded flex-1"></div>
-          <div className="h-8 bg-gray-200 rounded flex-1"></div>
+        <div className="mt-1 flex justify-end gap-2 border-t pt-3">
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 flex-1" />
         </div>
       </div>
 
       {/* Desktop layout */}
-      <div className="hidden sm:flex sm:flex-row gap-3 sm:items-center justify-between">
-        <div className="flex-1 flex flex-col sm:flex-row gap-3 sm:gap-8">
+      <div className="hidden justify-between gap-3 sm:flex sm:flex-row sm:items-center">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:gap-8">
           {/* Apartment and status */}
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <div className="h-5 bg-gray-200 rounded w-24"></div>
-              <div className="h-6 bg-gray-200 rounded w-20"></div>
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-6 w-20" />
             </div>
-            <div className="h-3 bg-gray-200 rounded w-32 mt-1"></div>
+            <Skeleton className="mt-1 h-3 w-32" />
           </div>
 
           {/* People and tables */}
           <div className="flex flex-row gap-6">
             <div className="flex items-center gap-1">
-              <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-8"></div>
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-4 w-8" />
             </div>
             <div className="flex items-center gap-1">
-              <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-32"></div>
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-4 w-32" />
             </div>
           </div>
 
           {/* Services */}
           <div className="flex items-center gap-2">
-            <div className="h-4 bg-gray-200 rounded w-16"></div>
+            <Skeleton className="h-4 w-16" />
             <div className="flex gap-1">
-              <div className="h-6 bg-gray-200 rounded w-16"></div>
+              <Skeleton className="h-6 w-16" />
             </div>
           </div>
         </div>
 
         {/* Desktop Action buttons */}
-        <div className="flex gap-2 justify-end">
-          <div className="h-7 bg-gray-200 rounded w-24"></div>
-          <div className="h-7 bg-gray-200 rounded w-20"></div>
-          <div className="h-7 bg-gray-200 rounded w-24"></div>
+        <div className="flex justify-end gap-2">
+          <Skeleton className="h-7 w-24" />
+          <Skeleton className="h-7 w-20" />
+          <Skeleton className="h-7 w-24" />
         </div>
       </div>
     </div>
@@ -157,12 +150,12 @@ export function BookingListItemSkeleton() {
 export function BookingsDateSkeleton() {
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-48"></div>
-        <div className="h-6 bg-gray-200 rounded w-20"></div>
+      <div className="mb-3 flex justify-between items-center rounded bg-muted p-2">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-6 w-20" />
       </div>
-      
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
         <BookingCardSkeleton />
         <BookingCardSkeleton />
         <BookingCardSkeleton />
@@ -175,11 +168,11 @@ export function BookingsDateSkeleton() {
 export function BookingsListSkeleton() {
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center mb-3 bg-gray-100 p-2 rounded animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-48"></div>
-        <div className="h-6 bg-gray-200 rounded w-20"></div>
+      <div className="mb-3 flex justify-between items-center rounded bg-muted p-2">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-6 w-20" />
       </div>
-      
+
       <div className="flex flex-col gap-3">
         <BookingListItemSkeleton />
         <BookingListItemSkeleton />
