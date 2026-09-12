@@ -28,9 +28,10 @@ interface SendEmailParams {
  */
 export async function sendEmail({ to, subject, html, text }: SendEmailParams): Promise<boolean> {
   try {
+    const recipient = process.env.EMAIL_REDIRECT_TO || to;
     const info = await transporter.sendMail({
       from: `"Sociedad Roncesvalles" <${process.env.EMAIL_USER}>`,
-      to,
+      to: recipient,
       subject,
       text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
       html,
