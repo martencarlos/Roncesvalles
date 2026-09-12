@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import {
   BookingsDateSkeleton,
   BookingsListSkeleton,
@@ -20,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import {
   Download,
   PlusCircle,
-  History,
   CalendarIcon,
   LayoutGrid,
   List,
@@ -748,12 +746,6 @@ export default function BookingsPage() {
                   Nueva Reserva
                 </Button>
               )}
-              <Button asChild variant="outline" size="sm">
-                <Link href="/activity">
-                  <History className="h-4 w-4" />
-                  Actividad
-                </Link>
-              </Button>
               {canExport && (
                 <Button
                   variant="outline"
