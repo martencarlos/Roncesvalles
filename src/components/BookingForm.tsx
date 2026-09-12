@@ -45,6 +45,60 @@ const LAST_APARTMENT_KEY = "lastSelectedApartment";
 const FIRST_BOOKING_KEY = "hasCreatedFirstBooking";
 const MAX_PEOPLE_PER_TABLE = 8;
 
+const TableTile: React.FC<{
+  number: number;
+  selected: boolean;
+  booked: boolean;
+  onToggle: (n: number) => void;
+}> = ({ number, selected, booked, onToggle }) => {
+  const tableClass = booked
+    ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
+    : selected
+    ? "border-primary bg-primary text-primary-foreground cursor-pointer"
+    : "border-warning/40 bg-warning/20 text-warning-foreground group-hover:bg-warning/30 cursor-pointer group-hover:scale-105";
+
+  const chairClass = booked ? "bg-border" : selected ? "bg-primary" : "bg-warning/50";
+
+  const chairs = (position: "top" | "bottom") => (
+    <span
+      className={`absolute left-1/2 flex -translate-x-1/2 gap-1 ${
+        position === "top" ? "top-0" : "bottom-0"
+      }`}
+    >
+      {[0, 1, 2, 3].map((i) => (
+        <span key={i} className={`h-1.5 w-1.5 rounded-full ${chairClass}`} />
+      ))}
+    </span>
+  );
+
+  return (
+    <button
+      type="button"
+      disabled={booked}
+      aria-pressed={selected}
+      aria-label={`Mesa ${number}`}
+      onClick={() => onToggle(number)}
+      className="group relative flex h-12 w-16 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-16 sm:w-24"
+    >
+      {chairs("top")}
+      <span
+        className={`relative flex h-8 w-14 items-center justify-center rounded-md border-2 text-sm font-bold shadow-sm transition-all duration-200 sm:h-11 sm:w-20 sm:text-base ${tableClass}`}
+      >
+        {number}
+        {booked && (
+          <LockIcon className="absolute right-1 top-1 h-3 w-3 text-muted-foreground" />
+        )}
+        {selected && (
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground ring-2 ring-background">
+            ✓
+          </span>
+        )}
+      </span>
+      {chairs("bottom")}
+    </button>
+  );
+};
+
 const BookingForm: React.FC<BookingFormProps> = ({
   onSubmit,
   initialData,
@@ -456,16 +510,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
   };
 
-  const getTableClasses = (tableNumber: number) => {
-    if (isBooked(tableNumber)) {
-      return "bg-muted text-muted-foreground cursor-not-allowed relative border border-border";
-    }
-    if (isSelected(tableNumber)) {
-      return "bg-primary text-primary-foreground cursor-pointer border-2 border-primary ";
-    }
-    return "bg-warning/20 text-warning-foreground hover:bg-warning/30 cursor-pointer border border-warning/40 hover:scale-105";
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
@@ -557,15 +601,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 <>
                   <div className="mb-3 flex justify-end gap-3 rounded-md bg-muted p-2 text-xs">
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-md border border-warning/50 bg-warning/40 shadow-sm"></div>
+                      <div className="w-4 h-2.5 rounded-[4px] border-2 border-warning/50 bg-warning/40 shadow-sm"></div>
                       <span>Disponible</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-md bg-primary shadow-sm"></div>
+                      <div className="w-4 h-2.5 rounded-[4px] border-2 border-primary bg-primary shadow-sm"></div>
                       <span>Seleccionada</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-md border border-border bg-muted shadow-sm"></div>
+                      <div className="w-4 h-2.5 rounded-[4px] border-2 border-border bg-muted shadow-sm"></div>
                       <span>Reservada</span>
                     </div>
                   </div>
@@ -574,67 +618,36 @@ const BookingForm: React.FC<BookingFormProps> = ({
                     {/* Visual representation of tables layout */}
                     <div className="absolute flex flex-col items-start justify-end h-full left-0 py-2 sm:py-4">
                       {[2, 1].map((num) => (
-                        <div key={num} className="relative m-1 sm:m-2">
-                          <div
-                            className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
-                              num
-                            )}`}
-                            onClick={() => toggleTable(num)}
-                          >
-                            <span className="font-bold">{num}</span>
-                            {isBooked(num) && (
-                              <LockIcon className="absolute right-1 top-1 h-3 w-3 text-muted-foreground" />
-                            )}
-                            {isSelected(num) && (
-                              <div className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
-                                <span className="text-xs text-primary-foreground">✓</span>
-                              </div>
-                            )}
-                          </div>
+                        <div key={num} className="m-1 sm:m-2">
+                          <TableTile
+                            number={num}
+                            selected={isSelected(num)}
+                            booked={isBooked(num)}
+                            onToggle={toggleTable}
+                          />
                         </div>
                       ))}
                     </div>
                     <div className="absolute flex justify-center space-x-2 sm:space-x-4 w-full top-2 sm:top-4">
                       {[3, 4].map((num) => (
-                        <div key={num} className="relative">
-                          <div
-                            className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
-                              num
-                            )}`}
-                            onClick={() => toggleTable(num)}
-                          >
-                            <span className="font-bold">{num}</span>
-                            {isBooked(num) && (
-                              <LockIcon className="absolute right-1 top-1 h-3 w-3 text-muted-foreground" />
-                            )}
-                            {isSelected(num) && (
-                              <div className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
-                                <span className="text-xs text-primary-foreground">✓</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        <TableTile
+                          key={num}
+                          number={num}
+                          selected={isSelected(num)}
+                          booked={isBooked(num)}
+                          onToggle={toggleTable}
+                        />
                       ))}
                     </div>
                     <div className="absolute flex flex-col items-end justify-end h-full right-0 py-2 sm:py-4">
                       {[5, 6].map((num) => (
-                        <div key={num} className="relative m-1 sm:m-2">
-                          <div
-                            className={`w-16 h-12 sm:w-24 sm:h-16 rounded-sm flex items-center justify-center text-sm sm:text-base shadow-md transition-all duration-200 ${getTableClasses(
-                              num
-                            )}`}
-                            onClick={() => toggleTable(num)}
-                          >
-                            <span className="font-bold">{num}</span>
-                            {isBooked(num) && (
-                              <LockIcon className="absolute right-1 top-1 h-3 w-3 text-muted-foreground" />
-                            )}
-                            {isSelected(num) && (
-                              <div className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary">
-                                <span className="text-xs text-primary-foreground">✓</span>
-                              </div>
-                            )}
-                          </div>
+                        <div key={num} className="m-1 sm:m-2">
+                          <TableTile
+                            number={num}
+                            selected={isSelected(num)}
+                            booked={isBooked(num)}
+                            onToggle={toggleTable}
+                          />
                         </div>
                       ))}
                     </div>
