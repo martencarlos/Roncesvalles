@@ -55,27 +55,39 @@ export function SectionHeader({
   description,
   actions,
   className,
+  nowrap,
 }: {
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
+  nowrap?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "mb-4 flex flex-wrap items-center justify-between gap-3",
+        "mb-4 flex items-center justify-between gap-3",
+        nowrap ? "flex-nowrap" : "flex-wrap",
         className
       )}
     >
-      <div className="min-w-0 space-y-0.5">
+      <div className={cn("min-w-0 space-y-0.5", nowrap && "flex-1")}>
         <h2 className="text-base font-semibold">{title}</h2>
         {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p
+            className={cn(
+              "text-sm text-muted-foreground",
+              nowrap && "truncate"
+            )}
+          >
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? (
-        <div className="flex items-center gap-2">{actions}</div>
+        <div className={cn("flex items-center gap-2", nowrap && "shrink-0")}>
+          {actions}
+        </div>
       ) : null}
     </div>
   );

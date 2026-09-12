@@ -725,6 +725,7 @@ export default function BookingsPage() {
 
         <section className="space-y-4">
           <SectionHeader
+            nowrap
             title={
               <span className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4 text-primary" />
