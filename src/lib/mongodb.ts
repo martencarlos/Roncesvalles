@@ -2,6 +2,8 @@
 import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/community-space';
+const MONGODB_DB =
+  process.env.MONGODB_DB || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
 
 // Define our cache interface
 interface MongooseConnection {
@@ -30,6 +32,7 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      dbName: MONGODB_DB,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
