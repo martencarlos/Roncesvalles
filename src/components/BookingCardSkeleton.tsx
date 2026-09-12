@@ -6,49 +6,39 @@ export function BookingCardSkeleton() {
   return (
     <Card className="group overflow-hidden">
       <CardHeader className="pb-2 px-4">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-6 w-28" />
-          <Skeleton className="h-4 w-20" />
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <Skeleton className="h-7 w-28" />
+            <Skeleton className="mt-1 h-3 w-20" />
+          </div>
+          <Skeleton className="h-6 w-16" />
         </div>
       </CardHeader>
       <CardContent className="space-y-2 px-4 pb-2">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="h-5 w-6" />
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <Skeleton className="h-4 w-4 rounded-full" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-          <Skeleton className="h-4 w-4" />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <Skeleton className="h-4 w-4 rounded-full" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-5 w-16" />
         </div>
 
         <div className="mt-1 flex items-center justify-between">
-          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-5 w-16" />
           <Skeleton className="h-6 w-16" />
         </div>
 
         <div className="mt-1 flex items-center justify-between">
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-6 w-20" />
         </div>
       </CardContent>
 
-      <CardFooter className="flex justify-end gap-2 px-4 pt-2">
-        <div className="flex w-full gap-2">
-          <Skeleton className="h-8 flex-1" />
-          <Skeleton className="h-8 flex-1" />
-        </div>
+      <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-2">
+        <Skeleton className="h-7 w-20" />
+        <Skeleton className="h-7 w-24" />
       </CardFooter>
     </Card>
   );
@@ -145,37 +135,54 @@ export function BookingListItemSkeleton() {
   );
 }
 
-// src/components/BookingsDateSkeleton.tsx
-export function BookingsDateSkeleton() {
-  return (
-    <div className="space-y-3">
-      <div className="mb-3 flex justify-between items-center rounded bg-muted p-2">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-6 w-20" />
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
-        <BookingCardSkeleton />
-        <BookingCardSkeleton />
-        <BookingCardSkeleton />
-      </div>
-    </div>
+// Mirrors the /bookings list layout so loading does not shift the page:
+// mobile always shows list items, desktop shows cards or rows per viewMode.
+export function BookingsSkeleton({
+  viewMode,
+  showHeader,
+  cardGrid,
+}: {
+  viewMode: "card" | "list";
+  showHeader?: boolean;
+  cardGrid?: boolean;
+}) {
+  const rows = (
+    <>
+      <BookingListItemSkeleton />
+      <BookingListItemSkeleton />
+      <BookingListItemSkeleton />
+    </>
   );
-}
 
-// src/components/BookingsListSkeleton.tsx
-export function BookingsListSkeleton() {
   return (
     <div className="space-y-3">
-      <div className="mb-3 flex justify-between items-center rounded bg-muted p-2">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-6 w-20" />
-      </div>
+      {showHeader ? (
+        <div className="mb-3 flex justify-between items-center rounded bg-muted p-2">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-6 w-20" />
+        </div>
+      ) : null}
 
-      <div className="flex flex-col gap-3">
-        <BookingListItemSkeleton />
-        <BookingListItemSkeleton />
-        <BookingListItemSkeleton />
+      {/* Mobile: always list items */}
+      <div className="flex flex-col gap-3 sm:hidden">{rows}</div>
+
+      {/* Desktop: cards or list, matching the page */}
+      <div className="hidden sm:block">
+        {viewMode === "card" ? (
+          <div
+            className={
+              cardGrid
+                ? "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                : "flex flex-col gap-3"
+            }
+          >
+            <BookingCardSkeleton />
+            <BookingCardSkeleton />
+            <BookingCardSkeleton />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">{rows}</div>
+        )}
       </div>
     </div>
   );

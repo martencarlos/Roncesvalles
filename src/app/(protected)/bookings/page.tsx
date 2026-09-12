@@ -1,11 +1,8 @@
 // src/app/(protected)/bookings/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  BookingsDateSkeleton,
-  BookingsListSkeleton,
-} from "@/components/BookingCardSkeleton";
+import { useState, useEffect, useMemo } from "react";
+import { BookingsSkeleton } from "@/components/BookingCardSkeleton";
 import {
   format,
   isToday,
@@ -67,10 +64,23 @@ const ALL_TABLES = [1, 2, 3, 4, 5, 6];
 // Create a skeleton for the available tables
 const TablesSkeleton = () => {
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-      {ALL_TABLES.map((i) => (
-        <Skeleton key={i} className="h-[68px] rounded-lg" />
-      ))}
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {ALL_TABLES.map((i) => (
+          <div
+            key={i}
+            className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-card p-3 text-center"
+          >
+            <Skeleton className="h-3.5 w-3.5 rounded-full" />
+            <Skeleton className="h-5 w-14" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-4">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-20" />
+      </div>
     </div>
   );
 };
@@ -81,14 +91,13 @@ type DateFilter =
   | "future"
   | "past"
   | "specific";
-type ViewMode = "card" | "list" | undefined;
+type ViewMode = "card" | "list";
 
 export default function BookingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [bookings, setBookings] = useState<IBooking[]>([]);
-  const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingBooking, setEditingBooking] = useState<IBooking | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -119,10 +128,14 @@ export default function BookingsPage() {
 
   // Blocks list for admin/conserje list view
   const [blocks, setBlocks] = useState<IBlockedDate[]>([]);
-  const [filteredBlocks, setFilteredBlocks] = useState<IBlockedDate[]>([]);
 
-  // Add view mode state
-  const [viewMode, setViewMode] = useState<ViewMode>(undefined);
+  // Add view mode state (lazy read so the first paint already matches the
+  // saved preference, avoiding a skeleton swap and re-render on mount)
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "card";
+    const saved = window.localStorage.getItem("bookingViewMode");
+    return saved === "list" || saved === "card" ? saved : "card";
+  });
 
   // Add state for bookings by date and meal type (including block indicators)
   const [bookingsByDate, setBookingsByDate] = useState<BookingCalendarInfo>({});
@@ -161,7 +174,6 @@ export default function BookingsPage() {
       );
 
       setBookings(sortedData);
-      applyFilters(sortedData, dateFilter, selectedDate);
 
       // Fetch all bookings and blocked dates for calendar indicators in parallel
       const [calendarRes, blocksCalRes] = await Promise.all([
@@ -176,7 +188,6 @@ export default function BookingsPage() {
       if (blocksCalRes.ok) {
         allBlocks = await blocksCalRes.json();
         setBlocks(allBlocks);
-        applyBlockFilters(allBlocks, dateFilter, selectedDate);
       }
 
       setBookingsByDate(buildBookingCalendarInfo(allBookings, allBlocks));
@@ -257,18 +268,6 @@ export default function BookingsPage() {
   };
 
   useEffect(() => {
-    // Check if we're in the browser environment (not during SSR)
-    if (typeof window !== "undefined") {
-      const savedViewMode = localStorage.getItem("bookingViewMode");
-      if (savedViewMode === "list" || savedViewMode === "card") {
-        setViewMode(savedViewMode as ViewMode);
-      } else {
-        setViewMode("card");
-      }
-    }
-  }, []);
-
-  useEffect(() => {
     if (status === "authenticated") {
       if (session?.user?.role === "user") {
         setDateFilter("future");
@@ -277,114 +276,75 @@ export default function BookingsPage() {
     }
   }, [status]);
 
-  // Apply filters to bookings
-  const applyFilters = (
-    allBookings: IBooking[],
-    filter: DateFilter,
-    date: Date
-  ) => {
-    let filtered: IBooking[] = [];
+  // Derived (computed during render) instead of stored in state to avoid the
+  // extra render each fetch used to trigger.
+  const filteredBookings = useMemo(() => {
+    // For regular users, only show their own apartment's bookings.
+    // Admins and Conserjes can see all bookings.
+    const userBookings =
+      session?.user.role === "user"
+        ? bookings.filter(
+            (booking) =>
+              booking.apartmentNumber === session.user.apartmentNumber
+          )
+        : bookings;
 
-    // For regular users, only show their own apartment's bookings
-    // Admins and Conserjes can see all bookings
-    let userBookings = allBookings;
-    if (session?.user.role === "user") {
-      userBookings = allBookings.filter(
-        (booking) => booking.apartmentNumber === session.user.apartmentNumber
-      );
-    }
-
-    switch (filter) {
+    switch (dateFilter) {
       case "today":
-        filtered = userBookings.filter((booking) =>
+        return userBookings.filter((booking) =>
           isToday(new Date(booking.date))
         );
-        break;
       case "future":
-        filtered = userBookings.filter(
+        return userBookings.filter(
           (booking) =>
             isFuture(new Date(booking.date)) || isToday(new Date(booking.date))
         );
-        break;
       case "past":
-        filtered = userBookings.filter(
+        return userBookings.filter(
           (booking) =>
             isPast(new Date(booking.date)) && !isToday(new Date(booking.date))
         );
-        break;
-      case "specific":
-        const selectedDateStart = startOfDay(date);
-        const selectedDateEnd = endOfDay(date);
-
-        filtered = userBookings.filter((booking) => {
-          const bookingDate = new Date(booking.date);
-          return (
-            bookingDate >= selectedDateStart && bookingDate <= selectedDateEnd
-          );
-        });
-        break;
-      case "all":
-      default:
-        filtered = userBookings;
-        break;
-    }
-
-    setFilteredBookings(filtered);
-  };
-
-  // Apply date filters to blocks (for admin/conserje list view)
-  const applyBlockFilters = (
-    allBlocks: IBlockedDate[],
-    filter: DateFilter,
-    date: Date
-  ) => {
-    let filtered: IBlockedDate[] = [];
-
-    switch (filter) {
-      case "today":
-        filtered = allBlocks.filter((block) => isToday(new Date(block.date)));
-        break;
-      case "future":
-        filtered = allBlocks.filter(
-          (block) =>
-            isFuture(new Date(block.date)) || isToday(new Date(block.date))
-        );
-        break;
-      case "past":
-        filtered = allBlocks.filter(
-          (block) =>
-            isPast(new Date(block.date)) && !isToday(new Date(block.date))
-        );
-        break;
       case "specific": {
-        const selectedDateStart = startOfDay(date);
-        const selectedDateEnd = endOfDay(date);
-        filtered = allBlocks.filter((block) => {
-          const blockDate = new Date(block.date);
-          return blockDate >= selectedDateStart && blockDate <= selectedDateEnd;
+        const start = startOfDay(selectedDate);
+        const end = endOfDay(selectedDate);
+        return userBookings.filter((booking) => {
+          const bookingDate = new Date(booking.date);
+          return bookingDate >= start && bookingDate <= end;
         });
-        break;
       }
       case "all":
       default:
-        filtered = allBlocks;
-        break;
+        return userBookings;
     }
+  }, [bookings, dateFilter, selectedDate, session]);
 
-    setFilteredBlocks(filtered);
-  };
-
-  // Update filters when date filter or selected date changes
-  useEffect(() => {
-    applyFilters(bookings, dateFilter, selectedDate);
-    applyBlockFilters(blocks, dateFilter, selectedDate);
-    setCurrentPage(1);
-  }, [dateFilter, selectedDate, bookings, blocks]);
-
-  // When you need to check for booked tables and update the available tables:
-  useEffect(() => {
-    updateAvailableTables(selectedDate);
-  }, [selectedDate]); // This will run whenever the selected date changes
+  const filteredBlocks = useMemo(() => {
+    switch (dateFilter) {
+      case "today":
+        return blocks.filter((block) => isToday(new Date(block.date)));
+      case "future":
+        return blocks.filter(
+          (block) =>
+            isFuture(new Date(block.date)) || isToday(new Date(block.date))
+        );
+      case "past":
+        return blocks.filter(
+          (block) =>
+            isPast(new Date(block.date)) && !isToday(new Date(block.date))
+        );
+      case "specific": {
+        const start = startOfDay(selectedDate);
+        const end = endOfDay(selectedDate);
+        return blocks.filter((block) => {
+          const blockDate = new Date(block.date);
+          return blockDate >= start && blockDate <= end;
+        });
+      }
+      case "all":
+      default:
+        return blocks;
+    }
+  }, [blocks, dateFilter, selectedDate]);
 
   const handleCreateBooking = async (data: Partial<IBooking>) => {
     // Prevent admin (read-only) from creating bookings
@@ -559,10 +519,13 @@ export default function BookingsPage() {
 
   const handleDateFilterChange = (filter: DateFilter) => {
     setDateFilter(filter);
+    setCurrentPage(1);
 
     // If switching to 'specific' and not already on a specific date, set today
     if (filter === "specific") {
-      setSelectedDate(new Date());
+      const today = new Date();
+      setSelectedDate(today);
+      updateAvailableTables(today);
     }
   };
 
@@ -801,6 +764,8 @@ export default function BookingsPage() {
                   if (date) {
                     setSelectedDate(date);
                     setDateFilter("specific");
+                    setCurrentPage(1);
+                    updateAvailableTables(date);
                   }
                 }}
                 dateFormat="d MMMM, yyyy"
@@ -1018,11 +983,11 @@ export default function BookingsPage() {
 
           {/* Bookings display - Card or List view */}
           {loading ? (
-            viewMode === "list" ? (
-              <BookingsListSkeleton />
-            ) : (
-              <BookingsDateSkeleton />
-            )
+            <BookingsSkeleton
+              viewMode={viewMode}
+              showHeader={!isAdminOrConserje && !isRegularUser}
+              cardGrid={!isAdminOrConserje}
+            />
           ) : isAdminOrConserje ? (
             /* Admin / Conserje: merged list of bookings + blocks */
             hasResults ? (
