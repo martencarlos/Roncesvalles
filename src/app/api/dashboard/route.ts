@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 // src/app/api/dashboard/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Booking from "@/models/Booking";
@@ -10,7 +10,7 @@ import { subMonths, startOfMonth, endOfMonth } from "date-fns";
 import ActivityLog from "@/models/ActivityLog";
 import { PasswordReset } from "@/models/PasswordReset";
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     // Authenticate the request
     const user = await authenticate(["it_admin"]);

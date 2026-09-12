@@ -1,11 +1,11 @@
 export const dynamic = 'force-dynamic';
 // src/app/api/users/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import { authenticate } from "@/lib/auth-utils";
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     // Authenticate and check if admin or IT admin
     const user = await authenticate(["admin", "it_admin"]);

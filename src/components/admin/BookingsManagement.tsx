@@ -1,7 +1,7 @@
 // src/components/admin/BookingsManagement.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   PlusCircle,
   Calendar,
+  ChevronDown,
   X,
   Edit,
   Trash2,
@@ -57,9 +58,7 @@ export default function BookingsManagement({
   const canManageInternalNotes = isITAdmin || isConserje;
 
   const [bookings, setBookings] = useState<IBooking[]>([]);
-  const [filteredBookings, setFilteredBookings] = useState<IBooking[]>([]);
   const [blocks, setBlocks] = useState<IBlockedDate[]>([]);
-  const [filteredBlocks, setFilteredBlocks] = useState<IBlockedDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -97,22 +96,13 @@ export default function BookingsManagement({
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         setBookings(sortedData);
-        applyFilters(
-          sortedData,
-          searchQuery,
-          dateFilter,
-          statusFilter,
-          selectedDate,
-          mealTypeFilter
-        );
 
         if (blocksRes.ok) {
           const blocksData: IBlockedDate[] = await blocksRes.json();
           setBlocks(blocksData);
-          applyBlockFilters(blocksData, dateFilter, statusFilter, selectedDate, mealTypeFilter);
         }
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setLoading(false);
       }
@@ -121,109 +111,83 @@ export default function BookingsManagement({
   }, []);
 
   // Filter Logic
-  const applyFilters = (
-    list: IBooking[],
-    query: string,
-    date: string,
-    status: string,
-    specificDate: Date | null,
-    meal: string
-  ) => {
-    let filtered = [...list];
-    if (query) {
-      const apt = parseInt(query);
+  const filteredBookings = useMemo(() => {
+    let filtered = [...bookings];
+    if (searchQuery) {
+      const apt = parseInt(searchQuery);
       if (!isNaN(apt))
         filtered = filtered.filter((b) => b.apartmentNumber === apt);
     }
-    if (date === "today")
+    if (dateFilter === "today")
       filtered = filtered.filter((b) => isToday(new Date(b.date)));
-    else if (date === "future")
+    else if (dateFilter === "future")
       filtered = filtered.filter(
         (b) => isToday(new Date(b.date)) || new Date(b.date) > new Date()
       );
-    else if (date === "past")
+    else if (dateFilter === "past")
       filtered = filtered.filter(
         (b) => !isToday(new Date(b.date)) && new Date(b.date) < new Date()
       );
-    else if (date === "specific" && specificDate) {
+    else if (dateFilter === "specific" && selectedDate) {
       filtered = filtered.filter((b) => {
         const d = new Date(b.date);
         return (
-          d.getDate() === specificDate.getDate() &&
-          d.getMonth() === specificDate.getMonth() &&
-          d.getFullYear() === specificDate.getFullYear()
+          d.getDate() === selectedDate.getDate() &&
+          d.getMonth() === selectedDate.getMonth() &&
+          d.getFullYear() === selectedDate.getFullYear()
         );
       });
     }
-    if (status !== "all")
-      filtered = filtered.filter((b) => b.status === status);
-    if (meal !== "all") filtered = filtered.filter((b) => b.mealType === meal);
-    setFilteredBookings(filtered);
-  };
-
-  // Filter logic for blocks — blocks don't have status or apartment search,
-  // but they do respect date and mealType filters
-  const applyBlockFilters = (
-    list: IBlockedDate[],
-    date: string,
-    status: string,
-    specificDate: Date | null,
-    meal: string
-  ) => {
-    // Blocks are never "completed" or "cancelled" — hide them when status filter is set
-    if (status !== "all") {
-      setFilteredBlocks([]);
-      return;
-    }
-    let filtered = [...list];
-    if (date === "today")
-      filtered = filtered.filter((b) => isToday(new Date(b.date)));
-    else if (date === "future")
-      filtered = filtered.filter(
-        (b) => isToday(new Date(b.date)) || new Date(b.date) > new Date()
-      );
-    else if (date === "past")
-      filtered = filtered.filter(
-        (b) => !isToday(new Date(b.date)) && new Date(b.date) < new Date()
-      );
-    else if (date === "specific" && specificDate) {
-      filtered = filtered.filter((b) => {
-        const d = new Date(b.date);
-        return (
-          d.getDate() === specificDate.getDate() &&
-          d.getMonth() === specificDate.getMonth() &&
-          d.getFullYear() === specificDate.getFullYear()
-        );
-      });
-    }
-    // mealType filter: block "both" matches any meal filter
-    if (meal !== "all") {
-      filtered = filtered.filter(
-        (b) => b.mealType === meal || b.mealType === "both"
-      );
-    }
-    setFilteredBlocks(filtered);
-  };
-
-  useEffect(() => {
-    applyFilters(
-      bookings,
-      searchQuery,
-      dateFilter,
-      statusFilter,
-      selectedDate,
-      mealTypeFilter
-    );
-    applyBlockFilters(blocks, dateFilter, statusFilter, selectedDate, mealTypeFilter);
+    if (statusFilter !== "all")
+      filtered = filtered.filter((b) => b.status === statusFilter);
+    if (mealTypeFilter !== "all")
+      filtered = filtered.filter((b) => b.mealType === mealTypeFilter);
+    return filtered;
   }, [
     bookings,
-    blocks,
     searchQuery,
     dateFilter,
     statusFilter,
     selectedDate,
     mealTypeFilter,
   ]);
+
+  // Filter logic for blocks — blocks don't have status or apartment search,
+  // but they do respect date and mealType filters
+  const filteredBlocks = useMemo(() => {
+    // Blocks are never "completed" or "cancelled" — hide them when status filter is set
+    if (statusFilter !== "all") {
+      return [];
+    }
+    let filtered = [...blocks];
+    if (dateFilter === "today")
+      filtered = filtered.filter((b) => isToday(new Date(b.date)));
+    else if (dateFilter === "future")
+      filtered = filtered.filter(
+        (b) => isToday(new Date(b.date)) || new Date(b.date) > new Date()
+      );
+    else if (dateFilter === "past")
+      filtered = filtered.filter(
+        (b) => !isToday(new Date(b.date)) && new Date(b.date) < new Date()
+      );
+    else if (dateFilter === "specific" && selectedDate) {
+      filtered = filtered.filter((b) => {
+        const d = new Date(b.date);
+        return (
+          d.getDate() === selectedDate.getDate() &&
+          d.getMonth() === selectedDate.getMonth() &&
+          d.getFullYear() === selectedDate.getFullYear()
+        );
+      });
+    }
+    // mealType filter: block "both" matches any meal filter
+    if (mealTypeFilter !== "all") {
+      filtered = filtered.filter(
+        (b) => b.mealType === mealTypeFilter || b.mealType === "both"
+      );
+    }
+    return filtered;
+  }, [blocks, dateFilter, statusFilter, selectedDate, mealTypeFilter]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -255,8 +219,8 @@ export default function BookingsManagement({
           data.apartmentNumber
         } ha reservado las mesas ${data.tables?.join(", ")}`,
       });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
       throw err;
     }
   };
@@ -281,8 +245,8 @@ export default function BookingsManagement({
       );
       setEditingBooking(null);
       toast.success("Reserva Actualizada");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
       throw err;
     }
   };
@@ -302,9 +266,10 @@ export default function BookingsManagement({
       if (!res.ok) throw new Error("Error al eliminar la reserva");
       setBookings((prev) => prev.filter((b) => b._id !== deletingBooking._id));
       toast.error("Reserva Eliminada");
-    } catch (err: any) {
-      setError(err.message);
-      toast.error(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
       setShowDeleteDialog(false);
@@ -367,16 +332,27 @@ export default function BookingsManagement({
           />
 
           {dateFilter === "specific" && (
-            <div className="relative">
+            <div className="relative w-full sm:w-40">
+              <div className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+              </div>
               <DatePicker
                 selected={selectedDate}
                 onChange={(date: Date | null) => date && setSelectedDate(date)}
                 dateFormat="dd/MM/yyyy"
                 locale="es"
                 placeholderText="Fecha"
-                className="w-full sm:w-36 p-2 border rounded-md"
-                customInput={<Input className="w-full sm:w-36" readOnly />}
+                wrapperClassName="w-full"
+                customInput={
+                  <Input
+                    className="w-full cursor-pointer pl-10 pr-10 text-center"
+                    readOnly
+                  />
+                }
               />
+              <div className="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground">
+                <ChevronDown className="h-4 w-4" />
+              </div>
             </div>
           )}
 

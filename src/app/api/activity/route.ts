@@ -1,8 +1,9 @@
 export const dynamic = 'force-dynamic';
 // src/app/api/activity/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import type { QueryFilter } from 'mongoose';
 import connectDB from '@/lib/mongodb';
-import ActivityLog from '@/models/ActivityLog';
+import ActivityLog, { type IActivityLog } from '@/models/ActivityLog';
 import { authenticate } from '@/lib/auth-utils';
 
 export async function GET(req: NextRequest) {
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
     const skip = (validPage - 1) * validLimit;
     
     // Build query based on filters
-    const query: any = {};
+    const query: QueryFilter<IActivityLog> = {};
     
     // If it's a regular user, only show their own apartment's logs
     if (currentUser.role === 'user') {
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
         query.action = { $in: ['user_create', 'user_update', 'user_delete'] };
       } else if (['create', 'update', 'delete', 'confirm', 'user_create', 'user_update', 'user_delete'].includes(actionType)) {
         // Show a specific action type
-        query.action = actionType;
+        query.action = actionType as IActivityLog["action"];
       }
     }
     

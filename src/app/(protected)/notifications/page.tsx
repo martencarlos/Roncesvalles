@@ -32,8 +32,8 @@ export default function NotificationsPage() {
         const data = await res.json();
         setNotifications(data.notifications);
         setTotalPages(data.totalPages);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setLoading(false);
       }

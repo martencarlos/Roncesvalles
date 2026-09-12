@@ -119,8 +119,8 @@ interface Feedback {
           setFeedbacks(data.feedback);
           setTotalPages(data.totalPages);
           setTotalCount(data.totalCount);
-        } catch (err: any) {
-          setError(err.message);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : String(err));
           console.error(err);
         } finally {
           setLoading(false);
@@ -224,9 +224,9 @@ interface Feedback {
             newStatus === "in-progress" ? "En progreso" : "Resuelto"
           }"`,
         });
-      } catch (err: any) {
+      } catch (err) {
         toast.error("Error", {
-          description: err.message,
+          description: err instanceof Error ? err.message : String(err),
         });
       } finally {
         setIsSubmitting(false);
@@ -256,14 +256,12 @@ interface Feedback {
         toast.success("Feedback eliminado", {
           description: "El feedback ha sido eliminado correctamente",
         });
-      } catch (err: any) {
+      } catch (err) {
         toast.error("Error", {
-          description: err.message,
+          description: err instanceof Error ? err.message : String(err),
         });
       } finally {
         setIsSubmitting(false);
-        setIsDeleteDialogOpen(false);
-        setDeletingFeedback(null);
       }
     };
     

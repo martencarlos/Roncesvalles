@@ -1,7 +1,7 @@
 // src/components/admin/UserManagement.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -73,7 +73,6 @@ const ROLE_TONES: Record<string, "neutral" | "info" | "warning" | "success"> = {
 
 export default function UserManagement({ isITAdmin }: UserManagementProps) {
   const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -125,9 +124,8 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
 
         const data = await res.json();
         setUsers(data);
-        applyFilters(data, searchQuery, roleFilter);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
         console.error(err);
       } finally {
         setLoading(false);
@@ -138,12 +136,12 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
   }, []);
 
   // Apply filters
-  const applyFilters = (usersList: User[], query: string, role: string) => {
-    let filtered = [...usersList];
+  const filteredUsers = useMemo(() => {
+    let filtered = [...users];
 
     // Filter by search query
-    if (query) {
-      const lowerQuery = query.toLowerCase();
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (user) =>
           user.name.toLowerCase().includes(lowerQuery) ||
@@ -153,16 +151,11 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
     }
 
     // Filter by role
-    if (role !== "all") {
-      filtered = filtered.filter((user) => user.role === role);
+    if (roleFilter !== "all") {
+      filtered = filtered.filter((user) => user.role === roleFilter);
     }
 
-    setFilteredUsers(filtered);
-  };
-
-  // Handle search and filter
-  useEffect(() => {
-    applyFilters(users, searchQuery, roleFilter);
+    return filtered;
   }, [users, searchQuery, roleFilter]);
 
   // Reset filter
@@ -231,8 +224,8 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
       setIsAddUserOpen(false);
 
       toast.success("Usuario creado correctamente");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -268,7 +261,7 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
     setIsSubmitting(true);
 
     try {
-      const userData: any = {
+      const userData: { name: string; role?: string; password?: string } = {
         name: editForm.name,
       };
 
@@ -306,8 +299,8 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
       setEditingUser(null);
 
       toast.success("Usuario actualizado correctamente");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -343,8 +336,8 @@ export default function UserManagement({ isITAdmin }: UserManagementProps) {
       setUserToDelete(null);
 
       toast.success("Usuario eliminado correctamente");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }

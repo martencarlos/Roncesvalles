@@ -27,6 +27,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarIcon,
+  ChevronDown,
   PlusCircle,
   Trash2,
   ShieldAlert,
@@ -54,6 +55,15 @@ const MEAL_TONES: Record<BlockedMealType, "warning" | "info" | "neutral"> = {
   both: "neutral",
 };
 
+async function loadBlockedDates(): Promise<IBlockedDate[]> {
+  const res = await fetch("/api/blocked-dates");
+  if (!res.ok) throw new Error("Error al obtener los bloqueos");
+  const data: IBlockedDate[] = await res.json();
+  return [...data].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+}
+
 export default function BlockedDatesManagement() {
   const [blocks, setBlocks] = useState<IBlockedDate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,25 +84,30 @@ export default function BlockedDatesManagement() {
   const [deletingBlock, setDeletingBlock] = useState<IBlockedDate | null>(null);
 
   const fetchBlocks = async () => {
-    setLoading(true);
-    setError("");
     try {
-      const res = await fetch("/api/blocked-dates");
-      if (!res.ok) throw new Error("Error al obtener los bloqueos");
-      const data: IBlockedDate[] = await res.json();
-      const sorted = [...data].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      const sorted = await loadBlockedDates();
+      setError("");
       setBlocks(sorted);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBlocks();
+    const load = async () => {
+      try {
+        const sorted = await loadBlockedDates();
+        setError("");
+        setBlocks(sorted);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const resetCreateForm = () => {
@@ -129,8 +144,8 @@ export default function BlockedDatesManagement() {
       toast.success("Bloqueo creado", {
         description: `Se ha bloqueado ${mealLabel.toLowerCase()} el ${format(newDate, "d MMM, yyyy", { locale: es })}.`,
       });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -153,8 +168,8 @@ export default function BlockedDatesManagement() {
       toast.success("Bloqueo eliminado", {
         description: "El bloqueo ha sido eliminado correctamente.",
       });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
       setShowDeleteDialog(false);
@@ -268,18 +283,30 @@ export default function BlockedDatesManagement() {
           <div className="space-y-4 py-2">
             {/* Date picker */}
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                Fecha
-              </Label>
-              <DatePicker
-                selected={newDate}
-                onChange={(date: Date | null) => date && setNewDate(date)}
-                dateFormat="d MMMM, yyyy"
-                locale="es"
-                className="w-full rounded-md border border-input bg-card p-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
-                wrapperClassName="w-full"
-              />
+              <Label>Fecha</Label>
+              <div className="custom-datepicker-container">
+                <div className="relative flex items-center">
+                  <div className="pointer-events-none absolute left-3 z-10 text-muted-foreground">
+                    <CalendarIcon className="h-4 w-4" />
+                  </div>
+                  <DatePicker
+                    selected={newDate}
+                    onChange={(date: Date | null) => date && setNewDate(date)}
+                    dateFormat="d MMMM, yyyy"
+                    locale="es"
+                    wrapperClassName="w-full"
+                    customInput={
+                      <input
+                        className="w-full cursor-pointer rounded-md border border-input bg-card py-2 pl-10 pr-10 text-center text-sm text-foreground outline-none transition-colors hover:border-ring focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                        readOnly
+                      />
+                    }
+                  />
+                  <div className="pointer-events-none absolute right-3 z-10 text-muted-foreground">
+                    <ChevronDown className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Meal type */}

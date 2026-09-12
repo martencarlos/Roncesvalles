@@ -1,7 +1,7 @@
 // src/components/BookingNoteDialog.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { IBooking } from "@/models/Booking";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,19 +29,38 @@ export default function BookingNoteDialog({
   onOpenChange: (open: boolean) => void;
   onSaved?: (booking: IBooking) => void | Promise<void>;
 }) {
-  const [internalNoteText, setInternalNoteText] = useState("");
-  const [cleaningHoursText, setCleaningHoursText] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* Remount when the dialog opens or the target booking changes so the
+          fields initialize from that booking. */}
+      <BookingNoteForm
+        key={`${open}:${booking?._id ?? ""}`}
+        booking={booking}
+        onSaved={onSaved}
+        onClose={() => onOpenChange(false)}
+      />
+    </Dialog>
+  );
+}
 
-  useEffect(() => {
-    if (!open) return;
-    setInternalNoteText(booking?.internalNotes || "");
-    setCleaningHoursText(
-      typeof booking?.cleaningHours === "number"
-        ? String(booking.cleaningHours)
-        : ""
-    );
-  }, [open, booking]);
+function BookingNoteForm({
+  booking,
+  onSaved,
+  onClose,
+}: {
+  booking: IBooking | null;
+  onSaved?: (booking: IBooking) => void | Promise<void>;
+  onClose: () => void;
+}) {
+  const [internalNoteText, setInternalNoteText] = useState(
+    booking?.internalNotes || ""
+  );
+  const [cleaningHoursText, setCleaningHoursText] = useState(
+    typeof booking?.cleaningHours === "number"
+      ? String(booking.cleaningHours)
+      : ""
+  );
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     if (!booking?._id) return;
@@ -68,68 +87,66 @@ export default function BookingNoteDialog({
       const updatedBooking = await res.json();
       await onSaved?.(updatedBooking);
       toast.success("Nota interna actualizada");
-      onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message);
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <StickyNote className="h-5 w-5 text-warning-foreground" />
-            Notas Internas (Conserjería)
-          </DialogTitle>
-          <DialogDescription>
-            Estas notas solo son visibles para conserjes y administradores IT.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <Textarea
-            value={internalNoteText}
-            onChange={(e) => setInternalNoteText(e.target.value)}
-            placeholder="Escriba aquí anotaciones..."
-            rows={5}
-            className="bg-warning/10 border-warning/30"
-          />
-          {booking?.noCleaningService && (
-            <div className="space-y-2">
-              <Label htmlFor="cleaningHours">Horas de limpieza</Label>
-              <Input
-                id="cleaningHours"
-                type="number"
-                min="0"
-                step="0.25"
-                value={cleaningHoursText}
-                onChange={(e) => setCleaningHoursText(e.target.value)}
-                placeholder="Ej. 2.5"
-              />
-              <p className="text-xs text-muted-foreground">
-                Si hubo acuerdo con el usuario, introduzca aquí las horas
-                trabajadas para que la exportación aplique la tarifa correcta.
-              </p>
-            </div>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <StickyNote className="h-5 w-5 text-warning-foreground" />
+          Notas Internas (Conserjería)
+        </DialogTitle>
+        <DialogDescription>
+          Estas notas solo son visibles para conserjes y administradores IT.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <Textarea
+          value={internalNoteText}
+          onChange={(e) => setInternalNoteText(e.target.value)}
+          placeholder="Escriba aquí anotaciones..."
+          rows={5}
+          className="bg-warning/10 border-warning/30"
+        />
+        {booking?.noCleaningService && (
+          <div className="space-y-2">
+            <Label htmlFor="cleaningHours">Horas de limpieza</Label>
+            <Input
+              id="cleaningHours"
+              type="number"
+              min="0"
+              step="0.25"
+              value={cleaningHoursText}
+              onChange={(e) => setCleaningHoursText(e.target.value)}
+              placeholder="Ej. 2.5"
+            />
+            <p className="text-xs text-muted-foreground">
+              Si hubo acuerdo con el usuario, introduzca aquí las horas
+              trabajadas para que la exportación aplique la tarifa correcta.
+            </p>
+          </div>
+        )}
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            "Guardando..."
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" /> Guardar Nota
+            </>
           )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              "Guardando..."
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" /> Guardar Nota
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 }

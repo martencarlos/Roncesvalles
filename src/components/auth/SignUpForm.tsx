@@ -84,8 +84,8 @@ export default function SignUpForm() {
 
       // Registration successful, redirect to sign in
       router.push("/auth/signin?registered=true");
-    } catch (error: any) {
-      setErrorMessage(error.message);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
       setIsSubmitting(false);
     }

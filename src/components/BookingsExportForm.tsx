@@ -47,8 +47,10 @@ export default function BookingsExportForm({
     try {
       await runBookingsExport({ scope, year, month, format, includeDetails });
       onExportSuccess?.();
-    } catch (err: any) {
-      setError(err.message || "Error al exportar los datos");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error al exportar los datos"
+      );
     } finally {
       setIsLoading(false);
     }

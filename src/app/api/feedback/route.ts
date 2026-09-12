@@ -1,8 +1,9 @@
 export const dynamic = 'force-dynamic';
 // src/app/api/feedback/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import type { QueryFilter } from 'mongoose';
 import connectDB from '@/lib/mongodb';
-import Feedback from '@/models/Feedback';
+import Feedback, { type IFeedback } from '@/models/Feedback';
 import ActivityLog from '@/models/ActivityLog';
 import { authenticate } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email-service';
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
     
-  } catch (error: any) {
+  } catch (error) {
     console.error('POST /api/feedback error:', error);
     return NextResponse.json(
       { error: 'Error al enviar el feedback' },
@@ -106,14 +107,14 @@ export async function GET(req: NextRequest) {
     const skip = (validPage - 1) * validLimit;
     
     // Build query based on filters
-    const query: any = {};
+    const query: QueryFilter<IFeedback> = {};
     
     if (status !== 'all') {
-      query.status = status;
+      query.status = status as IFeedback["status"];
     }
     
     if (type !== 'all') {
-      query.type = type;
+      query.type = type as IFeedback["type"];
     }
     
     // Get total count for pagination based on filters
@@ -134,7 +135,7 @@ export async function GET(req: NextRequest) {
       totalCount
     });
     
-  } catch (error: any) {
+  } catch (error) {
     console.error('GET /api/feedback error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch feedback' },
@@ -144,7 +145,7 @@ export async function GET(req: NextRequest) {
 }
 
 // Function to send email notification about new feedback
-async function sendFeedbackEmail(feedback: any) {
+async function sendFeedbackEmail(feedback: IFeedback) {
   const adminEmail = 'martencarlos@gmail.com';
   const subject = `Nuevo feedback: ${getFeedbackTypeLabel(feedback.type)}`;
   

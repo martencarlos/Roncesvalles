@@ -40,23 +40,35 @@ export default function SystemSummary({ userStats, bookingStats }: SystemSummary
   ];
 
   // Custom label renderer for pie charts
-  const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent }: any) => {
+  const renderCustomizedLabel = ({
+    cx,
+    cy,
+    midAngle,
+    outerRadius,
+    percent,
+  }: {
+    cx?: number;
+    cy?: number;
+    midAngle?: number;
+    outerRadius?: number;
+    percent?: number;
+  }) => {
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius * 0.55;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const radius = (outerRadius ?? 0) * 0.55;
+    const x = (cx ?? 0) + radius * Math.cos(-(midAngle ?? 0) * RADIAN);
+    const y = (cy ?? 0) + radius * Math.sin(-(midAngle ?? 0) * RADIAN);
     
     return (
       <text 
         x={x} 
         y={y} 
         fill="var(--foreground)" 
-        textAnchor={x > cx ? 'start' : 'end'} 
+        textAnchor={x > (cx ?? 0) ? 'start' : 'end'} 
         dominantBaseline="central"
         fontSize="10"
         fontWeight="bold"
       >
-        {`${(percent * 100).toFixed(0)}%`}
+        {`${((percent ?? 0) * 100).toFixed(0)}%`}
       </text>
     );
   };

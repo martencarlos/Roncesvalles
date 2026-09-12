@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic';
 // src/app/api/bookings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import type { QueryFilter } from 'mongoose';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import connectDB from '@/lib/mongodb';
-import Booking from '@/models/Booking';
+import Booking, { type IBooking } from '@/models/Booking';
 import BlockedDate from '@/models/BlockedDate';
 import ActivityLog from '@/models/ActivityLog';
 import User from '@/models/User';
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
     const availabilityCheck = url.searchParams.get('availabilityCheck');
     const forCalendar = url.searchParams.get('forCalendar');
     
-    const query: any = {};
+    const query: QueryFilter<IBooking> = {};
     
     // Robust Date Range Query
     if (dateParam) {
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
     
     // SECURITY FILTER: Hide internalNotes for regular users
     if (currentUser.role === 'user') {
-      const sanitizedBookings = bookings.map((b: any) => {
+      const sanitizedBookings = bookings.map((b) => {
         const bookingObj = b.toObject();
         delete bookingObj.internalNotes; // Remove internal notes
         return bookingObj;
@@ -183,8 +184,8 @@ export async function POST(req: NextRequest) {
     });
     
     // 1. Table Conflict Check
-    const bookedTables = existingBookings.flatMap((booking: any) => booking.tables);
-    const conflictingTables = requestedTables.filter((table: any) => bookedTables.includes(table));
+    const bookedTables = existingBookings.flatMap((booking) => booking.tables);
+    const conflictingTables = requestedTables.filter((table: number) => bookedTables.includes(table));
     
     if (conflictingTables.length > 0) {
       return NextResponse.json(
@@ -199,7 +200,7 @@ export async function POST(req: NextRequest) {
     // 2. Oven Conflict Check (Checking against existing bookings)
     // Note: We'll re-check if oven is allowed based on day-of-week below
     if (body.reservaHorno) {
-      const ovenAlreadyBooked = existingBookings.some((booking: any) => booking.reservaHorno);
+      const ovenAlreadyBooked = existingBookings.some((booking) => booking.reservaHorno);
       if (ovenAlreadyBooked) {
         return NextResponse.json(
           { 
@@ -293,9 +294,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(newBooking, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('POST error:', error);
-    if (error.name === 'ValidationError') {
+    if (error instanceof Error && error.name === 'ValidationError') {
       return NextResponse.json({ error: 'Validación', details: error.message }, { status: 400 });
     }
     return NextResponse.json({ error: 'Error al crear la reserva' }, { status: 500 });

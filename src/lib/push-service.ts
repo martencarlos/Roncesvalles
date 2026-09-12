@@ -49,7 +49,7 @@ export async function sendPushToConserje(payload: PushPayload): Promise<void> {
       return;
     }
 
-    const conserjeIds = conserjes.map((c: any) => c._id.toString());
+    const conserjeIds = conserjes.map((c) => c._id.toString());
 
     // Find all push subscriptions for all conserje users (supports multiple users + multi-device)
     const subscriptions = await PushSubscription.find({
@@ -79,9 +79,10 @@ export async function sendPushToConserje(payload: PushPayload): Promise<void> {
             urgency: 'high',
             TTL: 86400, // 24 hours — gives Android time to wake up and deliver
           });
-        } catch (err: any) {
+        } catch (err) {
+          const statusCode = (err as { statusCode?: number }).statusCode;
           // 410 Gone or 404 Not Found = subscription expired/unsubscribed
-          if (err.statusCode === 410 || err.statusCode === 404) {
+          if (statusCode === 410 || statusCode === 404) {
             console.log(`[push-service] Removing stale subscription: ${sub.endpoint}`);
             await PushSubscription.findByIdAndDelete(sub._id);
           } else {

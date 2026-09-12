@@ -92,7 +92,14 @@ export async function sendPasswordResetEmail(
 /**
  * Send a feedback notification email to the admin
  */
-export async function sendFeedbackEmail(feedback: any): Promise<boolean> {
+export async function sendFeedbackEmail(feedback: {
+  type: string;
+  name: string;
+  email: string;
+  apartmentNumber?: number;
+  createdAt: Date;
+  content: string;
+}): Promise<boolean> {
   const adminEmail = 'martencarlos@gmail.com';
   const subject = `Nuevo feedback: ${getFeedbackTypeLabel(feedback.type)}`;
   

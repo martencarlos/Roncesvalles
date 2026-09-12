@@ -51,9 +51,12 @@ export async function GET(req: NextRequest) {
         year: Number(year),
         month: month ? Number(month) : undefined,
       }));
-    } catch (error: any) {
+    } catch (error) {
       return NextResponse.json(
-        { error: error.message || "Invalid export range" },
+        {
+          error:
+            error instanceof Error ? error.message : "Invalid export range",
+        },
         { status: 400 }
       );
     }

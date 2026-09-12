@@ -67,8 +67,10 @@ export default function ExportDataPanel({ userRole }: ExportDataPanelProps) {
         generateUserPDF(users);
       }
       
-    } catch (err: any) {
-      setUserError(err.message || 'Error al exportar los datos de usuarios');
+    } catch (err) {
+      setUserError(
+        err instanceof Error ? err.message : 'Error al exportar los datos de usuarios'
+      );
     } finally {
       setIsLoadingUsers(false);
     }

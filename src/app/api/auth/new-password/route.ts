@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("New password error:", error);
     
     return NextResponse.json(

@@ -140,8 +140,10 @@ export default function AdminDashboard() {
         setBookingStats(data.bookingStats);
         setLastUpdated(new Date());
         
-      } catch (err: any) {
-        setError(err.message || "Error al cargar las estadísticas");
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Error al cargar las estadísticas"
+        );
         console.error(err);
       } finally {
         setIsLoading(false);

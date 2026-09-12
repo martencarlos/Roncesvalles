@@ -1,7 +1,7 @@
 // src/app/(protected)/bookings/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { BookingsSkeleton } from "@/components/BookingCardSkeleton";
 import {
   format,
@@ -24,6 +24,7 @@ import {
   Flame,
   Lock,
   CalendarX,
+  ChevronDown,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -104,7 +105,7 @@ export default function BookingsPage() {
   const [selectedMealType, setSelectedMealType] = useState<MealType>("lunch");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
+  const [dateFilter, setDateFilter] = useState<DateFilter | null>(null);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [deletingBooking, setDeletingBooking] = useState<IBooking | null>(null);
@@ -194,8 +195,8 @@ export default function BookingsPage() {
 
       // Now fetch ALL bookings for the selected date to check availability
       updateAvailableTables(selectedDate);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       console.error(err);
     } finally {
       setLoading(false);
@@ -267,14 +268,22 @@ export default function BookingsPage() {
     }
   };
 
+  // Keep the latest fetchBookings without making the mount effect depend on it
+  // (a changed identity must not cancel/re-run the fetch).
+  const fetchBookingsRef = useRef(fetchBookings);
+  useEffect(() => {
+    fetchBookingsRef.current = fetchBookings;
+  });
+
   useEffect(() => {
     if (status === "authenticated") {
-      if (session?.user?.role === "user") {
-        setDateFilter("future");
-      }
-      fetchBookings();
+      fetchBookingsRef.current();
     }
   }, [status]);
+
+  // Regular users default to upcoming bookings; everyone else to today.
+  const effectiveDateFilter: DateFilter =
+    dateFilter ?? (session?.user?.role === "user" ? "future" : "today");
 
   // Derived (computed during render) instead of stored in state to avoid the
   // extra render each fetch used to trigger.
@@ -289,7 +298,7 @@ export default function BookingsPage() {
           )
         : bookings;
 
-    switch (dateFilter) {
+    switch (effectiveDateFilter) {
       case "today":
         return userBookings.filter((booking) =>
           isToday(new Date(booking.date))
@@ -316,10 +325,10 @@ export default function BookingsPage() {
       default:
         return userBookings;
     }
-  }, [bookings, dateFilter, selectedDate, session]);
+  }, [bookings, effectiveDateFilter, selectedDate, session]);
 
   const filteredBlocks = useMemo(() => {
-    switch (dateFilter) {
+    switch (effectiveDateFilter) {
       case "today":
         return blocks.filter((block) => isToday(new Date(block.date)));
       case "future":
@@ -344,7 +353,7 @@ export default function BookingsPage() {
       default:
         return blocks;
     }
-  }, [blocks, dateFilter, selectedDate]);
+  }, [blocks, effectiveDateFilter, selectedDate]);
 
   const handleCreateBooking = async (data: Partial<IBooking>) => {
     // Prevent admin (read-only) from creating bookings
@@ -399,10 +408,11 @@ export default function BookingsPage() {
           data.mealType === "lunch" ? "comida" : "cena"
         } el ${format(data.date as Date, "d MMM, yyyy", { locale: es })}`,
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error("Create booking error:", err);
       toast.error("Error", {
-        description: err.message || "Error al crear la reserva",
+        description:
+          err instanceof Error ? err.message : "Error al crear la reserva",
       });
       throw err;
     }
@@ -458,10 +468,13 @@ export default function BookingsPage() {
       toast.success("Reserva Actualizada", {
         description: `Actualizada reserva para Apt #${data.apartmentNumber}`,
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error("Update booking error:", err);
       toast.error("Error", {
-        description: err.message || "Error al actualizar la reserva",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Error al actualizar la reserva",
       });
       throw err;
     }
@@ -501,8 +514,8 @@ export default function BookingsPage() {
       toast.error("Reserva Eliminada", {
         description: "La reserva ha sido eliminada correctamente",
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -577,9 +590,12 @@ export default function BookingsPage() {
     : [];
 
   const totalPages = Math.max(1, Math.ceil(mergedList.length / itemsPerPage));
+  // Clamp for rendering instead of syncing state in an effect (e.g. when the
+  // current page no longer exists after filtering).
+  const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedMergedList = mergedList.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage
   );
 
   // Toggle view mode
@@ -617,13 +633,6 @@ export default function BookingsPage() {
     }
   }, [status, router]);
 
-  useEffect(() => {
-    if (!isAdminOrConserje) return;
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages, isAdminOrConserje]);
-
   if (status === "loading" || status === "unauthenticated") {
     return null;
   }
@@ -634,13 +643,13 @@ export default function BookingsPage() {
     selectedMealType === "lunch" ? blockedLunch : blockedDinner;
 
   const listTitle =
-    dateFilter === "today"
+    effectiveDateFilter === "today"
       ? "Reservas de Hoy"
-      : dateFilter === "future"
+      : effectiveDateFilter === "future"
       ? "Próximas Reservas"
-      : dateFilter === "past"
+      : effectiveDateFilter === "past"
       ? "Reservas Pasadas"
-      : dateFilter === "specific"
+      : effectiveDateFilter === "specific"
       ? `Reservas del ${formatDateEs(selectedDate, "d MMMM, yyyy")}`
       : "Todas las Reservas";
 
@@ -658,7 +667,7 @@ export default function BookingsPage() {
           "d MMMM, yyyy"
         )}.`,
         all: "No hay reservas ni bloqueos disponibles.",
-      }[dateFilter]
+      }[effectiveDateFilter]
     : {
         today: "No hay reservas para hoy.",
         future: "No hay próximas reservas.",
@@ -668,7 +677,7 @@ export default function BookingsPage() {
           "d MMMM, yyyy"
         )}.`,
         all: "No hay reservas disponibles.",
-      }[dateFilter];
+      }[effectiveDateFilter];
 
   const emptyState = (
     <EmptyState
@@ -756,7 +765,7 @@ export default function BookingsPage() {
 
           <div className="custom-datepicker-container">
             <div className="relative flex items-center">
-              <div className="pointer-events-none absolute left-3 text-muted-foreground">
+              <div className="pointer-events-none absolute left-3 z-10 text-muted-foreground">
                 <CalendarIcon className="h-4 w-4" />
               </div>
               <DatePicker
@@ -775,11 +784,14 @@ export default function BookingsPage() {
                 onFocus={(e) => e.target.blur()}
                 customInput={
                   <input
-                    className="w-full cursor-pointer rounded-md border border-input bg-card py-2 pl-10 pr-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                    className="w-full cursor-pointer rounded-md border border-input bg-card py-2 pl-10 pr-10 text-center text-sm text-foreground outline-none transition-colors hover:border-ring focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
                     readOnly
                   />
                 }
               />
+              <div className="pointer-events-none absolute right-3 z-10 text-muted-foreground">
+                <ChevronDown className="h-4 w-4" />
+              </div>
             </div>
 
             <div className="datepicker-legend">
@@ -799,7 +811,7 @@ export default function BookingsPage() {
                 <div className="datepicker-legend-dot booking-dot-blocked"></div>
                 <span>Bloqueada</span>
               </div>
-              <div className="flex items-center gap-1 text-muted-foreground ml-auto">
+              <div className="hidden items-center gap-1 text-muted-foreground sm:ml-auto sm:flex">
                 <InfoIcon className="h-3 w-3" />
                 <span>Fechas con reservas</span>
               </div>
@@ -937,7 +949,7 @@ export default function BookingsPage() {
                 <div className="flex flex-wrap gap-2">
                   {!isRegularUser && (
                     <Button
-                      variant={dateFilter === "today" ? "default" : "outline"}
+                      variant={effectiveDateFilter === "today" ? "default" : "outline"}
                       onClick={() => handleDateFilterChange("today")}
                       size="sm"
                     >
@@ -945,14 +957,14 @@ export default function BookingsPage() {
                     </Button>
                   )}
                   <Button
-                    variant={dateFilter === "future" ? "default" : "outline"}
+                    variant={effectiveDateFilter === "future" ? "default" : "outline"}
                     onClick={() => handleDateFilterChange("future")}
                     size="sm"
                   >
                     Próximas
                   </Button>
                   <Button
-                    variant={dateFilter === "past" ? "default" : "outline"}
+                    variant={effectiveDateFilter === "past" ? "default" : "outline"}
                     onClick={() => handleDateFilterChange("past")}
                     size="sm"
                   >
@@ -1091,7 +1103,7 @@ export default function BookingsPage() {
                 </div>
                 {totalPages > 1 && (
                   <Pagination
-                    currentPage={currentPage}
+                    currentPage={safeCurrentPage}
                     totalPages={totalPages}
                     onPageChange={setCurrentPage}
                     itemsPerPage={itemsPerPage}

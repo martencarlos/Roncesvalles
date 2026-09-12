@@ -1,5 +1,5 @@
 // src/components/BookingForm.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { IBooking, MealType } from "@/models/Booking";
 import { IBlockedDate } from "@/models/BlockedDate";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
 import { format, differenceInDays } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
-import { CalendarIcon, LockIcon, InfoIcon, AlertTriangle, ShieldAlert } from "lucide-react";
+import { CalendarIcon, ChevronDown, LockIcon, InfoIcon, AlertTriangle, ShieldAlert } from "lucide-react";
 import { isOffSeason } from "@/lib/export-utils";
 import { useSession } from "next-auth/react";
 import { getApartmentLabel } from "@/lib/utils";
@@ -149,17 +149,103 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [bookingsForDates, setBookingsForDates] = useState<BookingCalendarInfo>({});
-  const [noCleaningService, setNoCleaningService] = useState<boolean>(
-    initialData?.noCleaningService || false
-  );
-  const [cleaningWarningReason, setCleaningWarningReason] =
-    useState<string>("");
-  const [isConciergeRestDay, setIsConciergeRestDay] = useState<boolean>(false);
-  const [isShortNotice, setIsShortNotice] = useState<boolean>(false);
   const [isOvenBooked, setIsOvenBooked] = useState<boolean>(false);
   const [dateBlock, setDateBlock] = useState<IBlockedDate | null>(null);
 
   const maxPeopleAllowed = selectedTables.length * MAX_PEOPLE_PER_TABLE;
+
+  // Derived concierge-service state (previously synced via an effect)
+  const { isConciergeRestDay, isShortNotice, offSeason } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    const daysDifference = differenceInDays(checkDate, today);
+    const dayOfWeek = checkDate.getDay();
+    return {
+      isConciergeRestDay: dayOfWeek === 2 || dayOfWeek === 3, // Tue/Wed
+      isShortNotice: daysDifference <= 4,
+      offSeason: isOffSeason(checkDate),
+    };
+  }, [date]);
+
+  const { noCleaningService, cleaningWarningReason } = useMemo(() => {
+    const mealTypeHasChanged =
+      initialData?.mealType !== undefined && initialData.mealType !== mealType;
+    const dateHasChanged =
+      initialData?.date !== undefined &&
+      new Date(initialData.date).getTime() !== date.getTime();
+
+    if (
+      !initialData?._id ||
+      (initialData?._id && (dateHasChanged || mealTypeHasChanged))
+    ) {
+      if (offSeason) {
+        return {
+          noCleaningService: true,
+          cleaningWarningReason:
+            "Durante la temporada baja (mayo a noviembre) no se proporciona servicio de conserjería.",
+        };
+      } else if (isConciergeRestDay) {
+        return {
+          noCleaningService: true,
+          cleaningWarningReason:
+            "Los martes y miércoles no hay servicio de conserjería.",
+        };
+      } else if (isShortNotice) {
+        return {
+          noCleaningService: true,
+          cleaningWarningReason:
+            "Para reservas con menos de 5 días de antelación no se proporciona servicio de conserjería.",
+        };
+      }
+      return { noCleaningService: false, cleaningWarningReason: "" };
+    } else if (initialData?.noCleaningService) {
+      if (offSeason) {
+        return {
+          noCleaningService: true,
+          cleaningWarningReason:
+            "Durante la temporada baja (mayo a noviembre) no se proporciona servicio de conserjería.",
+        };
+      } else if (isConciergeRestDay) {
+        return {
+          noCleaningService: true,
+          cleaningWarningReason:
+            "Los martes y miércoles no hay servicio de conserjería.",
+        };
+      }
+      return {
+        noCleaningService: true,
+        cleaningWarningReason:
+          "Para reservas con menos de 5 días de antelación no se proporciona servicio de conserjería.",
+      };
+    }
+
+    return {
+      noCleaningService: initialData?.noCleaningService || false,
+      cleaningWarningReason: "",
+    };
+  }, [
+    date,
+    mealType,
+    initialData,
+    offSeason,
+    isConciergeRestDay,
+    isShortNotice,
+  ]);
+
+  const effectivePrepararFuego =
+    isConciergeRestDay || isShortNotice || offSeason ? false : prepararFuego;
+
+  // Clamp attendees to the capacity of the selected tables (derived, so no
+  // state-sync effect is needed).
+  const effectiveNumberOfPeople =
+    selectedTables.length > 0 &&
+    typeof numberOfPeople === "number" &&
+    numberOfPeople > maxPeopleAllowed
+      ? maxPeopleAllowed
+      : numberOfPeople;
+
 
   function getLastSelectedApartment(): number | undefined {
     if (typeof window !== "undefined") {
@@ -179,77 +265,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
   }
 
-  // Effect to handle Concierge Service Logic (Days of week & Notice)
-  useEffect(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-
-    const daysDifference = differenceInDays(checkDate, today);
-
-    const dayOfWeek = checkDate.getDay();
-    const restDay = dayOfWeek === 2 || dayOfWeek === 3; // 2=Tuesday, 3=Wednesday
-    const shortNotice = daysDifference <= 4;
-    const offSeason = isOffSeason(checkDate);
-
-    setIsConciergeRestDay(restDay);
-    setIsShortNotice(shortNotice);
-
-    // LOGIC:
-    // 1. If Short Notice (< 5 days): Disable Fire (User must do it). Oven allowed.
-    // 2. If Rest Day (Tue/Wed): Disable Fire (No Concierge). Oven allowed (not a concierge task).
-    // 3. If Off Season (May-Nov): Disable Fire (No Concierge). Oven allowed.
-    
-    if (restDay || shortNotice || offSeason) {
-      setPrepararFuego(false);
-      // Removed setReservaHorno(false) so Oven is preserved
-    }
-
-    // Logic for "No Cleaning Service" flag and warnings
-    const mealTypeHasChanged =
-      initialData?.mealType !== undefined && initialData.mealType !== mealType;
-    const dateHasChanged =
-      initialData?.date !== undefined &&
-      new Date(initialData.date).getTime() !== date.getTime();
-
-    if (!initialData?._id || (initialData?._id && (dateHasChanged || mealTypeHasChanged))) {
-      if (offSeason) {
-        setNoCleaningService(true);
-        setCleaningWarningReason(
-          "Durante la temporada baja (mayo a noviembre) no se proporciona servicio de conserjería."
-        );
-      } else if (restDay) {
-        setNoCleaningService(true);
-        setCleaningWarningReason(
-          "Los martes y miércoles no hay servicio de conserjería."
-        );
-      } else if (shortNotice) {
-        setNoCleaningService(true);
-        setCleaningWarningReason(
-          "Para reservas con menos de 5 días de antelación no se proporciona servicio de conserjería."
-        );
-      } else {
-        setNoCleaningService(false);
-        setCleaningWarningReason("");
-      }
-    } else if (initialData?.noCleaningService) {
-      // Logic for editing existing bookings with the flag set
-      if (offSeason) {
-        setCleaningWarningReason(
-          "Durante la temporada baja (mayo a noviembre) no se proporciona servicio de conserjería."
-        );
-      } else if (restDay) {
-        setCleaningWarningReason(
-          "Los martes y miércoles no hay servicio de conserjería."
-        );
-      } else {
-        setCleaningWarningReason(
-          "Para reservas con menos de 5 días de antelación no se proporciona servicio de conserjería."
-        );
-      }
-    }
-  }, [date, mealType, initialData]);
 
   useEffect(() => {
     const fetchAllBookings = async () => {
@@ -300,22 +315,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
           setReservaHorno(false);
         }
 
-        const hasConflict = selectedTables.some((tableNum) =>
-          allBookedTables.includes(tableNum)
-        );
-
-        if (hasConflict) {
-          const validTables = selectedTables.filter(
+        setSelectedTables((prev) => {
+          const validTables = prev.filter(
             (tableNum) => !allBookedTables.includes(tableNum)
           );
-          setSelectedTables(validTables);
-          if (selectedTables.length !== validTables.length) {
+          if (prev.length !== validTables.length) {
             toast.info("Selección de mesas actualizada", {
               description:
                 "Algunas mesas que había seleccionado ya no están disponibles.",
             });
           }
-        }
+          return validTables;
+        });
 
         // Check if this date+mealType is blocked
         const blockRes = await fetch(`/api/blocked-dates?date=${dateString}`);
@@ -341,19 +352,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setMealType(value);
     setSelectedTables([]);
   };
-
-  useEffect(() => {
-    if (
-      selectedTables.length > 0 &&
-      typeof numberOfPeople === "number" &&
-      numberOfPeople > maxPeopleAllowed
-    ) {
-      setNumberOfPeople(maxPeopleAllowed);
-      toast.info("Número de personas ajustado", {
-        description: `El máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}.`,
-      });
-    }
-  }, [selectedTables, maxPeopleAllowed, numberOfPeople]);
 
   const handleApartmentChange = (value: string) => {
     if (!isRegularUser) {
@@ -457,7 +455,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       return;
     }
 
-    if (numberOfPeople === "" || numberOfPeople < 1) {
+    if (effectiveNumberOfPeople === "" || effectiveNumberOfPeople < 1) {
       setError("Por favor, indique un número de personas válido");
       toast.error("Error de Validación", {
         description: "Por favor, indique un número de personas válido",
@@ -465,7 +463,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       return;
     }
 
-    if (numberOfPeople > maxPeopleAllowed) {
+    if (effectiveNumberOfPeople > maxPeopleAllowed) {
       setError(
         `El número máximo de personas permitidas para ${selectedTables.length} mesa(s) es ${maxPeopleAllowed}`
       );
@@ -487,10 +485,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
         apartmentNumber: effectiveApartmentNumber,
         date,
         mealType,
-        numberOfPeople,
+        numberOfPeople: effectiveNumberOfPeople,
         tables: selectedTables,
         // Force fire to false if rest day OR short notice (Concierge logic)
-        prepararFuego: (isConciergeRestDay || isShortNotice) ? false : prepararFuego,
+        prepararFuego: effectivePrepararFuego,
         // Allow oven regardless of rest day (unless conflict)
         reservaHorno: reservaHorno,
         userId: session?.user?.id,
@@ -500,11 +498,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
       if (!initialData?._id && !isRegularUser) {
         saveLastSelectedApartment(effectiveApartmentNumber);
       }
-    } catch (error: any) {
-      setError(error.message || "Error al enviar la reserva");
-      toast.error("Error", {
-        description: error.message || "Error al enviar la reserva",
-      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Error al enviar la reserva";
+      setError(message);
+      toast.error("Error", { description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -523,7 +521,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Label htmlFor="date">Fecha</Label>
         <div className="custom-datepicker-container">
           <div className="relative flex items-center w-full">
-            <div className="absolute left-3 pointer-events-none text-muted-foreground">
+            <div className="pointer-events-none absolute left-3 z-10 text-muted-foreground">
               <CalendarIcon className="h-4 w-4" />
             </div>
             <DatePicker
@@ -537,11 +535,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
               renderDayContents={renderDayContents}
               customInput={
                 <input
-                  className="w-full pl-10 p-2 border rounded-md cursor-pointer"
+                  className="w-full cursor-pointer rounded-md border border-input bg-card py-2 pl-10 pr-10 text-center text-sm text-foreground outline-none transition-colors hover:border-ring focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
                   readOnly
                 />
               }
             />
+            <div className="pointer-events-none absolute right-3 z-10 text-muted-foreground">
+              <ChevronDown className="h-4 w-4" />
+            </div>
           </div>
           <div className="datepicker-legend">
             <div className="datepicker-legend-item">
@@ -560,7 +561,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               <div className="datepicker-legend-dot booking-dot-blocked"></div>
               <span>Bloqueada</span>
             </div>
-            <div className="flex items-center gap-1 text-muted-foreground ml-auto">
+            <div className="hidden items-center gap-1 text-muted-foreground sm:ml-auto sm:flex">
               <InfoIcon className="h-3 w-3" />
               <span>Fechas con reservas</span>
             </div>
@@ -740,7 +741,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               min="1"
               max={selectedTables.length > 0 ? maxPeopleAllowed : undefined}
               required
-              value={numberOfPeople}
+              value={effectiveNumberOfPeople}
               onChange={handleNumberOfPeopleChange}
             />
             {selectedTables.length > 0 && (
@@ -765,7 +766,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="prepararFuego"
-                checked={prepararFuego}
+                checked={effectivePrepararFuego}
                 onCheckedChange={() => setPrepararFuego(!prepararFuego)}
                 disabled={isConciergeRestDay || isShortNotice}
               />

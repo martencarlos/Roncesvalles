@@ -53,7 +53,7 @@ export async function PUT(
     
     return NextResponse.json(updatedFeedback);
     
-  } catch (error: any) {
+  } catch (error) {
     console.error(`PUT /api/feedback/${params.id} error:`, error);
     return NextResponse.json(
       { error: 'Failed to update feedback status' },
@@ -104,7 +104,7 @@ export async function DELETE(
     
     return NextResponse.json({ message: "Feedback deleted successfully" });
     
-  } catch (error: any) {
+  } catch (error) {
     console.error(`DELETE /api/feedback/${params.id} error:`, error);
     return NextResponse.json(
       { error: 'Failed to delete feedback' },

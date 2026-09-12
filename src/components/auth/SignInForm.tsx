@@ -1,7 +1,7 @@
 // src/components/auth/SignInForm.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -25,15 +25,13 @@ export default function SignInForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  
-  useEffect(() => {
-    if (passwordUpdated === "true") {
-      setSuccessMessage("Su contraseña ha sido actualizada correctamente. Por favor, inicie sesión con su nueva contraseña.");
-    } else if (registered === "true") {
-      setSuccessMessage("Su cuenta ha sido creada correctamente. Por favor, inicie sesión.");
-    }
-  }, [passwordUpdated, registered]);
+
+  const successMessage =
+    passwordUpdated === "true"
+      ? "Su contraseña ha sido actualizada correctamente. Por favor, inicie sesión con su nueva contraseña."
+      : registered === "true"
+      ? "Su cuenta ha sido creada correctamente. Por favor, inicie sesión."
+      : "";
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

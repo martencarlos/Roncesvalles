@@ -53,7 +53,11 @@ export default function UserProfileForm() {
         throw new Error("Usuario no identificado");
       }
       
-      const updateData: any = { name };
+      const updateData: {
+        name: string;
+        currentPassword?: string;
+        password?: string;
+      } = { name };
       
       // Only include password data if user wants to change it
       if (newPassword && currentPassword) {
@@ -93,8 +97,8 @@ export default function UserProfileForm() {
       router.refresh();
       
       toast.success("Perfil actualizado correctamente");
-    } catch (error: any) {
-      setErrorMessage(error.message);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
       setIsSubmitting(false);
     }

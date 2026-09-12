@@ -44,6 +44,10 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
     isProtectedRef.current = isProtected;
   }, [isProtected]);
 
+  // This loader intentionally mirrors external session status into local
+  // state (and manages a safety-valve timer); there is no render-time
+  // derivation that preserves the latch/transient handling. See comment above.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (status === "authenticated") {
       wasAuthenticatedRef.current = true;
@@ -90,6 +94,7 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
       }
     }
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Cleanup on unmount only
   useEffect(() => {

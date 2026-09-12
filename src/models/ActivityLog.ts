@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 
 export interface IActivityLog {
   _id: string;
-  action: 'create' | 'update' | 'delete' | 'user_create' | 'user_update' | 'user_delete';
+  action: 'create' | 'update' | 'delete' | 'confirm' | 'user_create' | 'user_update' | 'user_delete';
   apartmentNumber?: number; // Optional for user management activities
   userId: string; // The user who performed the action
   targetUserId?: string; // For user management activities - the affected user

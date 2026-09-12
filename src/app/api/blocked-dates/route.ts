@@ -1,10 +1,11 @@
 export const dynamic = "force-dynamic";
 // src/app/api/blocked-dates/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import type { QueryFilter } from "mongoose";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/mongodb";
-import BlockedDate from "@/models/BlockedDate";
+import BlockedDate, { type IBlockedDate } from "@/models/BlockedDate";
 import ActivityLog from "@/models/ActivityLog";
 import { sendPushToConserje } from "@/lib/push-service";
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const dateParam = url.searchParams.get("date");
 
-    const query: any = {};
+    const query: QueryFilter<IBlockedDate> = {};
 
     if (dateParam) {
       const targetDate = new Date(dateParam);
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     endOfDay.setHours(23, 59, 59, 999);
 
     // Conflict check: overlapping blocks for the same date+mealType
-    const conflictQuery: any = {
+    const conflictQuery: QueryFilter<IBlockedDate> = {
       date: { $gte: startOfDay, $lte: endOfDay },
       $or: [
         { mealType: "both" },
@@ -137,9 +138,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(newBlock, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("POST /api/blocked-dates error:", error);
-    if (error.name === "ValidationError") {
+    if (error instanceof Error && error.name === "ValidationError") {
       return NextResponse.json(
         { error: "Validación", details: error.message },
         { status: 400 }

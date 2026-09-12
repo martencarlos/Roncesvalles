@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/mongodb";
-import Booking from "@/models/Booking";
+import Booking, { type IBooking, type MealType } from "@/models/Booking";
 import ActivityLog from "@/models/ActivityLog";
 import User from "@/models/User";
 import { sendPushToConserje } from "@/lib/push-service";
@@ -92,9 +92,12 @@ export async function PUT(
       let cleaningHours: number | null | undefined;
       try {
         cleaningHours = normalizeCleaningHours(body.cleaningHours);
-      } catch (error: any) {
+      } catch (error) {
         return NextResponse.json(
-          { error: "Validación", message: error.message },
+          {
+            error: "Validación",
+            message: error instanceof Error ? error.message : String(error),
+          },
           { status: 400 }
         );
       }
@@ -306,9 +309,9 @@ export async function PUT(
 
       // 1. Table Conflict
       const bookedTables = existingBookings.flatMap(
-        (booking: any) => booking.tables
+        (booking) => booking.tables
       );
-      const conflictingTables = requestedTables.filter((table: any) =>
+      const conflictingTables = requestedTables.filter((table: number) =>
         bookedTables.includes(table)
       );
 
@@ -324,7 +327,7 @@ export async function PUT(
 
       // 2. Oven Conflict (only if allowed/wantsOven)
       if (wantsOven) {
-        const ovenTaken = existingBookings.some((b: any) => b.reservaHorno);
+        const ovenTaken = existingBookings.some((b) => b.reservaHorno);
         if (ovenTaken) {
           return NextResponse.json(
             {
@@ -343,14 +346,17 @@ export async function PUT(
     let normalizedCleaningHours: number | null | undefined;
     try {
       normalizedCleaningHours = normalizeCleaningHours(body.cleaningHours);
-    } catch (error: any) {
+    } catch (error) {
       return NextResponse.json(
-        { error: "Validación", message: error.message },
+        {
+          error: "Validación",
+          message: error instanceof Error ? error.message : String(error),
+        },
         { status: 400 }
       );
     }
 
-    const updateData: any = {
+    const updateData: Partial<IBooking> & { date: Date; mealType: MealType } = {
       apartmentNumber: body.apartmentNumber ?? originalBooking.apartmentNumber,
       date: effectiveDate,
       mealType: checkMealType,
@@ -481,9 +487,9 @@ export async function PUT(
     }
 
     return NextResponse.json(updatedBooking);
-  } catch (error: any) {
+  } catch (error) {
     console.error(`PUT error:`, error);
-    if (error.name === "ValidationError")
+    if (error instanceof Error && error.name === "ValidationError")
       return NextResponse.json(
         { error: "Validation", details: error.message },
         { status: 400 }

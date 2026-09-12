@@ -70,8 +70,8 @@ export default function ActivityPage() {
         
         // Check if any filters are applied
         setIsFilterApplied(actionType !== 'all' || userOnly || !!apartmentFilter);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
         console.error(err);
       } finally {
         setLoading(false);

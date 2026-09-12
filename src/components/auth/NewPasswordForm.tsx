@@ -74,8 +74,8 @@ export default function NewPasswordForm({ token, email }: NewPasswordFormProps) 
         router.push("/auth/signin?passwordUpdated=true");
       }, 3000);
       
-    } catch (error: any) {
-      setErrorMessage(error.message);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
       setIsSubmitting(false);
     }

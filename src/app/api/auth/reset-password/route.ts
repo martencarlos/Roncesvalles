@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("Reset password error:", error);
     
     return NextResponse.json(

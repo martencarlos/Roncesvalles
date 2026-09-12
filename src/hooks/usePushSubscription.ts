@@ -53,15 +53,15 @@ export function usePushSubscription(): PushSubscriptionState {
   useEffect(() => {
     if (status !== 'authenticated') return;
     if (!isConserje) return;
-    if (!isPushSupported()) {
-      setPermission('unsupported');
-      return;
-    }
     if (initialized.current) return;
     initialized.current = true;
 
     async function init() {
       try {
+        if (!isPushSupported()) {
+          setPermission('unsupported');
+          return;
+        }
         await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         registrationRef.current = await navigator.serviceWorker.ready;
 

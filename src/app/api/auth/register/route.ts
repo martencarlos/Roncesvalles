@@ -113,10 +113,15 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("Registration error:", error);
     
-    if (error.code === 11000) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: number }).code === 11000
+    ) {
       // MongoDB duplicate key error
       return NextResponse.json(
         { error: "Correo electrónico o apartamento ya registrado" },

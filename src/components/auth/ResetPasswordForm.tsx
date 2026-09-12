@@ -54,8 +54,8 @@ export default function ResetPasswordForm() {
       }
       
       setIsSubmitted(true);
-    } catch (error: any) {
-      setErrorMessage(error.message);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
       setIsSubmitting(false);
     }

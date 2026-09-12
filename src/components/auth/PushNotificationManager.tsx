@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { Bell, BellOff, BellRing, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,17 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { INotificationLog } from '@/models/NotificationLog';
 
+const MOBILE_QUERY = '(max-width: 639px)';
+
+function subscribeMobile(callback: () => void) {
+  const mq = window.matchMedia(MOBILE_QUERY);
+  mq.addEventListener('change', callback);
+  return () => mq.removeEventListener('change', callback);
+}
+
+const getMobileSnapshot = () => window.matchMedia(MOBILE_QUERY).matches;
+const getMobileServerSnapshot = () => false;
+
 export default function PushNotificationManager() {
   const { data: session } = useSession();
   const { permission, isLoading, subscribe, unsubscribe } = usePushSubscription();
@@ -24,18 +35,14 @@ export default function PushNotificationManager() {
   const [hasPrompted, setHasPrompted] = useState(false);
   const [notifications, setNotifications] = useState<INotificationLog[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useSyncExternalStore(
+    subscribeMobile,
+    getMobileSnapshot,
+    getMobileServerSnapshot
+  );
   const panelRef = useRef<HTMLDivElement>(null);
 
   const isConserje = session?.user?.role === 'conserje';
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 639px)');
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   // Auto-open once on first visit when permission unknown and user hasn't opted out
   useEffect(() => {

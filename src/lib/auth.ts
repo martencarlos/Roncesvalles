@@ -1,5 +1,5 @@
 // src/lib/auth.ts - Updated to track login events and handle session updates
-import { AuthOptions } from "next-auth";
+import { AuthOptions, type RequestInternal } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import connectDB from "./mongodb";
@@ -24,18 +24,22 @@ function getBrowserInfo(userAgent: string): string {
   return `${browser.name || 'Unknown'} ${browser.version || ''}`.trim();
 }
 
+type LoginTrackingRequest = Pick<RequestInternal, "headers"> & {
+  connection?: { remoteAddress?: string };
+};
+
 // Function to track login events
 async function trackLoginEvent(
   userId: string, 
   success: boolean, 
-  req: any, 
+  req: LoginTrackingRequest, 
   failureReason?: string
 ) {
   try {
-    const userAgent = req.headers['user-agent'] || '';
+    const userAgent = req.headers?.['user-agent'] || '';
     const ipAddress = 
-      req.headers['x-forwarded-for']?.split(',')[0] || 
-      req.connection.remoteAddress || 
+      req.headers?.['x-forwarded-for']?.split(',')[0] || 
+      req.connection?.remoteAddress || 
       '0.0.0.0';
     
     // Parse user agent to get OS info
