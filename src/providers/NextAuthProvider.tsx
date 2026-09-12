@@ -117,6 +117,14 @@ export function NextAuthProvider({
 }: {
   children: React.ReactNode;
 }) {
+  // Register the service worker at startup so the app is installable as a PWA
+  // (Chrome Android requires a SW with a fetch handler for the install prompt).
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    }
+  }, []);
+
   return (
     <SessionProvider>
       <AuthLoader>{children}</AuthLoader>
