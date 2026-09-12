@@ -346,6 +346,7 @@ export default function BookingsManagement({
                 customInput={
                   <Input
                     className="w-full cursor-pointer pl-10 pr-10 text-center"
+                    inputMode="none"
                     readOnly
                   />
                 }

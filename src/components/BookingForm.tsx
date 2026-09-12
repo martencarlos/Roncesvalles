@@ -536,6 +536,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               customInput={
                 <input
                   className="w-full cursor-pointer rounded-md border border-input bg-card py-2 pl-10 pr-10 text-center text-sm text-foreground outline-none transition-colors hover:border-ring focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                  inputMode="none"
                   readOnly
                 />
               }
