@@ -1,3 +1,7 @@
 allowBuilds:
   sharp: true
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - nodemailer@10.0.9
+overrides:
+  nodemailer: ^10.0.9
