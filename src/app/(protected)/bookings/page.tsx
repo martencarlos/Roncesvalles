@@ -944,6 +944,7 @@ export default function BookingsPage() {
 
         <section className="space-y-4">
           <SectionHeader
+            nowrap
             title={listTitle}
             actions={
               <>
